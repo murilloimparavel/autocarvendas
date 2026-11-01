@@ -271,13 +271,14 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
           </div>
 
           <aside className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
-            <h1 className="sf-title-line flex-wrap">
+            <p className="sf-eyebrow sf-eyebrow-accent flex items-center gap-2">
               <span className="sf-dot" data-tone={status.tone} aria-hidden="true" />
-              <span className="sf-display text-[length:var(--sf-text-2xl)]">{name}</span>
-              {readOnly && <span className="sf-chip shrink-0">{status.label}</span>}
+              {status.label}
+            </p>
+            <h1 className="mt-2 flex flex-wrap items-start gap-3">
+              <span className="sf-display text-[2.25rem] leading-[0.9] xl:text-[2.75rem]" style={{ fontStretch: '100%', letterSpacing: '-0.015em' }}>{name}</span>
             </h1>
-            <p className="sf-muted mt-1 pl-4 text-[length:var(--sf-text-md)]">
-              {!readOnly && <span className="sr-only">{status.label}. </span>}
+            <p className="sf-muted sf-caps mt-2 text-[length:var(--sf-text-md)]">
               {vehicle.trim}
             </p>
 
@@ -383,7 +384,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
 
           <div className="min-w-0 lg:col-start-1 lg:row-start-2">
             <section aria-labelledby="vdp-spec">
-              <h2 id="vdp-spec" className="sf-heading text-[length:var(--sf-text-xl)]">Specifications</h2>
+              <h2 id="vdp-spec" className="sf-caps text-[0.875rem] font-medium">Specifications</h2>
               <dl className="sf-spec mt-4 grid-cols-2 sm:grid-cols-3">
                 {specs.map((spec) => (
                   <div key={spec.label}>
@@ -395,7 +396,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
             </section>
 
             <section className="mt-10 border-t pt-8" style={{ borderColor: 'var(--sf-rule)' }} aria-labelledby="vdp-description">
-              <h2 id="vdp-description" className="sf-heading text-[length:var(--sf-text-xl)]">Description</h2>
+              <h2 id="vdp-description" className="sf-caps text-[0.875rem] font-medium">Description</h2>
               {vehicle.description ? (
                 <p className="sf-muted mt-4 max-w-[68ch] whitespace-pre-line text-[length:var(--sf-text-md)] leading-relaxed">
                   {vehicle.description}
@@ -407,7 +408,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
 
             {Array.isArray(features) && features.length > 0 && (
               <section className="mt-10 border-t pt-8" style={{ borderColor: 'var(--sf-rule)' }} aria-labelledby="vdp-features">
-                <h2 id="vdp-features" className="sf-title-line sf-heading text-[length:var(--sf-text-xl)]">
+                <h2 id="vdp-features" className="sf-title-line sf-caps text-[0.875rem] font-medium">
                   Features
                   <span className="sf-chip sf-figure">{features.length}</span>
                 </h2>
@@ -449,7 +450,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
             ref={barContactOpenerRef}
             type="button"
             onClick={() => openLead('contact', barContactOpenerRef)}
-            className="sf-btn sf-btn-ghost min-w-0 px-2"
+            className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1"
           >
             Ask
           </button>
@@ -457,12 +458,12 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
             ref={barTestDriveOpenerRef}
             type="button"
             onClick={() => openLead('test-drive', barTestDriveOpenerRef)}
-            className="sf-btn sf-btn-primary min-w-0 px-2"
+            className="sf-btn sf-btn-primary sf-bar-btn min-w-0 px-1"
           >
             Test drive
           </button>
-          <Link href={financingHref} className="sf-btn sf-btn-ghost min-w-0 px-2">Finance</Link>
-          <Link href={tradeInHref} className="sf-btn sf-btn-ghost min-w-0 px-2">Trade-in</Link>
+          <Link href={financingHref} className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1">Finance</Link>
+          <Link href={tradeInHref} className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1">Trade-in</Link>
         </div>
       </div>
       )}

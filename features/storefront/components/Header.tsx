@@ -93,7 +93,7 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className="sf-caps relative whitespace-nowrap px-2 py-2 text-[0.875rem] font-medium xl:px-2.5 xl:text-[0.9375rem] transition-colors hover:text-[var(--sf-accent)]"
+                  className="sf-caps relative whitespace-nowrap px-2.5 py-2 text-[0.75rem] font-medium xl:px-3.5 transition-colors hover:text-[var(--sf-accent)]"
                   style={{ color: active ? 'var(--sf-accent)' : 'var(--sf-ink)' }}
                 >
                   {item.label}
@@ -129,10 +129,10 @@ export function Header() {
               <UserRound className="size-5" aria-hidden="true" />
             </Link>
 
-            <Link href="/test-drive" className="sf-btn sf-btn-primary ml-1 hidden min-h-[2.25rem] px-6 py-1.5 md:inline-flex">
+            <Link href="/test-drive" className="sf-btn sf-btn-primary ml-1 hidden min-h-[2rem] px-6 py-1 text-[0.75rem] md:inline-flex">
               Test drive
             </Link>
-            <Link href="/trade-in" className="sf-btn sf-btn-ghost hidden min-h-[2.25rem] px-6 py-1.5 xl:inline-flex" style={{ borderColor: 'var(--sf-accent)' }}>
+            <Link href="/trade-in" className="sf-btn sf-btn-ghost hidden min-h-[2rem] px-6 py-1 text-[0.75rem] xl:inline-flex" style={{ borderColor: 'var(--sf-accent)' }}>
               Trade-in
             </Link>
 

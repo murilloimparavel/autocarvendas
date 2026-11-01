@@ -103,26 +103,26 @@ export async function HomePage() {
       <section className="relative hidden overflow-hidden md:block">
         <Image src={HERO_PHOTO} alt="" fill priority unoptimized sizes="100vw" className="object-cover object-[60%_55%]" />
         <span className="sf-hero-shade" aria-hidden="true" />
-        <Container className="relative flex min-h-[26.3rem] flex-col pb-2.5 pt-14">
+        <Container className="relative flex min-h-[26.25rem] flex-col pb-[1.125rem] pt-[3.25rem]">
           <h1 className="sf-display sf-hero-title">
-            <span className="block max-w-[36rem]" style={{ color: 'var(--sf-bone)' }}>{copy.lead}</span>
+            <span className="block max-w-[40rem]" style={{ color: 'var(--sf-bone)' }}>{copy.lead}</span>
             {copy.accent && <span className="block" style={{ color: 'var(--sf-accent)' }}>{copy.accent}</span>}
           </h1>
           {copy.sub && (
-            <p className="mt-6 max-w-[46rem] text-[0.875rem] font-medium uppercase" style={{ color: 'var(--sf-ink)' }}>
+            <p className="mt-4 max-w-[46rem] text-[0.8125rem] font-medium uppercase" style={{ color: 'var(--sf-ink)' }}>
               {copy.sub}
             </p>
           )}
-          <div className="mt-auto pt-8">
+          <div className="mt-auto pt-5">
             <HeroSearch />
           </div>
         </Container>
       </section>
 
-      <section className="hidden pt-4 md:block">
+      <section className="hidden pt-3 md:block">
         <Container>
           <h2 className="mb-3 flex items-center gap-4">
-            <Link href="/inventory" className="sf-caps inline-flex items-center gap-4 text-[0.9375rem] font-semibold hover:text-[var(--sf-accent)]">
+            <Link href="/inventory" className="sf-caps inline-flex items-center gap-4 text-[0.875rem] font-medium hover:text-[var(--sf-accent)]">
               Inventory
               {count !== null && <span className="sr-only">, {count} vehicles</span>}
               <ChevronRight className="size-4" style={{ color: 'var(--sf-accent)' }} aria-hidden="true" />
@@ -131,17 +131,17 @@ export async function HomePage() {
           {inventoryState ? (
             <InventoryState state={inventoryState} />
           ) : (
-            <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 lg:gap-[1.25rem]">
               {vehicles.map((vehicle, index) => (
                 <ShowroomCard key={vehicle.id} vehicle={vehicle} currencyCode={business.currencyCode} priority={index < 3} />
               ))}
             </div>
           )}
 
-          <div className="mt-6 grid grid-cols-3 border-t py-6" style={{ borderColor: 'var(--sf-rule)' }}>
+          <div className="mt-4 grid grid-cols-3 border-t py-5" style={{ borderColor: 'var(--sf-rule)' }}>
             {STRIP.map((item, index) => (
-              <div key={item.href} className={`min-w-0 ${index > 0 ? 'border-l pl-[4.5rem]' : ''}`} style={{ borderColor: 'var(--sf-rule)' }}>
-                <h3 className="sf-caps text-[0.9375rem] font-semibold">{item.title}</h3>
+              <div key={item.href} className={`min-w-0 ${index > 0 ? 'border-l pl-11' : ''}`} style={{ borderColor: 'var(--sf-rule)' }}>
+                <h3 className="sf-caps text-[0.875rem] font-medium">{item.title}</h3>
                 <Link href={item.href} className="mt-1 inline-flex items-center gap-2 text-[0.9375rem] hover:text-[var(--sf-accent)]" style={{ color: 'var(--sf-ink-2)' }}>
                   {item.action}
                   <ChevronRight className="size-4" style={{ color: 'var(--sf-accent)' }} aria-hidden="true" />

@@ -26,7 +26,7 @@ export function ShowroomCard({ vehicle, currencyCode, priority = false }: { vehi
       <span className="sf-showroom-card-shade" aria-hidden="true" />
       <span className="sf-tag absolute left-3 top-3">{conditionTag(vehicle.condition)}</span>
       <span className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col items-start">
-        <span className="sf-heading sf-caps max-w-full truncate text-[1.1875rem] leading-tight" style={{ color: 'var(--sf-ink)' }}>{name}</span>
+        <span className="sf-heading max-w-full truncate text-[1.0625rem] uppercase leading-tight" style={{ color: 'var(--sf-ink)', letterSpacing: '0.005em' }}>{name}</span>
         <span className="mt-1 flex w-full items-end justify-between gap-3">
           <span className="sf-price-plate">{formatPrice(vehicle.price, currencyCode)}</span>
           <span className="text-[0.8125rem]" style={{ color: 'var(--sf-ink-2)' }}>{formatMileage(vehicle.mileage)}</span>
