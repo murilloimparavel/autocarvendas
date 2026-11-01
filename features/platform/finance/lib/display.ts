@@ -65,3 +65,30 @@ export function formatAge(days: number | null) {
   if (days == null) return '-'
   return days === 0 ? 'Today' : `${days}d`
 }
+
+export function countLabel(count: number, one: string, many = `${one}s`) {
+  return `${count} ${count === 1 ? one : many}`
+}
+
+/** Desk headline: manager approvals first, then storefront applications still waiting on a lender. */
+export function financeDeskStatus({ error, approvalsWaiting, applicationsWaiting }: { error: boolean; approvalsWaiting: number; applicationsWaiting: number }): { tone: DeskTone; label: string } {
+  if (error) return { tone: 'bad', label: 'Unavailable' }
+  if (approvalsWaiting > 0) return { tone: 'warn', label: 'Approvals waiting' }
+  if (applicationsWaiting > 0) return { tone: 'warn', label: `${countLabel(applicationsWaiting, 'application')} waiting` }
+  return { tone: 'ok', label: 'Up to date' }
+}
+
+// Storefront financing form values (FinancingPage) shown as the customer chose them.
+const employmentLabels: Record<string, string> = {
+  employed: 'Employed', 'self-employed': 'Self-employed', retired: 'Retired', student: 'Student', other: 'Other',
+}
+const creditTierLabels: Record<string, string> = {
+  'excellent-720-plus': 'Excellent (720+)', 'good-680-719': 'Good (680–719)', 'fair-620-679': 'Fair (620–679)',
+  'rebuilding-under-620': 'Rebuilding (<620)', unknown: 'Not sure',
+}
+export function employmentLabel(value: string | null | undefined) {
+  return value ? employmentLabels[value] || value : '-'
+}
+export function creditTierLabel(value: string | null | undefined) {
+  return value ? creditTierLabels[value] || value : '-'
+}

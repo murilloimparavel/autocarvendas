@@ -30,7 +30,7 @@ import {
   Track,
   type DeskTone,
 } from '@/features/platform/components/desk'
-import { daysSince, formatAge } from '../lib/display'
+import { countLabel, daysSince, financeDeskStatus, formatAge } from '../lib/display'
 import { centsToDollarInput, parseDollarsToCents, readDeskFinanceEvidence, type FinanceStep, type FinanceStepCode } from '../lib/financeEvidence'
 import { FinanceEvidenceHistory } from '@/features/platform/deals/components/FinanceEvidenceHistory'
 import { formatPhone } from '@/features/platform/lib/format'
@@ -784,12 +784,18 @@ export function FinanceDeskPageClient({
     { type: 'page' as const, label: 'Finance' },
   ]
 
+  const deskStatus = financeDeskStatus({
+    error: Boolean(error),
+    approvalsWaiting: stageCounts.submitted,
+    applicationsWaiting: applications.filter(application => ['submitted', 'under-review'].includes(application.status)).length,
+  })
+
   const header = (
     <DeskHeader
       title="Finance"
-      tone={error ? 'bad' : stageCounts.submitted > 0 ? 'warn' : 'ok'}
-      status={error ? 'Unavailable' : stageCounts.submitted > 0 ? 'Approvals waiting' : 'Up to date'}
-      meta={error ? 'Unavailable' : `${queue.length} waiting · ${stageCounts.active} in finance · ${openFinanceRequests.length} applications · ${products.length} products`}
+      tone={deskStatus.tone}
+      status={deskStatus.label}
+      meta={error ? 'Unavailable' : `${queue.length} waiting · ${stageCounts.active} in finance · ${countLabel(openFinanceRequests.length, 'application')} · ${countLabel(products.length, 'product')}`}
       actions={
         <>
           <Pill variant="plain" onClick={loadDeals} disabled={loading} aria-label="Refresh">

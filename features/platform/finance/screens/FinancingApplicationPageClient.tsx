@@ -12,7 +12,7 @@ import { parseDollarsToCents, parsePercentToBps } from '@/features/platform/deal
 import { getFinancingApplication, openApplicationFollowUp, queueApplicationToLender, recordApplicationDecision, recordSubmissionStatus } from '../actions/applications'
 import { FinanceFormDialog, type FieldErrors, type FinanceFormField } from '../components/FinanceFormDialog'
 import type { ApplicationDetail, ApplicationSubmission } from '../lib/applicationTypes'
-import { formatApr, formatCents, formatDateTime, formatDay, newIdempotencyKey, personName, stateTone, vehicleName } from '../lib/display'
+import { creditTierLabel, employmentLabel, formatApr, formatCents, formatDateTime, formatDay, newIdempotencyKey, personName, stateTone, vehicleName } from '../lib/display'
 
 type DialogState =
   | { kind: 'queue'; values: Record<string, string>; idempotencyKey: string }
@@ -271,9 +271,9 @@ export function FinancingApplicationPageClient({
               { label: 'Name', value: app.applicantName || '-' },
               { label: 'Email', value: app.applicantEmail || '-' },
               { label: 'Phone', value: app.applicantPhone ? formatPhone(app.applicantPhone) : '-' },
-              { label: 'Employment', value: app.employmentStatus || '-' },
+              { label: 'Employment', value: employmentLabel(app.employmentStatus) },
               { label: 'Annual income', value: formatCents(app.annualIncomeCents) },
-              { label: 'Credit (self-reported)', value: app.selfReportedCreditTier || '-' },
+              { label: 'Credit (self-reported)', value: creditTierLabel(app.selfReportedCreditTier) },
               { label: 'Consent', value: formatDateTime(app.consentAt, timeZone) },
               { label: 'Locked', value: formatDateTime(app.lockedAt, timeZone) },
             ]} />
