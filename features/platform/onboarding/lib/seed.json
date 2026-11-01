@@ -207,7 +207,7 @@
         "Panoramic glass roof",
         "BlueCruise"
       ],
-      "imagePath": "/images/electric-coupe.jpg"
+      "imagePath": "/images/vehicles/smc-2403.jpg"
     },
     {
       "vin": "4T1K61AK2RU210384",
@@ -234,7 +234,7 @@
         "Blind spot monitor",
         "Sport suspension"
       ],
-      "imagePath": "/images/luxury-sedan.jpg"
+      "imagePath": "/images/vehicles/smc-2404.jpg"
     },
     {
       "vin": "7FARS6H82SE016752",
@@ -261,7 +261,7 @@
         "Leather seats",
         "Honda Sensing"
       ],
-      "imagePath": "/images/family-suv.jpg"
+      "imagePath": "/images/vehicles/smc-2405.jpg"
     },
     {
       "vin": "1HGCY1F37PA051243",
@@ -288,7 +288,7 @@
         "Lane keeping assist",
         "LED headlights"
       ],
-      "imagePath": "/images/luxury-sedan.jpg"
+      "imagePath": "/images/vehicles/smc-2406.jpg"
     },
     {
       "vin": "1GNSKNKD5RR184302",
@@ -315,7 +315,7 @@
         "Third-row seating",
         "Heated seats"
       ],
-      "imagePath": "/images/family-suv.jpg"
+      "imagePath": "/images/vehicles/smc-2407.jpg"
     },
     {
       "vin": "3GN7DNRP4SS103876",
@@ -342,7 +342,7 @@
         "17.7-inch display",
         "Heated steering wheel"
       ],
-      "imagePath": "/images/family-suv.jpg"
+      "imagePath": "/images/vehicles/smc-2408.jpg"
     },
     {
       "vin": "W1KAF4HB8NR021497",
@@ -369,7 +369,7 @@
         "Ambient lighting",
         "Heated seats"
       ],
-      "imagePath": "/images/luxury-sedan.jpg"
+      "imagePath": "/images/vehicles/smc-2409.jpg"
     },
     {
       "vin": "4JGFB4FB1RA987214",
@@ -396,7 +396,7 @@
         "Panoramic roof",
         "Driver assistance package"
       ],
-      "imagePath": "/images/family-suv.jpg"
+      "imagePath": "/images/vehicles/smc-2410.jpg"
     },
     {
       "vin": "KM8KNDDF5SU312658",
@@ -423,7 +423,7 @@
         "Heat pump",
         "Highway Driving Assist"
       ],
-      "imagePath": "/images/electric-coupe.jpg"
+      "imagePath": "/images/vehicles/smc-2411.jpg"
     },
     {
       "vin": "1FA6P8CF0R5402917",
@@ -450,7 +450,7 @@
         "Active valve exhaust",
         "B&O audio"
       ],
-      "imagePath": "/images/electric-coupe.jpg"
+      "imagePath": "/images/vehicles/smc-2412.jpg"
     },
     {
       "vin": "4S4BTGND3P3184529",
@@ -477,7 +477,7 @@
         "Heated rear seats",
         "Roof rails"
       ],
-      "imagePath": "/images/family-suv.jpg"
+      "imagePath": "/images/vehicles/smc-2413.jpg"
     }
   ],
   "services": [
