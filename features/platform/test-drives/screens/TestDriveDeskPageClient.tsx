@@ -366,12 +366,12 @@ export function TestDriveDeskPageClient({
       : <Status tone="warn">License needs check</Status>
   )
 
-  const driveActions = (testDrive: TestDrive, section: string) => {
+  const driveActions = (testDrive: TestDrive, section: string, align: 'start' | 'end' = 'end') => {
     if (!isOpen(testDrive)) return null
     const busy = updatingId === testDrive.id
     const key = `${section}:${testDrive.id}`
     return (
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className={`flex flex-wrap gap-2 ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
         {isPastDue(testDrive) && (
           <Pill size="sm" className="h-10 md:h-7" onClick={() => { setNoShowError(null); setNoShowTarget(testDrive) }} disabled={busy}>
             No-show
@@ -478,7 +478,7 @@ export function TestDriveDeskPageClient({
                   <Th>Customer</Th>
                   <Th priority={2}>Vehicle</Th>
                   <Th priority={3}>License</Th>
-                  <Th className="w-0"><span className="sr-only">Actions</span></Th>
+                  <Th className="w-0 max-md:hidden"><span className="sr-only">Actions</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -505,6 +505,7 @@ export function TestDriveDeskPageClient({
                             {testDrive.salesperson?.name ? ` · ${testDrive.salesperson.name}` : ''}
                           </p>
                           <p className="break-words text-xs md:hidden">{vehicleCell(testDrive)}</p>
+                          <div className="mt-2 md:hidden">{driveActions(testDrive, 'today', 'start')}</div>
                           <p className="text-xs lg:hidden">{testDrive.driverLicenseVerified ? <span className="text-muted-foreground">License verified</span> : <span className="text-amber-700 dark:text-amber-300">License needs check</span>}</p>
                         </Td>
                         <Td priority={2} className="min-w-0">
@@ -512,7 +513,7 @@ export function TestDriveDeskPageClient({
                           {testDrive.vehicle?.stockNumber && <p><Code>#{testDrive.vehicle.stockNumber}</Code></p>}
                         </Td>
                         <Td priority={3}>{licenseStatus(testDrive)}</Td>
-                        <Td>{driveActions(testDrive, 'today')}</Td>
+                        <Td className="max-md:hidden">{driveActions(testDrive, 'today')}</Td>
                       </Tr>
                       {completionRow(testDrive, 'today', 5)}
                     </Fragment>
@@ -587,7 +588,7 @@ export function TestDriveDeskPageClient({
                   <Th priority={2}>Vehicle</Th>
                   <Th priority={3}>License</Th>
                   <Th>Status</Th>
-                  <Th className="w-0"><span className="sr-only">Actions</span></Th>
+                  <Th className="w-0 max-md:hidden"><span className="sr-only">Actions</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -607,6 +608,7 @@ export function TestDriveDeskPageClient({
                             {testDrive.salesperson?.name ? ` · ${testDrive.salesperson.name}` : ''}
                           </p>
                           <p className="break-words text-xs md:hidden">{vehicleCell(testDrive)}</p>
+                          <div className="mt-2 md:hidden">{driveActions(testDrive, 'all', 'start')}</div>
                           {testDrive.completed && !testDrive.noShow && !testDrive.cancelledAt && (
                             <p className="mt-0.5 break-words text-xs">
                               <span className="font-medium text-foreground">{interestLabels[testDrive.interestedLevel || ''] || testDrive.interestedLevel || '-'}</span>
@@ -628,7 +630,7 @@ export function TestDriveDeskPageClient({
                         </Td>
                         <Td priority={3}>{isOpen(testDrive) ? licenseStatus(testDrive) : <span className="text-muted-foreground">-</span>}</Td>
                         <Td><Status tone={state.tone}>{state.label}</Status></Td>
-                        <Td>{driveActions(testDrive, 'all')}</Td>
+                        <Td className="max-md:hidden">{driveActions(testDrive, 'all')}</Td>
                       </Tr>
                       {completionRow(testDrive, 'all', 6)}
                     </Fragment>
