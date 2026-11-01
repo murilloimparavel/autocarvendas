@@ -20,21 +20,21 @@ export function BrandMark({ size = 'md', className = '' }: { size?: 'md' | 'lg';
   return (
     <Link
       href="/"
-      className={`flex min-h-11 min-w-0 items-center gap-2.5 ${className}`}
+      className={`flex min-h-11 min-w-0 items-center gap-2 md:gap-2.5 ${className}`}
       aria-label={`${business.shortName} home`}
       title={business.shortName}
     >
-      <StoreLogo svg={business.logoIcon} color={business.logoColor} className={large ? 'size-9' : 'size-7 md:size-8'} />
+      <StoreLogo svg={business.logoIcon} color={business.logoColor} className={large ? 'size-9' : 'size-5 md:size-8'} />
       <span className="flex min-w-0 flex-col leading-none">
         <span
-          className={`sf-display truncate ${large ? 'text-[1.875rem]' : 'text-[1.5rem] md:text-[1.75rem]'}`}
+          className={`sf-display truncate ${large ? 'text-[1.875rem]' : 'text-[1.3125rem] md:text-[1.75rem]'}`}
           style={{ color: 'var(--sf-accent)', lineHeight: 0.9 }}
         >
           {lead}
         </span>
         {rest && (
           <span
-            className={`truncate font-extrabold uppercase ${large ? 'text-[0.8125rem]' : 'text-[0.6875rem] md:text-[0.75rem]'}`}
+            className={`truncate font-extrabold uppercase ${large ? 'text-[0.8125rem]' : 'text-[0.5625rem] md:text-[0.75rem]'}`}
             style={{ color: 'var(--sf-ink)', letterSpacing: '0.01em', fontStretch: '106%', marginTop: '0.2em' }}
           >
             {rest}

@@ -955,16 +955,26 @@ textarea.sf-input {
   background: linear-gradient(90deg, oklch(0.14 0.004 60 / 0.92) 0%, oklch(0.14 0.004 60 / 0.6) 38%, transparent 62%);
 }
 
+.sf-dock-clear {
+  --sf-dock-h: 3.5rem;
+  --sf-dock-gap: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--sf-dock-h) + var(--sf-dock-gap) + 1rem);
+}
+
 .sf-dock {
   position: fixed;
   left: 50%;
   bottom: max(1rem, env(safe-area-inset-bottom));
   z-index: 40;
+  /* 0.25rem padding x2 + 2.75rem items + 1.5px border x2 = 3.5rem (--sf-dock-h) */
+  box-sizing: border-box;
+  height: 3.5rem;
+  align-items: center;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   width: min(13.75rem, calc(100% - 2rem));
   transform: translateX(-50%);
-  padding: 0.3rem 0.75rem;
+  padding: 0.25rem 0.75rem;
   border: 1.5px solid var(--sf-accent);
   border-radius: 999px;
   background: oklch(0.14 0.003 60 / 0.94);
@@ -990,5 +1000,5 @@ textarea.sf-input {
 }
 
 body:has(.sf-dock) .sf-compare-bar {
-  bottom: 5.5rem;
+  bottom: calc(3.5rem + max(1rem, env(safe-area-inset-bottom)) + 0.75rem);
 }

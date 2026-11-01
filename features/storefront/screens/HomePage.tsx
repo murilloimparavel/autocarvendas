@@ -153,7 +153,7 @@ export async function HomePage() {
       </section>
 
       {/* ---------- Phone ---------- */}
-      <section className="relative overflow-hidden pb-28 md:hidden">
+      <section className="sf-dock-clear relative overflow-hidden md:hidden">
         <span className="sf-phone-glow" aria-hidden="true">
           <Image src={HERO_PHOTO} alt="" fill priority unoptimized sizes="100vw" className="object-cover object-[45%_70%]" />
         </span>
