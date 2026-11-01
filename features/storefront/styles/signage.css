@@ -977,7 +977,9 @@ textarea.sf-input {
   padding: 0.25rem 0.75rem;
   border: 1.5px solid var(--sf-accent);
   border-radius: 999px;
-  background: oklch(0.14 0.003 60 / 0.94);
+  /* Solid near-black pill: nothing behind it may read through. */
+  background: oklch(0.14 0.003 60);
+  isolation: isolate;
   box-shadow: 0 0 22px -4px oklch(0.665 0.205 38 / 0.55);
 }
 

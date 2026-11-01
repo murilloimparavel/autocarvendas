@@ -38,6 +38,13 @@ function clean(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+// Only a mark the store chose in Store Settings. An empty value, or the platform's
+// placeholder that onboarding writes when none is picked, means no mark: wordmark only.
+function storeOwnLogo(value: unknown) {
+  const svg = sanitizeStoreLogoSvg(clean(value))
+  return svg && svg !== DEFAULT_STORE_LOGO_ICON ? svg : ''
+}
+
 export function createStorefrontBusiness(profile: StorefrontProfileDto = {}): StorefrontBusiness {
   const addressLine1 = clean(profile.addressLine1)
   const addressLine2 = clean(profile.addressLine2)
@@ -63,7 +70,7 @@ export function createStorefrontBusiness(profile: StorefrontProfileDto = {}): St
     currencyCode: clean(profile.currencyCode).toUpperCase(),
     homepageTitle: clean(profile.homepageTitle),
     homepageDescription: clean(profile.homepageDescription),
-    logoIcon: sanitizeStoreLogoSvg(clean(profile.logoIcon)) || DEFAULT_STORE_LOGO_ICON,
+    logoIcon: storeOwnLogo(profile.logoIcon),
     logoColor: normalizeStoreLogoColor(profile.logoColor),
     timezone: clean(profile.timezone),
   }

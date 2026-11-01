@@ -24,7 +24,9 @@ export function BrandMark({ size = 'md', className = '' }: { size?: 'md' | 'lg';
       aria-label={`${business.shortName} home`}
       title={business.shortName}
     >
-      <StoreLogo svg={business.logoIcon} color={business.logoColor} className={large ? 'size-9' : 'size-5 md:size-8'} />
+      {business.logoIcon && (
+        <StoreLogo svg={business.logoIcon} color={business.logoColor} className={large ? 'size-9' : 'size-5 md:size-8'} />
+      )}
       <span className="flex min-w-0 flex-col leading-none">
         <span
           className={`sf-display truncate ${large ? 'text-[1.875rem]' : 'text-[1.3125rem] md:text-[1.75rem]'}`}
