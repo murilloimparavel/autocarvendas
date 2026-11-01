@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, Facts, Figure, Notice, Panel, Pill, Status, TitleLine, Track } from '@/features/platform/components/desk'
-import { formatPhone, recordReference } from '@/features/platform/lib/format'
+import { formatPhone } from '@/features/platform/lib/format'
 import { MoneyInput } from '@/features/platform/deals/components/MoneyInput'
 import { labelForDeal, toneForDeal } from '@/features/platform/deals/lib/dealStatus'
 import {
@@ -35,6 +35,7 @@ import {
   preliminaryWholesaleEstimate,
   tradeInCustomer,
   tradeInState,
+  tradeInReference,
   tradeInVehicleLabel,
   VIN_PATTERN,
 } from '../lib/tradeInState'
@@ -328,7 +329,8 @@ export function TradeInDetailPageClient({
     editBlocked && `Edit: ${editBlocked}`,
   ].filter(Boolean) as string[]
 
-  const primary = tradeIn.offerAmount == null ? 'appraise' : !deal ? 'attach' : !acquisition && data?.canSeeAcquisitions ? 'acquire' : null
+  const closed = state.label === 'Closed'
+  const primary = closed ? null : tradeIn.offerAmount == null ? 'appraise' : !deal ? 'attach' : !acquisition && data?.canSeeAcquisitions ? 'acquire' : null
 
   const actions = (
     <div role="group" aria-label="Trade-in actions" className="flex flex-wrap items-center gap-2 max-md:[&>button]:h-10">
@@ -367,7 +369,7 @@ export function TradeInDetailPageClient({
       meta={
         <span className="flex flex-wrap gap-x-2">
           <span className="text-foreground">{state.label}</span>
-          <span>· Trade-in <Code>{recordReference('TRD', tradeIn.id)}</Code></span>
+          <span>· Trade-in <Code>{tradeInReference(tradeIn)}</Code></span>
           <span>· {customer || 'No customer'}</span>
           {tradeIn.rooftop?.name && <span>· {tradeIn.rooftop.name}</span>}
         </span>

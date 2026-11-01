@@ -28,6 +28,7 @@ import {
   tradeInCustomer,
   tradeInQueue,
   tradeInState,
+  tradeInMatches,
   tradeInVehicleLabel,
   type TradeInQueue,
 } from '../lib/tradeInState'
@@ -68,17 +69,15 @@ export function TradeInDeskPageClient({
   }
 
   const counts = useMemo(() => {
-    const result: Record<TradeInQueue, number> = { appraise: 0, offered: 0, 'on-deal': 0, acquired: 0, all: tradeIns.length }
+    const result: Record<TradeInQueue, number> = { appraise: 0, offered: 0, 'on-deal': 0, acquired: 0, closed: 0, all: tradeIns.length }
     for (const tradeIn of tradeIns) result[tradeInQueue(tradeIn, acquisitions[tradeIn.id])] += 1
     return result
   }, [tradeIns, acquisitions])
 
   const visible = useMemo(() => {
-    const term = search.trim().toLowerCase()
     const rows = tradeIns.filter(tradeIn => {
       if (filter !== 'all' && tradeInQueue(tradeIn, acquisitions[tradeIn.id]) !== filter) return false
-      if (!term) return true
-      return `${tradeInVehicleLabel(tradeIn)} ${tradeIn.vin || ''} ${tradeInCustomer(tradeIn) || ''} ${tradeIn.lead?.email || ''} ${tradeIn.lead?.phone || ''}`.toLowerCase().includes(term)
+      return tradeInMatches(tradeIn, search)
     })
     return [...rows].sort((a, b) =>
       sortOrder === 'offer-desc'
@@ -168,6 +167,7 @@ export function TradeInDeskPageClient({
     { value: 'offered', label: 'Offered', count: counts.offered, tone: 'info' },
     { value: 'on-deal', label: 'On deal', count: counts['on-deal'], tone: 'ok' },
     ...(data.canSeeAcquisitions ? [{ value: 'acquired' as const, label: 'Acquired', count: counts.acquired }] : []),
+    ...(counts.closed > 0 ? [{ value: 'closed' as const, label: 'Closed', count: counts.closed }] : []),
     { value: 'all', label: 'All', count: counts.all },
   ]
 
@@ -258,7 +258,7 @@ export function TradeInDeskPageClient({
           <div className="flex min-w-0 items-center gap-2">
             <div className="relative min-w-0 flex-1 sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="h-10 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="Vehicle, customer or VIN" aria-label="Search trade-ins" />
+              <Input className="h-10 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="Vehicle, customer, VIN or reference" aria-label="Search trade-ins" />
             </div>
             <Select value={sortOrder} onValueChange={setSortOrder}>
               <SelectTrigger className="h-10 w-[9.5rem] shrink-0 rounded-[4px] px-2.5 text-[13px] sm:h-9" aria-label="Sort trade-ins"><SelectValue /></SelectTrigger>

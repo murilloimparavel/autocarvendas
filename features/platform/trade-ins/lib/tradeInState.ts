@@ -1,7 +1,8 @@
 import type { DeskTone } from '@/features/platform/components/desk'
 import type { TradeIn, TradeInAcquisition } from '../actions'
+import { customerRequestReference } from '@/features/storefront/lib/customerRequests'
 
-export type TradeInQueue = 'appraise' | 'offered' | 'on-deal' | 'acquired' | 'all'
+export type TradeInQueue = 'appraise' | 'offered' | 'on-deal' | 'acquired' | 'closed' | 'all'
 
 export const CONDITION_OPTIONS = [
   { value: 'excellent', label: 'Excellent' },
@@ -33,6 +34,8 @@ export function conditionNotes(value: string) {
 export function tradeInQueue(tradeIn: TradeIn, acquisition: TradeInAcquisition | null | undefined): Exclude<TradeInQueue, 'all'> {
   if (acquisition) return 'acquired'
   if (tradeIn.deal) return 'on-deal'
+  // Trade-ins carry no status; a request is closed when staff close its customer lead as lost.
+  if (tradeIn.lead?.status === 'closed-lost') return 'closed'
   if (tradeIn.offerAmount != null) return 'offered'
   return 'appraise'
 }
@@ -41,8 +44,21 @@ export function tradeInState(tradeIn: TradeIn, acquisition: TradeInAcquisition |
   const queue = tradeInQueue(tradeIn, acquisition)
   if (queue === 'acquired') return { tone: 'ok', label: 'In acquisition' }
   if (queue === 'on-deal') return { tone: tradeIn.deal?.status === 'cancelled' ? 'idle' : 'ok', label: tradeIn.deal?.status === 'pencil' ? 'On pencil deal' : 'On deal' }
+  if (queue === 'closed') return { tone: 'idle', label: 'Closed' }
   if (queue === 'offered') return { tone: 'info', label: 'Offered' }
   return { tone: 'warn', label: 'Needs appraisal' }
+}
+
+/** The reference the customer saw on the storefront confirmation, e.g. TRADE-7DGA0XWI. */
+export function tradeInReference(tradeIn: Pick<TradeIn, 'id'>) {
+  return customerRequestReference('trade-in', tradeIn.id)
+}
+
+export function tradeInMatches(tradeIn: TradeIn, term: string) {
+  const needle = term.trim().toLowerCase()
+  if (!needle) return true
+  return [tradeInVehicleLabel(tradeIn), tradeIn.vin, tradeInCustomer(tradeIn), tradeIn.lead?.email, tradeIn.lead?.phone, tradeInReference(tradeIn)]
+    .filter(Boolean).join(' ').toLowerCase().includes(needle)
 }
 
 export function tradeInVehicleLabel(tradeIn: Pick<TradeIn, 'year' | 'make' | 'model' | 'trim'>) {

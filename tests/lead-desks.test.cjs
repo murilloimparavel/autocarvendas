@@ -27,6 +27,7 @@ function load(relative) {
 }
 
 const display = load('features/platform/finance/lib/display');
+const tradeIns = load('features/platform/trade-ins/lib/tradeInState');
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('finance desk is not "Up to date" while a storefront application waits on a lender', () => {
@@ -49,4 +50,32 @@ test('financing form values read as the customer chose them', () => {
   assert.equal(display.creditTierLabel('rebuilding-under-620'), 'Rebuilding (<620)');
   assert.equal(display.creditTierLabel('legacy-value'), 'legacy-value');
   assert.equal(display.employmentLabel(null), '-');
+});
+
+const tradeIn = (overrides = {}) => ({
+  id: 'cmvyfht9v000gql0x7dga0xwi', year: '2019', make: 'Honda', model: 'Accord', trim: 'EX-L', vin: '1HGCV1F59KA012345',
+  offerAmount: null, deal: null,
+  lead: { id: 'lead1', firstName: 'QA', lastName: 'Test', email: 'qa+tradein@example.com', phone: '7035550189', status: 'new' },
+  ...overrides,
+});
+
+test('admin shows the trade-in reference the storefront confirmation gave the customer', () => {
+  assert.equal(tradeIns.tradeInReference(tradeIn()), 'TRADE-7DGA0XWI');
+  assert.equal(tradeIns.tradeInMatches(tradeIn(), 'trade-7dga0xwi'), true);
+  assert.equal(tradeIns.tradeInMatches(tradeIn(), 'qa+tradein'), true);
+  assert.equal(tradeIns.tradeInMatches(tradeIn(), 'civic'), false);
+  assert.equal(tradeIns.tradeInMatches(tradeIn(), '  '), true);
+});
+
+test('a trade-in whose lead was closed lost leaves the appraisal queue', () => {
+  const open = tradeIn();
+  const closed = tradeIn({ lead: { ...open.lead, status: 'closed-lost' } });
+  assert.equal(tradeIns.tradeInQueue(open, null), 'appraise');
+  assert.equal(tradeIns.tradeInQueue(closed, null), 'closed');
+  assert.deepEqual(plain(tradeIns.tradeInState(closed, null)), { tone: 'idle', label: 'Closed' });
+  // A trade-in already on a deal or acquired keeps that state; the deal owns it now.
+  assert.equal(tradeIns.tradeInQueue({ ...closed, deal: { id: 'd1', status: 'pencil' } }, null), 'on-deal');
+  assert.equal(tradeIns.tradeInQueue(closed, { id: 'a1' }), 'acquired');
+  // Closed won is a sale, not a dropped request.
+  assert.equal(tradeIns.tradeInQueue(tradeIn({ lead: { ...open.lead, status: 'closed-won' } }), null), 'appraise');
 });
