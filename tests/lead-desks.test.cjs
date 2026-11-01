@@ -79,3 +79,12 @@ test('a trade-in whose lead was closed lost leaves the appraisal queue', () => {
   // Closed won is a sale, not a dropped request.
   assert.equal(tradeIns.tradeInQueue(tradeIn({ lead: { ...open.lead, status: 'closed-won' } }), null), 'appraise');
 });
+
+test('a closed trade-in offers only Edit', () => {
+  const open = tradeIn();
+  const closed = tradeIn({ lead: { ...open.lead, status: 'closed-lost' } });
+  assert.deepEqual(plain(tradeIns.tradeInActions(open, null)), { closed: false, appraise: true, attach: true, acquire: true });
+  assert.deepEqual(plain(tradeIns.tradeInActions(closed, null)), { closed: true, appraise: false, attach: false, acquire: false });
+  assert.equal(tradeIns.tradeInActions({ ...open, deal: { id: 'd1', status: 'pencil' } }, null).attach, false);
+  assert.equal(tradeIns.tradeInActions(open, { id: 'a1' }).acquire, false);
+});

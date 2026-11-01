@@ -61,6 +61,12 @@ export function tradeInMatches(tradeIn: TradeIn, term: string) {
     .filter(Boolean).join(' ').toLowerCase().includes(needle)
 }
 
+/** Appraise, attach and acquire only apply to a live request; a closed one keeps Edit for corrections. */
+export function tradeInActions(tradeIn: TradeIn, acquisition: TradeInAcquisition | null | undefined) {
+  const closed = tradeInQueue(tradeIn, acquisition) === 'closed'
+  return { closed, appraise: !closed, attach: !closed && !tradeIn.deal, acquire: !closed && !acquisition }
+}
+
 export function tradeInVehicleLabel(tradeIn: Pick<TradeIn, 'year' | 'make' | 'model' | 'trim'>) {
   return [tradeIn.year, tradeIn.make, tradeIn.model, tradeIn.trim].filter(Boolean).join(' ') || 'Unknown vehicle'
 }

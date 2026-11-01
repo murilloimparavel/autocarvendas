@@ -35,6 +35,7 @@ import {
   preliminaryWholesaleEstimate,
   tradeInCustomer,
   tradeInState,
+  tradeInActions,
   tradeInReference,
   tradeInVehicleLabel,
   VIN_PATTERN,
@@ -322,22 +323,25 @@ export function TradeInDetailPageClient({
   const attachBlocked = tradeIn.offerAmount == null ? 'Record an offer first' : null
   const detachBlocked = deal && !dealIsPencil ? `The deal is ${labelForDeal(deal.status || '').toLowerCase()}` : null
   const editBlocked = deal && !dealIsPencil ? `On a ${labelForDeal(deal.status || '').toLowerCase()} deal` : null
-  const blockers = [
+  const allowed = tradeInActions(tradeIn, acquisition)
+  const closed = allowed.closed
+  const blockers = closed ? ['Closed: the customer lead was closed lost. Open the lead for the reason.'] : [
     appraiseBlocked && `Appraise: ${appraiseBlocked}`,
     !deal && attachBlocked && `Attach: ${attachBlocked}`,
     detachBlocked && `Detach: ${detachBlocked}`,
     editBlocked && `Edit: ${editBlocked}`,
   ].filter(Boolean) as string[]
 
-  const closed = state.label === 'Closed'
   const primary = closed ? null : tradeIn.offerAmount == null ? 'appraise' : !deal ? 'attach' : !acquisition && data?.canSeeAcquisitions ? 'acquire' : null
 
   const actions = (
     <div role="group" aria-label="Trade-in actions" className="flex flex-wrap items-center gap-2 max-md:[&>button]:h-10">
-      <Pill variant={primary === 'appraise' ? 'primary' : 'raised'} onClick={() => openDialog('appraise')} disabled={Boolean(appraiseBlocked)} aria-describedby={appraiseBlocked ? 'trade-in-blockers' : undefined}>
-        {tradeIn.offerAmount == null ? 'Appraise' : 'Re-appraise'}
-      </Pill>
-      {deal ? (
+      {allowed.appraise && (
+        <Pill variant={primary === 'appraise' ? 'primary' : 'raised'} onClick={() => openDialog('appraise')} disabled={Boolean(appraiseBlocked)} aria-describedby={appraiseBlocked ? 'trade-in-blockers' : undefined}>
+          {tradeIn.offerAmount == null ? 'Appraise' : 'Re-appraise'}
+        </Pill>
+      )}
+      {closed ? null : deal ? (
         <Pill onClick={() => openDialog('detach')} disabled={Boolean(detachBlocked)} aria-describedby={detachBlocked ? 'trade-in-blockers' : undefined}>
           <Unlink />
           Detach
@@ -348,7 +352,7 @@ export function TradeInDetailPageClient({
           Attach to deal
         </Pill>
       )}
-      {data?.canSeeAcquisitions && !acquisition && (
+      {data?.canSeeAcquisitions && allowed.acquire && (
         <Pill variant={primary === 'acquire' ? 'primary' : 'raised'} onClick={() => openDialog('acquire')}>
           <Truck />
           Acquire into inventory
@@ -415,7 +419,7 @@ export function TradeInDetailPageClient({
                 <div>
                   <p className="text-[12px] font-medium text-muted-foreground">Offer</p>
                   <p className="mt-1">
-                    {tradeIn.offerAmount != null ? <Figure size="lg">{formatWholeUsd(tradeIn.offerAmount)}</Figure> : <Attention>Needs appraisal</Attention>}
+                    {tradeIn.offerAmount != null ? <Figure size="lg">{formatWholeUsd(tradeIn.offerAmount)}</Figure> : closed ? <span className="text-sm text-muted-foreground">No offer</span> : <Attention>Needs appraisal</Attention>}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">{tradeIn.appraisedBy?.name ? `By ${tradeIn.appraisedBy.name}` : 'Not appraised'}</p>
