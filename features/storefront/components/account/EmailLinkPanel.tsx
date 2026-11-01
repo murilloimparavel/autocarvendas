@@ -29,10 +29,11 @@ export function EmailLinkPanel({ link }: { link: CustomerEmailLink | null }) {
           {link.verified ? 'Email verified' : 'Email not verified'}
         </span>
       </h2>
-      <p className="sf-muted break-all pl-4 text-[length:var(--sf-text-sm)]">
-        {link.verified
-          ? `Requests made with ${link.email} are linked to this account.`
-          : `Verify ${link.email} to link requests made with it before you signed in.`}
+      {/* Only the address may break anywhere; the sentence wraps at words. */}
+      <p className="sf-muted pl-4 text-[length:var(--sf-text-sm)]">
+        {link.verified ? 'Requests made with ' : 'Verify '}
+        <span className="break-all">{link.email}</span>
+        {link.verified ? ' are linked to this account.' : ' to link requests made with it before you signed in.'}
       </p>
       {result && <Notice tone={result.tone}>{result.text}</Notice>}
       <button type="button" onClick={send} disabled={pending} className={`sf-btn sf-btn-sm min-h-10 ${link.verified ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>

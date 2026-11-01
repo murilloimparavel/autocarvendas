@@ -77,7 +77,7 @@ export async function AccountPage() {
       <EmailLinkPanel link={emailLink} />
 
       {counts.length > 0 && (
-        <dl className="sf-spec">
+        <dl className="sf-spec grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))]">
           <div>
             <dt>Requests</dt>
             <dd className="sf-figure text-[length:var(--sf-text-xl)]">{history?.length ?? 0}</dd>
