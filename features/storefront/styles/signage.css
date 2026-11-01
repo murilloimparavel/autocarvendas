@@ -489,7 +489,9 @@ body:has(.storefront) {
 }
 
 .sf-pill[aria-pressed="true"] .sf-count,
-.sf-pill[data-active="true"] .sf-count {
+.sf-pill[data-active="true"] .sf-count,
+.sf-pill[aria-pressed="true"] .sf-faint,
+.sf-pill[data-active="true"] .sf-faint {
   color: var(--sf-accent-ink);
 }
 
