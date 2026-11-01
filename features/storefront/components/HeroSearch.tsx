@@ -2,116 +2,144 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search } from 'lucide-react'
-import { Make } from '@/features/storefront/lib/types'
+import { CalendarDays, CarFront, DollarSign, Gem, Search, Tag } from 'lucide-react'
 import { formatPrice } from '../lib/format'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
 
 const CONDITIONS = [
-  { value: '', label: 'All' },
+  { value: '', label: 'Any' },
   { value: 'new', label: 'New' },
   { value: 'used', label: 'Pre-owned' },
   { value: 'certified', label: 'Certified' },
 ]
 
-export function HeroSearch({ makes, years }: { makes: Make[]; years: number[] }) {
+const PRICES = [15000, 20000, 25000, 30000, 40000, 50000, 75000]
+
+function useHeroSearch() {
   const router = useRouter()
-  const { currencyCode } = useStorefrontBusiness()
+  const [query, setQuery] = useState('')
   const [condition, setCondition] = useState('')
-  const [make, setMake] = useState('')
-  const [model, setModel] = useState('')
-  const [year, setYear] = useState('')
   const [priceMax, setPriceMax] = useState('')
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const params = new URLSearchParams()
-    if (condition) params.set('condition', condition)
-    if (make) params.set('make', make)
-    if (model) params.set('model', model)
+    const q = query.trim()
+    // A leading model year narrows by year; the rest searches make, model and trim.
+    const year = q.match(/^(19|20)\d{2}\b/)?.[0]
+    const text = year ? q.slice(year.length).trim() : q
     if (year) {
       params.set('yearMin', year)
       params.set('yearMax', year)
     }
+    if (text) params.set('search', text)
+    if (condition) params.set('condition', condition)
     if (priceMax) params.set('priceMax', priceMax)
-    const query = params.toString()
-    router.push(query ? `/inventory?${query}` : '/inventory')
+    const search = params.toString()
+    router.push(search ? `/inventory?${search}` : '/inventory')
   }
+
+  return { query, setQuery, condition, setCondition, priceMax, setPriceMax, onSubmit }
+}
+
+// Desktop: one long dark bar over the bottom of the hero photo.
+export function HeroSearch() {
+  const { currencyCode } = useStorefrontBusiness()
+  const s = useHeroSearch()
 
   return (
     <form
-      onSubmit={onSubmit}
+      onSubmit={s.onSubmit}
       role="search"
       aria-label="Search inventory"
+      className="sf-hero-search grid grid-cols-[1.15fr_1.1fr_1.1fr_auto] items-center rounded-[var(--sf-radius-lg)] p-2"
     >
-      <div className="sf-track sf-track-block" role="group" aria-label="Condition">
-        {CONDITIONS.map((option) => (
-          <button
-            key={option.value || 'all'}
-            type="button"
-            className="sf-pill"
-            aria-pressed={condition === option.value}
-            onClick={() => setCondition(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5">
-        <div className="min-w-0">
-          <label htmlFor="hero-make" className="sf-label">Make</label>
-          <select id="hero-make" value={make} onChange={(e) => setMake(e.target.value)} className="sf-input">
-            <option value="">Any make</option>
-            {makes.map((m) => (
-              <option key={m.id} value={m.name}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="min-w-0">
-          <label htmlFor="hero-model" className="sf-label">Model</label>
+      <label className="sf-hero-field">
+        <CalendarDays className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="sf-hero-field-label">Year make model</span>
           <input
-            id="hero-model"
-            type="text"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder="Any model"
-            className="sf-input"
+            type="search"
+            value={s.query}
+            onChange={(e) => s.setQuery(e.target.value)}
+            placeholder="Any"
+            className="sf-hero-field-input"
           />
-        </div>
-
-        <div className="min-w-0">
-          <label htmlFor="hero-year" className="sf-label">Year</label>
-          <select id="hero-year" value={year} onChange={(e) => setYear(e.target.value)} className="sf-input">
-            <option value="">Any</option>
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
+        </span>
+      </label>
+      <label className="sf-hero-field">
+        <Gem className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="sf-hero-field-label">Condition</span>
+          <select value={s.condition} onChange={(e) => s.setCondition(e.target.value)} className="sf-hero-field-input">
+            {CONDITIONS.map((option) => (
+              <option key={option.value || 'any'} value={option.value}>{option.label}</option>
             ))}
           </select>
-        </div>
-
-        <div className="min-w-0">
-          <label htmlFor="hero-price" className="sf-label">Max price</label>
-          <select id="hero-price" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className="sf-input">
-            <option value="">No limit</option>
-            {[15000, 20000, 25000, 30000, 40000, 50000, 75000].map((value) => (
-              <option key={value} value={value}>
-                {formatPrice(value, currencyCode)}
-              </option>
+        </span>
+      </label>
+      <label className="sf-hero-field">
+        <DollarSign className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="sf-hero-field-label">Price</span>
+          <select value={s.priceMax} onChange={(e) => s.setPriceMax(e.target.value)} className="sf-hero-field-input">
+            <option value="">Max Price</option>
+            {PRICES.map((value) => (
+              <option key={value} value={value}>{formatPrice(value, currencyCode)}</option>
             ))}
           </select>
-        </div>
+        </span>
+      </label>
+      <button type="submit" className="sf-btn sf-btn-primary h-10 w-[17rem] gap-3 rounded-[6px] text-[1rem] font-medium">
+        <Search className="size-5" strokeWidth={1.75} aria-hidden="true" />
+        Search inventory
+      </button>
+    </form>
+  )
+}
 
-        <button type="submit" className="sf-btn sf-btn-primary col-span-2 mt-1">
-          <Search className="size-4" aria-hidden="true" />
-          Search
-        </button>
-      </div>
+// Phone: three underlined fields and a square orange search button on one row.
+export function HeroSearchCompact() {
+  const { currencyCode } = useStorefrontBusiness()
+  const s = useHeroSearch()
+
+  return (
+    <form onSubmit={s.onSubmit} role="search" aria-label="Search inventory" className="flex items-stretch gap-1">
+      <label className="sf-line-field">
+        <Search className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <span className="sr-only">Year, make or model</span>
+        <input
+          type="text"
+          enterKeyHint="search"
+          value={s.query}
+          onChange={(e) => s.setQuery(e.target.value)}
+          placeholder="Any make"
+          className="sf-line-field-input"
+        />
+      </label>
+      <label className="sf-line-field">
+        <CarFront className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <span className="sr-only">Condition</span>
+        <select value={s.condition} onChange={(e) => s.setCondition(e.target.value)} className="sf-line-field-input">
+          <option value="">Any type</option>
+          {CONDITIONS.slice(1).map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </label>
+      <label className="sf-line-field">
+        <Tag className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <span className="sr-only">Max price</span>
+        <select value={s.priceMax} onChange={(e) => s.setPriceMax(e.target.value)} className="sf-line-field-input">
+          <option value="">Max price</option>
+          {PRICES.map((value) => (
+            <option key={value} value={value}>{formatPrice(value, currencyCode)}</option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" className="grid size-11 shrink-0 place-items-center rounded-[2px]" style={{ background: 'var(--sf-accent)', color: 'var(--sf-accent-ink)' }} aria-label="Search inventory">
+        <Search className="size-5" strokeWidth={1.75} aria-hidden="true" />
+      </button>
     </form>
   )
 }

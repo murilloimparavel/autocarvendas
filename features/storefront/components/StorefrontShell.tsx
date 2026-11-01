@@ -1,4 +1,4 @@
-import { Overpass, Overpass_Mono, Public_Sans } from 'next/font/google'
+import { Archivo } from 'next/font/google'
 import type { CSSProperties, ReactNode } from 'react'
 import '@/features/storefront/styles/signage.css'
 import { ComparisonBar } from './ComparisonBar'
@@ -7,20 +7,11 @@ import { Header } from './Header'
 import { StorefrontBusinessProvider } from './StorefrontBusinessProvider'
 import type { StorefrontSettingsState } from '../lib/business'
 
-// Overpass descends from Highway Gothic, the lettering of road and lot signs.
-const display = Overpass({
+// Archivo carries the whole showroom: expanded and black for headlines, normal width for text.
+const display = Archivo({
   variable: '--font-storefront-display',
   subsets: ['latin'],
-})
-
-const body = Public_Sans({
-  variable: '--font-storefront-body',
-  subsets: ['latin'],
-})
-
-const mono = Overpass_Mono({
-  variable: '--font-storefront-mono',
-  subsets: ['latin'],
+  axes: ['wdth'],
 })
 
 type StorefrontBrandStyle = CSSProperties & {
@@ -29,7 +20,7 @@ type StorefrontBrandStyle = CSSProperties & {
 
 function StorefrontUnavailable() {
   return (
-    <div className={`storefront ${display.variable} ${body.variable} ${mono.variable} min-h-screen`}>
+    <div className={`storefront ${display.variable} min-h-screen`}>
       <main className="sf-container flex min-h-screen items-center justify-center py-16">
         <section className="max-w-md text-center" aria-live="polite">
           <h1 className="sf-display text-[length:var(--sf-text-2xl)]">We couldn&apos;t load this page.</h1>
@@ -60,7 +51,7 @@ export function StorefrontShell({
   return (
     <StorefrontBusinessProvider business={business}>
       <div
-        className={`storefront ${display.variable} ${body.variable} ${mono.variable} min-h-screen flex flex-col`}
+        className={`storefront ${display.variable} min-h-screen flex flex-col`}
         style={brandStyle}
       >
         <Header />

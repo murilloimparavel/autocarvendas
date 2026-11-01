@@ -1,27 +1,24 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { CalendarCheck, CarFront, ChevronRight, CircleDollarSign, House, MapPin, Search, Tag, Wrench } from 'lucide-react'
 import { fetchGraphQL } from '@/features/storefront/lib/data/graphql-client'
-import { GET_MAKES, GET_VEHICLES, GET_VEHICLES_COUNT } from '@/features/storefront/lib/data/queries'
-import { Make, Vehicle } from '@/features/storefront/lib/types'
+import { GET_VEHICLES, GET_VEHICLES_COUNT } from '@/features/storefront/lib/data/queries'
+import { Vehicle } from '@/features/storefront/lib/types'
 import { Container } from '../components/Container'
-import { HeroSearch } from '../components/HeroSearch'
-import { HomeContactPanel } from '../components/HomeContactPanel'
-import { VehicleCard } from '../components/VehicleCard'
-import { vehicleConditionLabel } from '../lib/vehicleStatus'
-import { formatPrice, vehicleTitle } from '../lib/format'
-import { primaryVehicleImage, vehicleImageUrl } from '../lib/images'
-import { isRepresentativePhoto } from '../lib/photoAttribution'
+import { HeroSearch, HeroSearchCompact } from '../components/HeroSearch'
+import { ShowroomCard, ShowroomRow } from '../components/ShowroomCard'
 import { loadHomeQuery, selectHomeFeaturedVehicles, selectHomeInventoryCount } from '../lib/data/home-inventory'
 import { loadStorefrontBusiness } from '../lib/data/storefront-business'
-import { createStorefrontBusiness } from '../lib/business'
+import { createStorefrontBusiness, type StorefrontBusiness } from '../lib/business'
+
+const HERO_PHOTO = '/images/showroom-dusk.jpg'
 
 async function getFeaturedVehicles() {
   return loadHomeQuery(
     () => fetchGraphQL<unknown>(GET_VEHICLES, {
       where: { status: { equals: 'available' } },
       orderBy: [{ year: 'desc' }],
-      take: 7,
+      take: 3,
     }),
     selectHomeFeaturedVehicles<Vehicle>,
   )
@@ -36,144 +33,220 @@ async function getInventoryCount() {
   )
 }
 
-async function getMakes(): Promise<Make[]> {
-  try {
-    const data = await fetchGraphQL<{ makes: Make[] }>(GET_MAKES, {})
-    return data.makes ?? []
-  } catch {
-    return []
+// "Springfield, VA, 22150" -> "Springfield"
+function cityOf(business: StorefrontBusiness) {
+  return business.addressLine2.split(',')[0]?.trim() || ''
+}
+
+function heroCopy(business: StorefrontBusiness) {
+  const title = business.homepageTitle.trim()
+  const custom = title && title !== business.fullName && title !== business.shortName
+  const city = cityOf(business)
+  const address = [business.addressLine1, business.addressLine2].filter(Boolean).join(', ')
+  return {
+    lead: custom ? title : 'Find your next drive:',
+    accent: custom ? '' : city ? `In ${city}.` : `${business.shortName}.`,
+    sub: business.homepageDescription || [business.fullName, address].filter(Boolean).join('. '),
   }
 }
 
-// Doors on the directory sign besides Sales (which carries the live search).
-const DOORS = [
-  { href: '/test-drive', label: 'Test drive', action: 'Pick a time' },
-  { href: '/trade-in', label: 'Trade-in', action: 'Value your vehicle' },
-  { href: '/financing', label: 'Financing', action: 'Estimate a payment' },
-  { href: '/service', label: 'Service', action: 'Book an appointment' },
+const STRIP = [
+  { title: 'Financing available', action: 'Estimate your payment', href: '/financing' },
+  { title: 'Sell us your car', action: 'Get a free offer', href: '/trade-in' },
+  { title: 'Your test drive awaits', action: 'Book now', href: '/test-drive' },
 ]
 
+const QUICK = [
+  { href: '/financing', label: 'Financing', icon: CircleDollarSign },
+  { href: '/trade-in', label: 'Trade in', icon: CarFront },
+  { href: '/test-drive', label: 'Test drive', icon: CalendarCheck },
+]
+
+const VISIT = [
+  { href: '/inventory', label: 'Vehicle inventory', icon: CarFront },
+  { href: '/contact', label: 'Contact sales', icon: Tag },
+  { href: '/service', label: 'Service center', icon: Wrench },
+]
+
+function InventoryState({ state }: { state: 'unavailable' | 'empty' }) {
+  return (
+    <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between" role={state === 'unavailable' ? 'alert' : undefined}>
+      <p className="sf-title-line font-semibold">
+        <span className="sf-dot" data-tone={state === 'unavailable' ? 'bad' : undefined} aria-hidden="true" />
+        {state === 'unavailable' ? 'Inventory couldn\u2019t be loaded.' : 'No vehicles listed'}
+      </p>
+      {state === 'unavailable' ? (
+        <Link href="/" prefetch={false} className="sf-btn sf-btn-ghost sf-btn-sm">Retry</Link>
+      ) : (
+        <Link href="/contact" className="sf-btn sf-btn-ghost sf-btn-sm">Contact sales</Link>
+      )}
+    </div>
+  )
+}
+
 export async function HomePage() {
-  const [featured, inventoryCount, makes, settings] = await Promise.all([
+  const [featured, inventoryCount, settings] = await Promise.all([
     getFeaturedVehicles(),
     getInventoryCount(),
-    getMakes(),
     loadStorefrontBusiness(),
   ])
   const business = settings.status === 'ready' ? settings.business : createStorefrontBusiness()
-  const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: 30 }, (_, i) => currentYear + 1 - i)
-  const vehicles = featured.status === 'ready' ? featured.value : []
-  // The hero shows the first listed vehicle that has a photo; with none, the hero is a single column.
-  const leadEntry = vehicles
-    .map((vehicle) => ({ vehicle, image: vehicleImageUrl(primaryVehicleImage(vehicle.images)) }))
-    .find((entry) => entry.image)
-  const lead = leadEntry?.vehicle
-  const leadImage = leadEntry?.image ?? null
+  const vehicles = featured.status === 'ready' ? featured.value.slice(0, 3) : []
   const count = inventoryCount.status === 'ready' ? inventoryCount.value : null
+  const copy = heroCopy(business)
+  const inventoryState = featured.status === 'unavailable' ? 'unavailable' : vehicles.length === 0 ? 'empty' : null
+  const city = cityOf(business)
 
   return (
-    <>
-      <section className="pb-[var(--sf-space-xl)] pt-4 md:pb-[var(--sf-space-2xl)] md:pt-8">
-        <Container className="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-          <div className="sf-band sf-sign flex min-w-0 flex-col px-5 pb-2 pt-6 md:px-8 md:pt-8">
-            <h1 className="sf-display max-w-[16ch] text-[length:var(--sf-text-display)]">
-              {business.homepageTitle || business.fullName}
-            </h1>
-            {business.homepageDescription && (
-              <p className="mt-4 max-w-md text-[length:var(--sf-text-md)]" style={{ color: 'var(--sf-on-dark-2)' }}>
-                {business.homepageDescription}
-              </p>
-            )}
-
-            <div className="sf-sign-row mt-7 pb-5 pt-4">
-              <div className="mb-3 flex items-baseline justify-between gap-4">
-                <h2 className="sf-heading text-[length:var(--sf-text-xl)]">Sales</h2>
-                <Link href="/inventory" className="sf-link inline-flex items-center gap-1 text-[length:var(--sf-text-sm)]">
-                  {count !== null ? (
-                    <>
-                      <span className="sf-figure">{new Intl.NumberFormat('en-US').format(count)}</span> on the lot
-                    </>
-                  ) : (
-                    'All inventory'
-                  )}
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Link>
-              </div>
-              <HeroSearch makes={makes} years={years} />
-            </div>
-
-            <ul>
-              {DOORS.map((door) => (
-                <li key={door.href} className="sf-sign-row">
-                  <Link href={door.href} className="sf-sign-door group">
-                    <span className="sf-heading w-28 shrink-0 text-[length:var(--sf-text-lg)]">{door.label}</span>
-                    <span className="min-w-0 flex-1 text-[length:var(--sf-text-sm)]" style={{ color: 'var(--sf-on-dark-2)' }}>{door.action}</span>
-                    <ArrowRight className="sf-sign-arrow size-5 shrink-0" aria-hidden="true" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+    <div className="sf-home" data-flush-end>
+      {/* ---------- Desktop and tablet ---------- */}
+      <section className="relative hidden overflow-hidden md:block">
+        <Image src={HERO_PHOTO} alt="" fill priority unoptimized sizes="100vw" className="object-cover object-[60%_55%]" />
+        <span className="sf-hero-shade" aria-hidden="true" />
+        <Container className="relative flex min-h-[26.3rem] flex-col pb-2.5 pt-14">
+          <h1 className="sf-display sf-hero-title">
+            <span className="block max-w-[36rem]" style={{ color: 'var(--sf-bone)' }}>{copy.lead}</span>
+            {copy.accent && <span className="block" style={{ color: 'var(--sf-accent)' }}>{copy.accent}</span>}
+          </h1>
+          {copy.sub && (
+            <p className="mt-6 max-w-[46rem] text-[0.875rem] font-medium uppercase" style={{ color: 'var(--sf-ink)' }}>
+              {copy.sub}
+            </p>
+          )}
+          <div className="mt-auto pt-8">
+            <HeroSearch />
           </div>
-
-          {lead && leadImage ? (
-            <Link href={`/inventory/${lead.id}`} className="sf-lead-frame group flex flex-col lg:min-h-[24rem]">
-              <span className="relative block aspect-[4/3] overflow-hidden lg:absolute lg:inset-0 lg:aspect-auto">
-                <Image src={leadImage} alt={vehicleTitle(lead)} fill priority unoptimized sizes="(min-width: 1024px) 46rem, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.02]" />
-              </span>
-              <span className="absolute inset-x-0 top-0 m-3 flex items-start justify-between gap-2 md:m-4">
-                <span className="sf-stall">#{lead.stockNumber}</span>
-                {isRepresentativePhoto(leadImage, lead) && <span className="sf-chip sf-chip-dark">Representative photo</span>}
-              </span>
-              <span className="relative mt-auto flex flex-wrap items-end justify-between gap-x-6 gap-y-1 border-t px-4 py-3 md:px-5" style={{ background: 'var(--sf-paper)', borderColor: 'var(--sf-rule)' }}>
-                <span className="min-w-0">
-                  <span className="sf-eyebrow block">{vehicleConditionLabel(lead.condition)}</span>
-                  <span className="sf-heading block text-[length:var(--sf-text-lg)]">{vehicleTitle(lead)}</span>
-                </span>
-                <span className="sf-price text-[length:var(--sf-text-2xl)]">{formatPrice(lead.price, business.currencyCode)}</span>
-              </span>
-            </Link>
-          ) : null}
         </Container>
       </section>
 
-      <section className="pb-[var(--sf-space-xl)] md:pb-[var(--sf-space-2xl)]">
+      <section className="hidden pt-4 md:block">
         <Container>
-          <div className="mb-6 flex items-end justify-between gap-4 border-b pb-3" style={{ borderColor: 'var(--sf-rule-strong)' }}>
-            <h2 className="sf-display text-[length:var(--sf-text-2xl)]">On the lot</h2>
-            <Link href="/inventory" className="sf-link inline-flex shrink-0 items-center gap-1 text-[length:var(--sf-text-sm)]">
-              All inventory
-              <ArrowRight className="size-4" aria-hidden="true" />
+          <h2 className="mb-3 flex items-center gap-4">
+            <Link href="/inventory" className="sf-caps inline-flex items-center gap-4 text-[0.9375rem] font-semibold hover:text-[var(--sf-accent)]">
+              Inventory
+              {count !== null && <span className="sr-only">, {count} vehicles</span>}
+              <ChevronRight className="size-4" style={{ color: 'var(--sf-accent)' }} aria-hidden="true" />
             </Link>
-          </div>
-
-          {featured.status === 'unavailable' ? (
-            <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between" role="alert">
-              <p className="sf-title-line font-semibold">
-                <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-                Inventory couldn&apos;t be loaded.
-              </p>
-              <Link href="/" prefetch={false} className="sf-btn sf-btn-ghost sf-btn-sm">Retry</Link>
-            </div>
-          ) : vehicles.length > 0 ? (
-            <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {vehicles.filter((vehicle) => vehicle.id !== lead?.id).slice(0, 6).map((vehicle, index) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 3} />
-              ))}
-            </div>
+          </h2>
+          {inventoryState ? (
+            <InventoryState state={inventoryState} />
           ) : (
-            <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="sf-title-line font-semibold">
-                <span className="sf-dot" aria-hidden="true" />
-                No vehicles listed
-              </p>
-              <Link href="/contact" className="sf-btn sf-btn-ghost sf-btn-sm">Contact sales</Link>
+            <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
+              {vehicles.map((vehicle, index) => (
+                <ShowroomCard key={vehicle.id} vehicle={vehicle} currencyCode={business.currencyCode} priority={index < 3} />
+              ))}
             </div>
           )}
+
+          <div className="mt-6 grid grid-cols-3 border-t py-6" style={{ borderColor: 'var(--sf-rule)' }}>
+            {STRIP.map((item, index) => (
+              <div key={item.href} className={`min-w-0 ${index > 0 ? 'border-l pl-[4.5rem]' : ''}`} style={{ borderColor: 'var(--sf-rule)' }}>
+                <h3 className="sf-caps text-[0.9375rem] font-semibold">{item.title}</h3>
+                <Link href={item.href} className="mt-1 inline-flex items-center gap-2 text-[0.9375rem] hover:text-[var(--sf-accent)]" style={{ color: 'var(--sf-ink-2)' }}>
+                  {item.action}
+                  <ChevronRight className="size-4" style={{ color: 'var(--sf-accent)' }} aria-hidden="true" />
+                </Link>
+              </div>
+            ))}
+          </div>
         </Container>
       </section>
 
-      <HomeContactPanel />
-    </>
+      {/* ---------- Phone ---------- */}
+      <section className="relative overflow-hidden pb-28 md:hidden">
+        <span className="sf-phone-glow" aria-hidden="true">
+          <Image src={HERO_PHOTO} alt="" fill priority unoptimized sizes="100vw" className="object-cover object-[45%_70%]" />
+        </span>
+        <Container className="relative">
+          <h1 className="sf-display sf-phone-title mx-auto mt-2 w-fit" aria-label={`Driven by you. ${business.fullName}`}>
+            <span className="block">Driven</span>
+            <span className="flex items-start">
+              <span className="sf-phone-title-small">By</span>
+              <span>You</span>
+            </span>
+          </h1>
+
+          <p className="sf-eyebrow sf-eyebrow-accent mt-3 text-[0.9375rem] font-bold">Find your next ride</p>
+          <div className="mt-2">
+            <HeroSearchCompact />
+          </div>
+
+          <nav aria-label="Shopping tools" className="mt-4 grid grid-cols-3 gap-2 px-3">
+            {QUICK.map(({ href, label, icon: Icon }) => (
+              <Link key={href} href={href} className="sf-quick-tile">
+                <Icon className="size-5" strokeWidth={1.4} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-5 flex items-end gap-3">
+            <div className="min-w-0">
+              <p className="sf-eyebrow sf-eyebrow-accent" style={{ letterSpacing: '0.04em' }}>Inventory</p>
+              <h2 className="sf-display whitespace-nowrap text-[1.375rem] leading-none" style={{ fontStretch: '80%' }}>Real cars. Real deals.</h2>
+            </div>
+            <span className="mb-1 h-px min-w-4 flex-1" style={{ background: 'var(--sf-accent)' }} aria-hidden="true" />
+            <Link href="/inventory" className="sf-caps inline-flex shrink-0 items-center gap-1 text-[0.8125rem] font-medium" style={{ color: 'var(--sf-accent)' }}>
+              View all
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="mt-3 space-y-2.5">
+            {inventoryState ? (
+              <InventoryState state={inventoryState} />
+            ) : (
+              vehicles.map((vehicle, index) => (
+                <ShowroomRow key={vehicle.id} vehicle={vehicle} currencyCode={business.currencyCode} priority={index < 2} />
+              ))
+            )}
+
+            <section className="sf-visit-card" aria-labelledby="home-visit">
+              <Image src={HERO_PHOTO} alt="" fill unoptimized sizes="100vw" className="object-cover object-[88%_60%]" />
+              <span className="sf-showroom-row-shade" aria-hidden="true" />
+              <div className="relative max-w-[70%] px-4 py-4">
+                <h2 id="home-visit" className="sf-display text-[1.5rem] leading-[0.95]" style={{ fontStretch: '100%' }}>
+                  <span className="block" style={{ color: 'var(--sf-accent)' }}>{city ? `Visit ${city}` : 'Visit us'}</span>
+                  <span className="mt-0.5 block text-[1.0625rem]">{business.fullName}</span>
+                </h2>
+                {(business.addressLine1 || business.addressLine2) && (
+                  <a href={business.directionsHref || '/contact'} target={business.directionsHref ? '_blank' : undefined} rel="noreferrer" className="mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug">
+                    <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                    <span>
+                      {business.addressLine1 && <span className="block">{business.addressLine1}</span>}
+                      {business.addressLine2 && <span className="block">{business.addressLine2}</span>}
+                    </span>
+                  </a>
+                )}
+              </div>
+            </section>
+          </div>
+
+          <nav aria-label="Visit" className="mt-3 grid grid-cols-3 gap-2 px-3">
+            {VISIT.map(({ href, label, icon: Icon }) => (
+              <Link key={href} href={href} className="sf-quick-tile">
+                <Icon className="size-4" strokeWidth={1.4} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
+        </Container>
+
+        <nav aria-label="Quick" className="sf-dock">
+          <Link href="/" aria-current="page" className="sf-dock-item" data-active="true">
+            <House className="size-5" aria-hidden="true" />
+            Home
+          </Link>
+          <Link href="/inventory" className="sf-dock-item">
+            <Search className="size-5" aria-hidden="true" />
+            Browse
+          </Link>
+          <Link href="/financing" className="sf-dock-item">
+            <Tag className="size-5" aria-hidden="true" />
+            Finance
+          </Link>
+        </nav>
+      </section>
+    </div>
   )
 }

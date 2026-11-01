@@ -22,7 +22,7 @@ export function ComparisonBar() {
     <>
       {/* Keeps the end of the footer reachable above the fixed bar. */}
       <div className="sf-band h-20" aria-hidden="true" />
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 md:bottom-5">
+      <div className="sf-compare-bar pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 md:bottom-5">
         <div
           className="sf-band pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[var(--sf-radius-md)] py-1.5 pl-4 pr-1.5"
           style={{ boxShadow: 'var(--sf-shadow-float)' }}

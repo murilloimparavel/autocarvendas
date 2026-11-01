@@ -6,16 +6,27 @@ import { usePathname, useRouter } from 'next/navigation'
 import { ArrowUpRight, Menu, Phone, Search, SquareStack, UserRound, X } from 'lucide-react'
 import { getComparisonVehicles } from '@/features/storefront/lib/comparison'
 import { isEscapeKey, restoreFocusAfterClose } from '../lib/dialogAccessibility'
+import { BrandMark } from './BrandMark'
 import { Container } from './Container'
-import { StoreLogo } from '@/features/platform/store-settings/components/StoreLogo'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
 
 const NAV = [
   { href: '/inventory', label: 'Inventory' },
   { href: '/financing', label: 'Financing' },
   { href: '/trade-in', label: 'Trade-in' },
-  { href: '/test-drive', label: 'Test drive' },
   { href: '/service', label: 'Service' },
+  { href: '/contact', label: 'Contact' },
+]
+
+const MENU = [
+  { href: '/inventory', label: 'Inventory' },
+  { href: '/test-drive', label: 'Test drive' },
+  { href: '/financing', label: 'Financing' },
+  { href: '/trade-in', label: 'Trade-in' },
+  { href: '/service', label: 'Service' },
+  { href: '/compare', label: 'Compare' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/account', label: 'Account' },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -38,9 +49,12 @@ export function Header() {
     return () => window.removeEventListener('comparison-updated', sync)
   }, [])
 
-  useEffect(() => {
+  // Close the menu when the route changes (state-during-render, not an effect).
+  const [menuPath, setMenuPath] = useState(pathname)
+  if (menuPath !== pathname) {
+    setMenuPath(pathname)
     setMenuOpen(false)
-  }, [pathname])
+  }
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,48 +81,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50" onKeyDown={handleHeaderKeyDown}>
-      <div className="sf-band hidden text-[length:var(--sf-text-xs)] sm:block">
-        <Container className="flex items-center gap-5 py-2">
-          {business.addressLine1 && (
-            <span className="hidden min-w-0 truncate md:inline" style={{ color: 'var(--sf-on-dark-2)' }}>
-              {[business.addressLine1, business.addressLine2].filter(Boolean).join(', ')}
-            </span>
-          )}
-          {business.hoursMonFri && (
-            <span className="hidden min-w-0 truncate lg:inline" style={{ color: 'var(--sf-on-dark-2)' }}>
-              {business.hoursMonFri}
-            </span>
-          )}
-          <span className="flex-1" />
-          {business.directionsHref && (
-            <a href={business.directionsHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 whitespace-nowrap transition-opacity hover:opacity-80">
-              Directions
-              <ArrowUpRight className="size-3.5" aria-hidden="true" />
-            </a>
-          )}
-          <Link href="/contact" className="whitespace-nowrap transition-opacity hover:opacity-80">
-            Contact
-          </Link>
-          {hasPhone && (
-            <a href={business.phoneHref} className="sf-figure whitespace-nowrap font-medium transition-opacity hover:opacity-80">
-              {business.phoneDisplay}
-            </a>
-          )}
-        </Container>
-      </div>
+      <div className="sf-band border-b" style={{ borderColor: 'var(--sf-rule-dark)' }}>
+        <Container className="flex h-16 items-center gap-3">
+          <BrandMark className="flex-1 lg:flex-none lg:shrink-0" />
 
-      <div
-        className="border-b"
-        style={{ background: 'var(--sf-paper)', borderColor: 'var(--sf-rule)' }}
-      >
-        <Container className="flex h-16 items-center gap-2 sm:gap-4 md:h-[4.5rem]">
-          {/* Phones: the name may wrap to two lines rather than truncate; it keeps a floor width so it never collapses to the logo. */}
-          <Link href="/" className="flex min-h-11 min-w-0 flex-1 items-center gap-2 sm:gap-2.5 xl:flex-initial" aria-label={`${business.shortName} home`} title={business.shortName}>
-            <StoreLogo svg={business.logoIcon} color={business.logoColor} className="size-7 shrink-0" />
-            <span className="sf-heading line-clamp-2 min-w-[6rem] break-words text-[0.9375rem] leading-tight sm:line-clamp-1 sm:text-[1rem] md:text-[1.1875rem]">{business.shortName}</span>
-          </Link>
-
-          <nav className="ml-4 hidden shrink-0 items-center gap-1 xl:flex" aria-label="Primary">
+          <nav className="mx-auto hidden min-w-0 items-center gap-0 lg:flex xl:gap-2" aria-label="Primary">
             {NAV.map((item) => {
               const active = isActive(pathname, item.href)
               return (
@@ -116,35 +93,20 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className="relative whitespace-nowrap px-3 py-2 text-[length:var(--sf-text-sm)] font-semibold transition-colors"
-                  style={{ color: active ? 'var(--sf-ink)' : 'var(--sf-ink-2)' }}
+                  className="sf-caps relative whitespace-nowrap px-2 py-2 text-[0.875rem] font-medium xl:px-2.5 xl:text-[0.9375rem] transition-colors hover:text-[var(--sf-accent)]"
+                  style={{ color: active ? 'var(--sf-accent)' : 'var(--sf-ink)' }}
                 >
                   {item.label}
-                  {active && (
-                    <span aria-hidden="true" className="absolute inset-x-3 -bottom-[0.95rem] h-[3px]" style={{ background: 'var(--sf-accent)' }} />
-                  )}
                 </Link>
               )
             })}
           </nav>
 
-          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5">
-            <form onSubmit={onSearch} className="relative hidden md:block" role="search">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" style={{ color: 'var(--sf-ink-3)' }} aria-hidden="true" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Make, model, stock #"
-                className="sf-input sf-input-icon w-48 2xl:w-60"
-                aria-label="Search inventory"
-              />
-            </form>
-
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5 lg:ml-0">
             {/* On phones Compare lives in the menu (and the compare bar) until something is selected. */}
             <Link
               href="/compare"
-              className={`relative size-11 place-items-center rounded-[3px] transition-colors hover:bg-[var(--sf-paper-2)] ${savedCount > 0 ? 'grid' : 'hidden sm:grid'}`}
+              className={`relative size-11 place-items-center rounded-[3px] transition-colors hover:text-[var(--sf-accent)] ${savedCount > 0 ? 'grid' : 'hidden sm:grid lg:hidden'}`}
               aria-label={`Compare vehicles${savedCount ? `, ${savedCount} selected` : ''}`}
             >
               <SquareStack className="size-5" aria-hidden="true" />
@@ -161,32 +123,29 @@ export function Header() {
             <Link
               href="/account"
               aria-current={isActive(pathname, '/account') ? 'page' : undefined}
-              className="hidden size-11 place-items-center rounded-[3px] transition-colors hover:bg-[var(--sf-paper-2)] sm:grid"
+              className="hidden size-10 place-items-center rounded-[3px] transition-colors hover:text-[var(--sf-accent)] sm:grid"
               aria-label="Account"
             >
               <UserRound className="size-5" aria-hidden="true" />
             </Link>
 
-            {hasPhone && (
-              <a href={business.phoneHref} className="grid size-11 place-items-center rounded-[3px] transition-colors hover:bg-[var(--sf-paper-2)] sm:hidden" aria-label={`Call ${business.phoneDisplay}`}>
-                <Phone className="size-5" aria-hidden="true" />
-              </a>
-            )}
-
-            <Link href="/inventory" className="sf-btn sf-btn-primary sf-btn-sm ml-1 hidden whitespace-nowrap md:inline-flex xl:hidden">
-              Shop inventory
+            <Link href="/test-drive" className="sf-btn sf-btn-primary ml-1 hidden min-h-[2.25rem] px-6 py-1.5 md:inline-flex">
+              Test drive
+            </Link>
+            <Link href="/trade-in" className="sf-btn sf-btn-ghost hidden min-h-[2.25rem] px-6 py-1.5 xl:inline-flex" style={{ borderColor: 'var(--sf-accent)' }}>
+              Trade-in
             </Link>
 
             <button
               ref={menuButtonRef}
               type="button"
-              className="grid size-11 place-items-center rounded-[3px] transition-colors hover:bg-[var(--sf-paper-2)] xl:hidden"
+              className="grid size-11 place-items-center rounded-[3px] transition-colors hover:text-[var(--sf-accent)] lg:hidden"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-controls="storefront-mobile-menu"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             >
-              {menuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
+              {menuOpen ? <X className="size-6" aria-hidden="true" /> : <Menu className="size-7" strokeWidth={1.5} aria-hidden="true" />}
             </button>
           </div>
         </Container>
@@ -195,11 +154,11 @@ export function Header() {
       {menuOpen && (
         <div
           id="storefront-mobile-menu"
-          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-b xl:hidden"
-          style={{ background: 'var(--sf-paper)', borderColor: 'var(--sf-rule)', boxShadow: 'var(--sf-shadow-float)' }}
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-b lg:hidden"
+          style={{ background: 'var(--sf-sign)', borderColor: 'var(--sf-rule)', boxShadow: 'var(--sf-shadow-float)' }}
         >
           <Container className="flex flex-col py-4">
-            <form onSubmit={onSearch} className="relative mb-3 md:hidden" role="search">
+            <form onSubmit={onSearch} className="relative mb-3" role="search">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" style={{ color: 'var(--sf-ink-3)' }} aria-hidden="true" />
               <input
                 type="search"
@@ -211,7 +170,7 @@ export function Header() {
               />
             </form>
             <nav aria-label="Mobile">
-              {[...NAV, { href: '/compare', label: 'Compare' }, { href: '/contact', label: 'Contact' }, { href: '/account', label: 'Account' }].map((item) => {
+              {MENU.map((item) => {
                 const active = isActive(pathname, item.href)
                 return (
                   <Link
@@ -219,7 +178,7 @@ export function Header() {
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
                     aria-current={active ? 'page' : undefined}
-                    className="sf-heading flex min-h-12 items-center justify-between border-b text-[length:var(--sf-text-lg)] last:border-0"
+                    className="sf-heading sf-caps flex min-h-12 items-center justify-between border-b text-[length:var(--sf-text-lg)] last:border-0"
                     style={{ borderColor: 'var(--sf-rule)', color: active ? 'var(--sf-accent)' : 'var(--sf-ink)' }}
                   >
                     {item.label}

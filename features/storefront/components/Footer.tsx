@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { Container } from './Container'
 import OpenfrontCTA from './OpenfrontCTA'
-import { StoreLogo } from '@/features/platform/store-settings/components/StoreLogo'
+import { BrandMark } from './BrandMark'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
 
 const SHOP = [
@@ -32,14 +32,11 @@ export function Footer({ branding = true }: { branding?: boolean }) {
   const hasAddress = business.addressLine1 || business.addressLine2
 
   return (
-    <footer className="sf-band">
+    <footer className="sf-band border-t" style={{ borderColor: 'var(--sf-rule-dark)' }}>
       <Container className="py-[var(--sf-space-xl)] md:py-[var(--sf-space-2xl)]">
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.5fr_1fr_1fr_1.2fr]">
           <div className="col-span-2 min-w-0 md:col-span-1">
-            <Link href="/" className="flex min-h-11 items-center gap-3">
-              <StoreLogo svg={business.logoIcon} color={business.logoColor} className="size-8" />
-              <span className="sf-heading text-[length:var(--sf-text-xl)]">{business.fullName}</span>
-            </Link>
+            <BrandMark size="lg" />
             {hasAddress && (
               <address className="mt-5 text-[length:var(--sf-text-sm)] not-italic" style={{ color: 'var(--sf-on-dark-2)' }}>
                 {business.addressLine1 && <div>{business.addressLine1}</div>}
