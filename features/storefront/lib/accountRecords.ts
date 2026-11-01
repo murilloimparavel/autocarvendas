@@ -5,11 +5,14 @@ export type Tone = 'ok' | 'warn' | 'bad' | 'accent' | 'idle'
 
 const OK_STATUSES = new Set(['completed', 'appraised', 'approved', 'funded', 'won', 'closed-won', 'sold', 'delivered', 'captured', 'fulfilled', 'paid', 'invoiced', 'financed'])
 const BAD_STATUSES = new Set(['cancelled', 'canceled', 'declined', 'rejected', 'lost', 'closed-lost', 'no-show', 'expired', 'failed', 'refunded'])
+// Closed without an outcome either way (a trade-in request whose lead was closed).
+const IDLE_STATUSES = new Set(['closed'])
 const ACTIVE_STATUSES = new Set(['checked-in', 'in-progress', 'waiting-parts', 'contacted', 'qualified', 'in-review', 'under-review', 'reviewing', 'submitted-to-lender', 'conditional', 'arrived', 'ready', 'pending', 'authorized', 'partially-refunded', 'submitted', 'negotiating', 'test-drive-scheduled'])
 
 export function statusTone(status: string | null | undefined): Tone {
   const key = String(status || '').trim().toLowerCase().replaceAll(' ', '-').replaceAll('_', '-')
   if (!key) return 'idle'
+  if (IDLE_STATUSES.has(key)) return 'idle'
   if (OK_STATUSES.has(key)) return 'ok'
   if (BAD_STATUSES.has(key)) return 'bad'
   if (ACTIVE_STATUSES.has(key)) return 'accent'

@@ -1,3 +1,4 @@
+import { customerTradeInStatus } from '../lifecycle/tradeInStatus'
 import { calculateDealPrice } from '../lifecycle/dealPricing'
 import {
   customerOwnership,
@@ -25,6 +26,11 @@ const KIND_LABEL: Record<Kind, string> = {
   inquiry: 'Inquiry',
   'trade-in': 'Trade-in',
   financing: 'Financing',
+}
+
+// Customers cannot read acquisitions; a trade-in only reaches one through a deal, which they do see.
+function tradeInFacts(tradeIn: any) {
+  return { onDeal: Boolean(tradeIn.deal?.id), leadStatus: tradeIn.lead?.status ?? null, offerAmountCents: tradeIn.offerAmountCents ?? null }
 }
 
 function vehicleLabel(vehicle: any) {
@@ -82,7 +88,7 @@ export async function customerRequestHistory(_root: unknown, _args: unknown, con
       : [],
     ownership.tradeInIds.length
       ? prisma.tradeIn.findMany({ where: { id: { in: ownership.tradeInIds } }, take: PAGE, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        select: { id: true, rooftopId: true, createdAt: true, offerAmountCents: true, year: true, make: true, model: true, trim: true } })
+        select: { id: true, rooftopId: true, createdAt: true, offerAmountCents: true, year: true, make: true, model: true, trim: true, deal: { select: { id: true } }, lead: { select: { status: true } } } })
       : [],
     ownership.applicationIds.length
       ? prisma.financingApplication.findMany({ where: { id: { in: ownership.applicationIds } }, take: PAGE, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -98,7 +104,7 @@ export async function customerRequestHistory(_root: unknown, _args: unknown, con
     ...drives.map((item: any) => row('test-drive', item, item.scheduledTime, testDriveStatus(item), vehicleLabel(item.vehicle))),
     ...services.map((item: any) => row('service', item, item.appointmentDate, item.status, item.customerVehicleDescription || null)),
     ...inquiries.map((item: any) => row('inquiry', item, item.createdAt, item.status || 'new', vehicleLabel(item.interestedVehicle))),
-    ...tradeIns.map((item: any) => row('trade-in', item, item.createdAt, item.offerAmountCents == null ? 'submitted' : 'appraised', vehicleLabel(item), item.offerAmountCents ?? null)),
+    ...tradeIns.map((item: any) => row('trade-in', item, item.createdAt, customerTradeInStatus(tradeInFacts(item)), vehicleLabel(item), item.offerAmountCents ?? null)),
     ...applications.map((item: any) => row('financing', item, item.createdAt, item.status, vehicleLabel(item.vehicle), item.requestedAmountCents ?? null)),
   ].sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()).slice(0, PAGE)
 }
@@ -173,14 +179,14 @@ async function requestDetail(prisma: any, ownership: CustomerOwnership, kind: st
     if (!ownership.tradeInIds.includes(id)) return null
     const tradeIn = await prisma.tradeIn.findUnique({
       where: { id },
-      select: { id: true, rooftopId: true, createdAt: true, year: true, make: true, model: true, trim: true, vin: true, mileage: true, condition: true, offerAmountCents: true },
+      select: { id: true, rooftopId: true, createdAt: true, year: true, make: true, model: true, trim: true, vin: true, mileage: true, condition: true, offerAmountCents: true, deal: { select: { id: true } }, lead: { select: { status: true } } },
     })
     if (!tradeIn) return null
     const response = await submissionResponse(prisma, 'TradeIn', tradeIn.id)
     const estimate = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null)
     return {
       kind, id: tradeIn.id, rooftopId: tradeIn.rooftopId, submittedAt: tradeIn.createdAt, scheduledAt: tradeIn.createdAt,
-      status: tradeIn.offerAmountCents == null ? 'submitted' : 'appraised',
+      status: customerTradeInStatus(tradeInFacts(tradeIn)),
       vehicle: { year: tradeIn.year, make: tradeIn.make, model: tradeIn.model, trim: tradeIn.trim, vin: tradeIn.vin, label: vehicleLabel(tradeIn) },
       mileage: tradeIn.mileage, condition: tradeIn.condition, offerAmountCents: tradeIn.offerAmountCents ?? null,
       estimatedMin: estimate(response?.estimatedMin), estimatedMax: estimate(response?.estimatedMax),

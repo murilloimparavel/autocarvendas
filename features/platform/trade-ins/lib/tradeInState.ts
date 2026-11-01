@@ -1,6 +1,7 @@
 import type { DeskTone } from '@/features/platform/components/desk'
 import type { TradeIn, TradeInAcquisition } from '../actions'
 import { customerRequestReference } from '@/features/storefront/lib/customerRequests'
+import { tradeInStatus } from '@/features/keystone/lifecycle/tradeInStatus'
 
 export type TradeInQueue = 'appraise' | 'offered' | 'on-deal' | 'acquired' | 'closed' | 'all'
 
@@ -32,12 +33,13 @@ export function conditionNotes(value: string) {
 }
 
 export function tradeInQueue(tradeIn: TradeIn, acquisition: TradeInAcquisition | null | undefined): Exclude<TradeInQueue, 'all'> {
-  if (acquisition) return 'acquired'
-  if (tradeIn.deal) return 'on-deal'
-  // Trade-ins carry no status; a request is closed when staff close its customer lead as lost.
-  if (tradeIn.lead?.status === 'closed-lost') return 'closed'
-  if (tradeIn.offerAmount != null) return 'offered'
-  return 'appraise'
+  const status = tradeInStatus({
+    acquired: Boolean(acquisition),
+    onDeal: Boolean(tradeIn.deal),
+    leadStatus: tradeIn.lead?.status,
+    offerAmountCents: tradeIn.offerAmount,
+  })
+  return status === 'submitted' ? 'appraise' : status
 }
 
 export function tradeInState(tradeIn: TradeIn, acquisition: TradeInAcquisition | null | undefined): { tone: DeskTone; label: string } {

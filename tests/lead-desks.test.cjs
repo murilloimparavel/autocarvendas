@@ -28,6 +28,8 @@ function load(relative) {
 
 const display = load('features/platform/finance/lib/display');
 const tradeIns = load('features/platform/trade-ins/lib/tradeInState');
+const shared = load('features/keystone/lifecycle/tradeInStatus');
+const account = load('features/storefront/lib/accountRecords');
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('finance desk is not "Up to date" while a storefront application waits on a lender', () => {
@@ -95,4 +97,32 @@ test('a closed trade-in states why, from its lost lead', () => {
   assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost', lostReasonCode: 'purchased-elsewhere', lostReason: '' } }), 'Purchased elsewhere');
   assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost', lostReasonCode: null, lostReason: 'Sold it privately' } }), 'Sold it privately');
   assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost' } }), 'No reason recorded');
+});
+
+test('admin and customer read trade-in state from one mapper', () => {
+  const cases = [
+    [{ leadStatus: 'new' }, 'submitted', 'appraise', 'submitted'],
+    [{ leadStatus: 'new', offerAmountCents: 180000 }, 'offered', 'offered', 'appraised'],
+    [{ leadStatus: 'closed-lost' }, 'closed', 'closed', 'closed'],
+    [{ leadStatus: 'closed-lost', offerAmountCents: 180000 }, 'closed', 'closed', 'closed'],
+    [{ leadStatus: 'closed-lost', onDeal: true }, 'on-deal', 'on-deal', 'appraised'],
+    [{ leadStatus: 'closed-won', onDeal: true, acquired: true }, 'acquired', 'acquired', 'appraised'],
+  ];
+  for (const [facts, sharedStatus, adminQueue, customerStatus] of cases) {
+    assert.equal(shared.tradeInStatus(facts), sharedStatus, JSON.stringify(facts));
+    assert.equal(shared.customerTradeInStatus(facts), customerStatus, JSON.stringify(facts));
+    const row = tradeIn({
+      offerAmount: facts.offerAmountCents ?? null,
+      deal: facts.onDeal ? { id: 'd1', status: 'pencil' } : null,
+      lead: { ...tradeIn().lead, status: facts.leadStatus },
+    });
+    assert.equal(tradeIns.tradeInQueue(row, facts.acquired ? { id: 'a1' } : null), adminQueue, JSON.stringify(facts));
+  }
+});
+
+test('the customer sees a closed trade-in as Closed in a neutral tone', () => {
+  const { customerRequestStatusLabel } = load('features/storefront/lib/customerRequests');
+  assert.equal(customerRequestStatusLabel('Trade-in', 'closed'), 'Closed');
+  assert.equal(account.statusTone('closed'), 'idle');
+  assert.equal(account.statusTone('closed-lost'), 'bad');
 });

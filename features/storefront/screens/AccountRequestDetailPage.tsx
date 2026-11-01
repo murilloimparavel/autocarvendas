@@ -125,7 +125,7 @@ export async function AccountRequestDetailPage({ refParam }: { refParam: string 
       ...(detail.mileage != null ? [{ label: 'Mileage', value: `${new Intl.NumberFormat('en-US').format(detail.mileage)} mi` }] : []),
       ...(detail.condition ? [{ label: 'Condition', value: statusLabel(detail.condition) }] : []),
       ...(range ? [{ label: 'Preliminary range', value: range }] : []),
-      { label: 'Offer', value: detail.offerAmountCents != null ? formatCents(detail.offerAmountCents) : 'Pending appraisal', strong: true },
+      { label: 'Offer', value: detail.offerAmountCents != null ? formatCents(detail.offerAmountCents) : detail.status === 'closed' ? 'No offer' : 'Pending appraisal', strong: true },
       { label: 'Submitted', value: formatDateTime(detail.submittedAt, tz) },
     )
     if (range) {
