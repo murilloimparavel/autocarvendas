@@ -411,10 +411,7 @@ export function TradeInDetailPageClient({
             {notice && <Notice tone="ok">{notice}</Notice>}
             {error && <Notice tone="bad">{error}</Notice>}
             {closed && (
-              <Notice tone="idle">
-                <span className="min-w-0">Closed: {tradeInClosedReason(tradeIn)}</span>
-                {tradeIn.lead && <Link href={`${basePath}/platform/crm/${tradeIn.lead.id}`} className="ml-auto shrink-0 font-medium underline underline-offset-2">Open lead</Link>}
-              </Notice>
+              <Notice tone="idle">Closed: {tradeInClosedReason(tradeIn)}</Notice>
             )}
             {blockers.length > 0 && <p id="trade-in-blockers" className="text-xs text-muted-foreground">{blockers.join(' · ')}</p>}
           </div>
