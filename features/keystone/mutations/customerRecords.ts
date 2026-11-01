@@ -86,12 +86,13 @@ export async function customerRequestHistory(_root: unknown, _args: unknown, con
       : [],
     ownership.applicationIds.length
       ? prisma.financingApplication.findMany({ where: { id: { in: ownership.applicationIds } }, take: PAGE, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        select: { id: true, rooftopId: true, createdAt: true, status: true, requestedAmountCents: true, vehicle: vehicleSelect } })
+        select: { id: true, rooftopId: true, createdAt: true, reference: true, status: true, requestedAmountCents: true, vehicle: vehicleSelect } })
       : [],
   ])
   const timezone = await rooftopTimezones(prisma, [...drives, ...services, ...inquiries, ...tradeIns, ...applications])
   const row = (kindKey: Kind, item: any, scheduledAt: any, status: string, vehicle: string | null, amountCents: number | null = null) => ({
     id: item.id, kind: KIND_LABEL[kindKey], kindKey, scheduledAt, status, timezone: timezone(item), vehicle, amountCents,
+    reference: typeof item.reference === 'string' ? item.reference : null,
   })
   return [
     ...drives.map((item: any) => row('test-drive', item, item.scheduledTime, testDriveStatus(item), vehicleLabel(item.vehicle))),

@@ -4,7 +4,7 @@ import { getCustomerRequestDetail } from '../actions/customerRecords'
 import { BookingActions } from '../components/account/BookingActions'
 import { AccountBack, AccountEmpty, AccountError, AccountHeader, AccountSection } from '../components/account/AccountStates'
 import { Sticker, type StickerRowData } from '../components/forms/RequestForm'
-import { customerRequestReference, customerRequestStatusLabel } from '../lib/customerRequests'
+import { customerFacingReference, customerRequestStatusLabel } from '../lib/customerRequests'
 import {
   customerRequestPath,
   formatCents,
@@ -52,7 +52,7 @@ export async function AccountRequestDetailPage({ refParam }: { refParam: string 
   }
 
   const kind = parsed.kind
-  const reference = customerRequestReference(kind, detail.id)
+  const reference = customerFacingReference(kind, detail.id, kind === 'financing' ? detail.reference : null)
   const tz = detail.timezone as string | null
   const rows: StickerRowData[] = [{ label: 'Reference', value: reference }]
   let body: React.ReactNode = null
@@ -133,7 +133,6 @@ export async function AccountRequestDetailPage({ refParam }: { refParam: string 
     }
   } else if (kind === 'financing') {
     rows.push(
-      ...(detail.reference ? [{ label: 'Application', value: detail.reference }] : []),
       ...vehicleRows(detail.vehicle),
       ...(detail.requestedAmountCents != null ? [{ label: 'Amount', value: formatCents(detail.requestedAmountCents) }] : []),
       ...(detail.plannedDownPaymentCents != null ? [{ label: 'Down payment', value: formatCents(detail.plannedDownPaymentCents) }] : []),

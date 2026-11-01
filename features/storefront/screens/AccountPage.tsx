@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react'
 import { getCustomer } from '../actions/account'
 import { getCustomerEmailLink, getCustomerRequestHistory } from '../actions/customerRecords'
 import { EmailLinkPanel } from '../components/account/EmailLinkPanel'
-import { customerRequestReference, customerRequestStatusLabel, type CustomerRequestKind } from '../lib/customerRequests'
+import { customerFacingReference, customerRequestStatusLabel, type CustomerRequestKind } from '../lib/customerRequests'
 import { customerRequestPath, formatCents, formatDateTime, isCustomerRequestKind, statusTone, type CustomerRequestRow } from '../lib/accountRecords'
 
 type CustomerRequest = CustomerRequestRow
@@ -27,7 +27,7 @@ function kindKey(item: CustomerRequest): CustomerRequestKind | null {
 
 function requestReference(item: CustomerRequest) {
   const kind = kindKey(item)
-  return kind ? customerRequestReference(kind, item.id) : null
+  return kind ? customerFacingReference(kind, item.id, item.reference) : null
 }
 
 function isScheduledKind(item: CustomerRequest) {

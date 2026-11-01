@@ -582,7 +582,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
       }
 
       type CustomerAccountResult { id: ID! }
-      type CustomerRequest { id: ID!, kind: String!, kindKey: String, scheduledAt: DateTime!, status: String!, timezone: String, vehicle: String, amountCents: Int }
+      type CustomerRequest { id: ID!, kind: String!, kindKey: String, scheduledAt: DateTime!, status: String!, timezone: String, vehicle: String, amountCents: Int, reference: String }
       type CustomerBookingResult { id: ID!, kind: String!, status: String!, scheduledAt: DateTime }
       type CustomerEmailLinkResult { email: String!, linkedCustomerCount: Int!, newlyLinkedCount: Int, verified: Boolean! }
       type CustomerEmailVerificationRequest { sent: Boolean!, email: String! }

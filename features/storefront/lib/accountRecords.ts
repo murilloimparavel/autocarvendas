@@ -87,6 +87,7 @@ export type CustomerRequestRow = {
   timezone?: string | null
   vehicle?: string | null
   amountCents?: number | null
+  reference?: string | null
 }
 
 export type CustomerPayment = {

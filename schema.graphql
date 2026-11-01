@@ -11252,6 +11252,7 @@ type CustomerRequest {
   timezone: String
   vehicle: String
   amountCents: Int
+  reference: String
 }
 
 type CustomerBookingResult {

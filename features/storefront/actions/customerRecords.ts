@@ -28,7 +28,7 @@ function errorMessage(error: unknown, fallback: string) {
 export async function getCustomerRequestHistory(): Promise<CustomerRequestRow[] | null> {
   try {
     const data = await request<{ customerRequestHistory: CustomerRequestRow[] }>(
-      `query CustomerHistory { customerRequestHistory { id kind kindKey scheduledAt status timezone vehicle amountCents } }`
+      `query CustomerHistory { customerRequestHistory { id kind kindKey scheduledAt status timezone vehicle amountCents reference } }`
     )
     return data.customerRequestHistory ?? []
   } catch {

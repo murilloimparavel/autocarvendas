@@ -29,3 +29,16 @@ export function customerRequestReference(
   if (!normalized) return null
   return `${REFERENCE_PREFIX[kind]}-${normalized.slice(-8).toUpperCase()}`
 }
+
+/**
+ * The reference shown back to the customer. A financing application has its own stored reference
+ * (FIN-6E2377C9484641CF), which is what the confirmation screen gave them; other kinds derive one.
+ */
+export function customerFacingReference(
+  kind: CustomerRequestKind,
+  persistedId?: string | null,
+  storedReference?: string | null
+) {
+  const stored = String(storedReference || '').trim()
+  return stored || customerRequestReference(kind, persistedId)
+}
