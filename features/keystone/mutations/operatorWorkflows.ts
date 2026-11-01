@@ -2,6 +2,7 @@ import { SERVICE_APPOINTMENT_TRANSITIONS } from '../lifecycle/serviceAppointment
 import { permissions } from '../access'
 import { domainEventRequestHash, recordDomainEventInTransaction, type DomainEventInput } from '../lifecycle/domainEvents'
 import { assertSessionRooftopPermission } from '../tenantRecords'
+import { cancelTestDriveInTransaction, TEST_DRIVE_CANCEL_SELECT } from './customerBookings'
 
 function commandKey(value: unknown) {
   const key = String(value || '').trim()
@@ -123,14 +124,37 @@ export async function recordLeadInteraction(_root: unknown, { data }: any, conte
   return { id: interactionId, leadId }
 }
 
+// Staff cancel goes through the same cancelTestDriveInTransaction as the customer's own
+// cancel, so the drive ends up the same whoever cancelled it. Only the audit event says
+// who: the staff member as actorId, with cancelledBy 'staff'.
+async function cancelTestDriveByStaff(context: any, rooftopId: string, id: string, idempotencyKey: unknown) {
+  const record = await context.prisma.testDrive.findFirst({ where: { id, rooftopId }, select: TEST_DRIVE_CANCEL_SELECT })
+  if (!record) throw new Error('Test drive not found or not accessible')
+  const event: DomainEventInput = {
+    eventKey: `test-drive:${commandKey(idempotencyKey)}`,
+    rooftopId,
+    aggregateType: 'TestDrive', aggregateId: id, action: 'staff-cancelled', topic: 'test-drive.staff-cancelled',
+    actorId: context.session.itemId,
+    afterSnapshot: { id, cancelledBy: 'staff' },
+    payload: { id, rooftopId, status: 'cancelled', source: 'operator-desk' },
+  }
+  await context.transaction(async (tx: any) => {
+    if (await replayOrLock(tx, event)) return
+    await cancelTestDriveInTransaction(tx, record, 'Only an open test drive that has not started yet can be cancelled')
+    await recordDomainEventInTransaction(tx, event)
+  }, { timeout: 30_000 })
+  return context.db.TestDrive.findOne({ where: { id } })
+}
+
 export async function updateTestDriveWorkflow(_root: unknown, { data }: any, context: any) {
   if (!context.session?.itemId || !permissions.canManageLeads({ session: context.session })) throw new Error('Lead management permission is required')
   const id = String(data.id || '')
   const action = String(data.action || '')
-  if (!['verify-license', 'complete', 'no-show'].includes(action)) throw new Error('Unsupported test-drive action')
+  if (!['verify-license', 'complete', 'no-show', 'cancel'].includes(action)) throw new Error('Unsupported test-drive action')
   const drive = await context.query.TestDrive.findOne({ where: { id }, query: 'id completed driverLicenseVerified scheduledTime rooftop { id } lead { id status updatedAt } updatedAt' })
   if (!drive?.rooftop?.id) throw new Error('Test drive not found or not accessible')
   await assertSessionRooftopPermission(context, drive.rooftop.id, 'canManageLeads')
+  if (action === 'cancel') return cancelTestDriveByStaff(context, drive.rooftop.id, id, data.idempotencyKey)
   if (drive.completed) throw new Error('Completed test drives are immutable')
   if (action === 'complete' && !drive.driverLicenseVerified) throw new Error('Driver license must be verified before completion')
   if (action === 'no-show' && new Date(drive.scheduledTime).getTime() > Date.now()) throw new Error('A test drive can only be marked no-show after its scheduled time')

@@ -18,6 +18,7 @@ import {
   getTestDriveVehicles,
   getTestDrives,
   markTestDriveNoShow,
+  cancelTestDrive,
   scheduleTestDrive,
   verifyTestDriveLicense,
 } from '../actions'
@@ -159,6 +160,8 @@ export function TestDriveDeskPageClient({
   const [vehicleOptions, setVehicleOptions] = useState<Array<{ value: string; label: string }>>([])
   const [notice, setNotice] = useState<string | null>(null)
   const [noShowTarget, setNoShowTarget] = useState<TestDrive | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<TestDrive | null>(null)
+  const [cancelError, setCancelError] = useState<string | null>(null)
   const [noShowError, setNoShowError] = useState<string | null>(null)
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
 
@@ -297,6 +300,23 @@ export function TestDriveDeskPageClient({
     setUpdatingId(null)
   }
 
+  const confirmCancel = async () => {
+    const testDrive = cancelTarget
+    if (!testDrive) return
+    setUpdatingId(testDrive.id)
+    setCancelError(null)
+    const response = await cancelTestDrive(testDrive.id)
+
+    if (!response.success) {
+      setCancelError(response.error || 'Unable to cancel this test drive.')
+      setUpdatingId(null)
+      return
+    }
+    setCancelTarget(null)
+    await loadTestDrives()
+    setUpdatingId(null)
+  }
+
   const isFiltered = Boolean(search.trim()) || filter !== 'all'
   const resetFilters = () => {
     setSearch('')
@@ -394,6 +414,11 @@ export function TestDriveDeskPageClient({
         >
           Complete
         </Pill>
+        {isUpcoming(testDrive.scheduledTime) && (
+          <Pill size="sm" variant="plain" className="h-10 md:h-7" onClick={() => { setCancelError(null); setCancelTarget(testDrive) }} disabled={busy}>
+            Cancel
+          </Pill>
+        )}
       </div>
     )
   }
@@ -616,7 +641,7 @@ export function TestDriveDeskPageClient({
                             </p>
                           )}
                           {(testDrive.cancelledAt || testDrive.noShow) && (
-                            <p className="text-xs text-muted-foreground">{testDrive.cancelledAt ? 'Cancelled by customer' : 'No-show'}</p>
+                            <p className="text-xs text-muted-foreground">{testDrive.cancelledAt ? 'Cancelled' : 'No-show'}</p>
                           )}
                         </Td>
                         <Td priority={2} className="min-w-0">
@@ -660,6 +685,31 @@ export function TestDriveDeskPageClient({
                 </Pill>
                 <Pill variant="primary" className="max-sm:h-11" onClick={markNoShow} disabled={Boolean(updatingId)}>
                   {updatingId && updatingId === noShowTarget?.id ? 'Saving' : 'Mark no-show'}
+                </Pill>
+              </Track>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={Boolean(cancelTarget)}
+          onOpenChange={open => { if (!open && !updatingId) { setCancelTarget(null); setCancelError(null) } }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Cancel this test drive?</DialogTitle>
+              <DialogDescription>
+                {cancelTarget ? `${leadName(cancelTarget)} · ${vehicleName(cancelTarget)} · ${formatDateTime(cancelTarget.scheduledTime, timeZone)}. The time goes back on the vehicle's schedule. This can't be undone.` : null}
+              </DialogDescription>
+            </DialogHeader>
+            {cancelError && <Notice tone="bad">{cancelError}</Notice>}
+            <DialogFooter>
+              <Track>
+                <Pill variant="plain" className="max-sm:h-11" onClick={() => { setCancelTarget(null); setCancelError(null) }} disabled={Boolean(updatingId)}>
+                  Keep it
+                </Pill>
+                <Pill variant="primary" className="max-sm:h-11" onClick={confirmCancel} disabled={Boolean(updatingId)}>
+                  {updatingId && updatingId === cancelTarget?.id ? 'Cancelling' : 'Cancel test drive'}
                 </Pill>
               </Track>
             </DialogFooter>

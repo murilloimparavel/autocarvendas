@@ -42,7 +42,7 @@ async function ownedBooking(context: any, accountId: string, kind: BookingKind, 
   if (kind === 'test-drive') {
     const drive = await context.prisma.testDrive.findFirst({
       where: { AND: [{ id }, ownedTestDriveWhere(ownership)] },
-      select: { id: true, rooftopId: true, vehicleId: true, scheduledTime: true, completed: true, noShow: true, cancelledAt: true, updatedAt: true },
+      select: TEST_DRIVE_CANCEL_SELECT,
     })
     if (!drive) throw new Error('Booking not found')
     return { kind, record: drive }
@@ -53,6 +53,27 @@ async function ownedBooking(context: any, accountId: string, kind: BookingKind, 
   })
   if (!appointment) throw new Error('Booking not found')
   return { kind, record: appointment }
+}
+
+export const TEST_DRIVE_CANCEL_SELECT = { id: true, rooftopId: true, vehicleId: true, scheduledTime: true, completed: true, noShow: true, cancelledAt: true, updatedAt: true } as const
+
+/**
+ * The one way a test drive gets cancelled, whether the customer or staff cancels it.
+ * Run inside a transaction. Only an open, future drive can be cancelled. The drive
+ * is closed with cancelledAt set, which also frees the vehicle's slot: the capacity
+ * check skips drives where cancelledAt is set. The caller records the audit event.
+ */
+export async function cancelTestDriveInTransaction(
+  tx: any,
+  record: { id: string; updatedAt: Date | string; scheduledTime: Date | string | null; completed?: boolean; noShow?: boolean; cancelledAt?: Date | string | null },
+  refusal: string,
+) {
+  if (!testDriveActions(record).canCancel) throw new Error(refusal)
+  const changed = await tx.prisma.testDrive.updateMany({
+    where: { id: record.id, completed: false, cancelledAt: null, updatedAt: record.updatedAt },
+    data: { completed: true, cancelledAt: new Date() },
+  })
+  if (changed.count !== 1) throw new Error('This test drive just changed. Reload and try again.')
 }
 
 export async function cancelCustomerBooking(_root: unknown, { kind, id, idempotencyKey }: { kind: string; id: string; idempotencyKey: string }, context: any) {
@@ -83,12 +104,7 @@ export async function cancelCustomerBooking(_root: unknown, { kind, id, idempote
       })
       if (changed.count !== 1) throw new Error('This appointment just changed. Reload and try again.')
     } else {
-      if (!testDriveActions(record).canCancel) throw new Error('This test drive can no longer be cancelled online. Contact the dealership.')
-      const changed = await tx.prisma.testDrive.updateMany({
-        where: { id: record.id, completed: false, cancelledAt: null, updatedAt: record.updatedAt },
-        data: { completed: true, cancelledAt: new Date() },
-      })
-      if (changed.count !== 1) throw new Error('This test drive just changed. Reload and try again.')
+      await cancelTestDriveInTransaction(tx, record, 'This test drive can no longer be cancelled online. Contact the dealership.')
     }
     await recordDomainEventInTransaction(tx, event)
   }, { timeout: 30_000 })

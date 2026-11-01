@@ -78,6 +78,17 @@ export async function markTestDriveNoShow(id: string) {
   return response
 }
 
+/** Staff cancel: same end state as the customer's own cancel, and it frees the vehicle's slot. */
+export async function cancelTestDrive(id: string) {
+  const response = await keystoneClient(`
+    mutation CancelTestDrive($data: TestDriveWorkflowInput!) {
+      updateTestDriveWorkflow(data: $data) { id completed cancelledAt }
+    }
+  `, { data: { id, action: 'cancel', idempotencyKey: `test-drive:${id}:cancel` } })
+  if (response.success) revalidatePath(TEST_DRIVES_PATH)
+  return response
+}
+
 export type TestDriveVehicleOption = { id: string; year: number | null; make: string | null; model: string | null; stockNumber: string | null }
 
 export async function getTestDriveVehicles() {
