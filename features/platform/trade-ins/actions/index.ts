@@ -6,7 +6,7 @@ import { keystoneClient } from '@/features/dashboard/lib/keystoneClient'
 import { operatorCommandRequest } from '@/features/platform/lib/operatorCommandClient'
 import { inventoryCommandRequest } from '@/features/platform/vehicles/lib/inventoryCommandClient'
 
-export type TradeInLead = { id: string; firstName: string | null; lastName: string | null; email: string | null; phone: string | null; status?: string | null }
+export type TradeInLead = { id: string; firstName: string | null; lastName: string | null; email: string | null; phone: string | null; status?: string | null; lostReasonCode?: string | null; lostReason?: string | null }
 export type TradeInDealRef = {
   id: string
   status: string | null
@@ -59,7 +59,7 @@ const TRADE_IN_FIELDS = `
   referenceValue offerAmount
   rooftop { id name }
   appraisedBy { id name }
-  lead { id firstName lastName email phone status }
+  lead { id firstName lastName email phone status lostReasonCode lostReason }
   deal { id status updatedAt tradeInValueCents vehicle { year make model stockNumber } }
 `
 

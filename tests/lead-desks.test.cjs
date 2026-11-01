@@ -80,11 +80,19 @@ test('a trade-in whose lead was closed lost leaves the appraisal queue', () => {
   assert.equal(tradeIns.tradeInQueue(tradeIn({ lead: { ...open.lead, status: 'closed-won' } }), null), 'appraise');
 });
 
-test('a closed trade-in offers only Edit', () => {
+test('a closed trade-in offers no actions', () => {
   const open = tradeIn();
   const closed = tradeIn({ lead: { ...open.lead, status: 'closed-lost' } });
   assert.deepEqual(plain(tradeIns.tradeInActions(open, null)), { closed: false, appraise: true, attach: true, acquire: true });
   assert.deepEqual(plain(tradeIns.tradeInActions(closed, null)), { closed: true, appraise: false, attach: false, acquire: false });
   assert.equal(tradeIns.tradeInActions({ ...open, deal: { id: 'd1', status: 'pencil' } }, null).attach, false);
   assert.equal(tradeIns.tradeInActions(open, { id: 'a1' }).acquire, false);
+});
+
+test('a closed trade-in states why, from its lost lead', () => {
+  const lead = tradeIn().lead;
+  assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost', lostReasonCode: 'other', lostReason: 'QA test submission' } }), 'Other: QA test submission');
+  assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost', lostReasonCode: 'purchased-elsewhere', lostReason: '' } }), 'Purchased elsewhere');
+  assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost', lostReasonCode: null, lostReason: 'Sold it privately' } }), 'Sold it privately');
+  assert.equal(tradeIns.tradeInClosedReason({ lead: { ...lead, status: 'closed-lost' } }), 'No reason recorded');
 });

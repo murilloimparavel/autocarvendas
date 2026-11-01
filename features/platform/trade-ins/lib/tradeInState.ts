@@ -67,6 +67,20 @@ export function tradeInActions(tradeIn: TradeIn, acquisition: TradeInAcquisition
   return { closed, appraise: !closed, attach: !closed && !tradeIn.deal, acquire: !closed && !acquisition }
 }
 
+const lostReasonLabels: Record<string, string> = {
+  'purchased-elsewhere': 'Purchased elsewhere', price: 'Price', financing: 'Financing',
+  'vehicle-unavailable': 'Vehicle unavailable', 'no-response': 'No response', timing: 'Timing', other: 'Other',
+}
+
+/** Why a closed trade-in was closed, from its lost lead: "Other: QA test submission". */
+export function tradeInClosedReason(tradeIn: Pick<TradeIn, 'lead'>) {
+  const code = tradeIn.lead?.lostReasonCode
+  const details = tradeIn.lead?.lostReason?.trim()
+  const reason = code ? lostReasonLabels[code] || code : null
+  if (reason && details) return `${reason}: ${details}`
+  return reason || details || 'No reason recorded'
+}
+
 export function tradeInVehicleLabel(tradeIn: Pick<TradeIn, 'year' | 'make' | 'model' | 'trim'>) {
   return [tradeIn.year, tradeIn.make, tradeIn.model, tradeIn.trim].filter(Boolean).join(' ') || 'Unknown vehicle'
 }

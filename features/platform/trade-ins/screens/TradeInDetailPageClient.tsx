@@ -36,6 +36,7 @@ import {
   tradeInCustomer,
   tradeInState,
   tradeInActions,
+  tradeInClosedReason,
   tradeInReference,
   tradeInVehicleLabel,
   VIN_PATTERN,
@@ -325,7 +326,7 @@ export function TradeInDetailPageClient({
   const editBlocked = deal && !dealIsPencil ? `On a ${labelForDeal(deal.status || '').toLowerCase()} deal` : null
   const allowed = tradeInActions(tradeIn, acquisition)
   const closed = allowed.closed
-  const blockers = closed ? ['Closed: the customer lead was closed lost. Open the lead for the reason.'] : [
+  const blockers = closed ? [] : [
     appraiseBlocked && `Appraise: ${appraiseBlocked}`,
     !deal && attachBlocked && `Attach: ${attachBlocked}`,
     detachBlocked && `Detach: ${detachBlocked}`,
@@ -358,10 +359,12 @@ export function TradeInDetailPageClient({
           Acquire into inventory
         </Pill>
       )}
-      <Pill onClick={() => openDialog('edit')} disabled={Boolean(editBlocked)} aria-describedby={editBlocked ? 'trade-in-blockers' : undefined}>
-        <Pencil />
-        Edit
-      </Pill>
+      {!closed && (
+        <Pill onClick={() => openDialog('edit')} disabled={Boolean(editBlocked)} aria-describedby={editBlocked ? 'trade-in-blockers' : undefined}>
+          <Pencil />
+          Edit
+        </Pill>
+      )}
     </div>
   )
 
@@ -378,7 +381,7 @@ export function TradeInDetailPageClient({
           {tradeIn.rooftop?.name && <span>· {tradeIn.rooftop.name}</span>}
         </span>
       }
-      actions={actions}
+      actions={closed ? undefined : actions}
     />
   )
 
@@ -403,10 +406,16 @@ export function TradeInDetailPageClient({
   return (
     <PageContainer title={title} header={header} breadcrumbs={breadcrumbs(title)}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
-        {(notice || error || blockers.length > 0) && (
+        {(notice || error || closed || blockers.length > 0) && (
           <div className="space-y-2">
             {notice && <Notice tone="ok">{notice}</Notice>}
             {error && <Notice tone="bad">{error}</Notice>}
+            {closed && (
+              <Notice tone="idle">
+                <span className="min-w-0">Closed: {tradeInClosedReason(tradeIn)}</span>
+                {tradeIn.lead && <Link href={`${basePath}/platform/crm/${tradeIn.lead.id}`} className="ml-auto shrink-0 font-medium underline underline-offset-2">Open lead</Link>}
+              </Notice>
+            )}
             {blockers.length > 0 && <p id="trade-in-blockers" className="text-xs text-muted-foreground">{blockers.join(' · ')}</p>}
           </div>
         )}
