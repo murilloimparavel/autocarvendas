@@ -37,6 +37,14 @@ export function statusForDecision(decision: FinancingDecision): FinancingApplica
   return decision
 }
 
+/**
+ * Operator-recorded decisions need the lender's reference as evidence. A dealership cancelling an
+ * application before it went to any lender has no lender reference to give.
+ */
+export function decisionNeedsLenderReference(decision: FinancingDecision, submissionId: string | null | undefined) {
+  return !(decision === 'cancelled' && !submissionId)
+}
+
 export function assertDecisionTerms(
   decision: FinancingDecision,
   terms: { approvedAmountCents?: number | null; aprBasisPoints?: number | null; termMonths?: number | null }

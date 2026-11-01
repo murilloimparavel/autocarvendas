@@ -2,7 +2,7 @@ import { permissions } from '../access'
 import { assertSessionRooftopPermission } from '../tenantRecords'
 import { recordDomainEventInTransaction } from '../lifecycle/domainEvents'
 import { resolveFinancingProviderAdapter } from '../../integrations/financing'
-import { assertDecisionTerms, assertFinancingTransition, statusForDecision, type FinancingDecision } from '../lifecycle/financingLifecycle'
+import { assertDecisionTerms, assertFinancingTransition, decisionNeedsLenderReference, statusForDecision, type FinancingDecision } from '../lifecycle/financingLifecycle'
 import { financingIdempotencyKey } from './financingUtils'
 
 export async function recordLenderDecision(_root: unknown, { data }: { data: any }, context: any) {
@@ -22,7 +22,7 @@ export async function recordLenderDecision(_root: unknown, { data }: { data: any
   const reasonCodes = Array.isArray(data.reasonCodes) ? data.reasonCodes.map(String).map((value: string) => value.trim()).filter(Boolean).slice(0, 20) : []
   assertDecisionTerms(decision, { approvedAmountCents, aprBasisPoints, termMonths })
   if (monthlyPaymentCents != null && (!Number.isInteger(monthlyPaymentCents) || monthlyPaymentCents < 0)) throw new Error('Monthly payment must be non-negative integer cents')
-  if (adapter.key === 'operator-recorded' && !externalReference) throw new Error('Operator-recorded lender decisions require an evidence reference')
+  if (adapter.key === 'operator-recorded' && !externalReference && decisionNeedsLenderReference(decision, data.submissionId)) throw new Error('Operator-recorded lender decisions require an evidence reference')
   if (decision === 'declined' && reasonCodes.length === 0) throw new Error('Declined decisions require at least one reason code')
   const idempotencyKey = financingIdempotencyKey(data.idempotencyKey, 'lender-decision')
   const targetStatus = statusForDecision(decision)

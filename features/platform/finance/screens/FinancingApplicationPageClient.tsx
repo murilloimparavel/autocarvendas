@@ -8,6 +8,7 @@ import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Code, DeskHeader, DeskSection, DeskTable, Facts, Figure, Notice, Pill, Readout, ReadoutStrip, Status, Td, Th, TitleLine, Tr, Track } from '@/features/platform/components/desk'
 import { formatPhone } from '@/features/platform/lib/format'
+import { decisionNeedsLenderReference, type FinancingDecision } from '@/features/keystone/lifecycle/financingLifecycle'
 import { parseDollarsToCents, parsePercentToBps } from '@/features/platform/deals/lib/moneyInput'
 import { getFinancingApplication, openApplicationFollowUp, queueApplicationToLender, recordApplicationDecision, recordSubmissionStatus } from '../actions/applications'
 import { FinanceFormDialog, type FieldErrors, type FinanceFormField } from '../components/FinanceFormDialog'
@@ -139,7 +140,8 @@ export function FinancingApplicationPageClient({
       const decision = v.decision
       if (!allowedDecisions.includes(decision)) errors.decision = 'Select a decision.'
       const reference = (v.reference || '').trim()
-      if (!reference) errors.reference = 'Enter the lender decision reference.'
+      const submission = app.submissions.find(item => item.id === v.submissionId)
+      if (!reference && decisionNeedsLenderReference(decision as FinancingDecision, submission?.id)) errors.reference = 'Enter the lender decision reference.'
       const reasonCodes = (v.reasonCodes || '').split(',').map(code => code.trim()).filter(Boolean)
       if (decision === 'declined' && !reasonCodes.length) errors.reasonCodes = 'Enter at least one reason code.'
       const hasTerms = ['approved', 'conditional'].includes(decision)
@@ -157,7 +159,6 @@ export function FinancingApplicationPageClient({
         monthlyPaymentCents = (v.payment || '').trim() ? parseDollarsToCents(v.payment) : null
         if ((v.payment || '').trim() && monthlyPaymentCents == null) errors.payment = 'Enter a dollar amount.'
       }
-      const submission = app.submissions.find(item => item.id === v.submissionId)
       if (app.submissions.length && !submission && decision !== 'cancelled') errors.submissionId = 'Select the submission this decision answers.'
       run = () => recordApplicationDecision({
         applicationId: app.id,
@@ -197,7 +198,9 @@ export function FinancingApplicationPageClient({
   ] : [
     ...(app.submissions.length ? [{ name: 'submissionId', label: 'Submission', type: 'select' as const, wide: true, options: app.submissions.map(item => ({ value: item.id, label: `${providerLabels[item.providerKey] || item.providerKey} · ${item.status}${item.externalReference ? ` · ${item.externalReference}` : ''} · ${formatDay(item.queuedAt, timeZone)}` })) }] : []),
     { name: 'decision', label: 'Decision', type: 'select', options: allowedDecisions.map(value => ({ value, label: decisionLabels[value] })) },
-    { name: 'reference', label: 'Decision reference', maxLength: 200 },
+    ...(decisionValue === 'cancelled' && !app.submissions.length
+      ? [{ name: 'reference', label: 'Note', maxLength: 200, placeholder: 'Optional', description: 'Not sent to a lender, so no lender reference is needed.' }]
+      : [{ name: 'reference', label: 'Decision reference', maxLength: 200 }]),
     ...(decisionValue === 'declined' ? [{ name: 'reasonCodes', label: 'Reason codes', placeholder: 'DTI, THIN-FILE', wide: true, description: 'Comma separated' }] : []),
     ...(['approved', 'conditional'].includes(decisionValue) ? [
       { name: 'amount', label: 'Approved amount', type: 'money' as const },
