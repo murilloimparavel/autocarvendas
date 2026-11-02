@@ -18,6 +18,31 @@ export type VehicleInventorySortKey =
   | 'year-asc'
   | string
 
+export const EMPTY_INVENTORY_FILTERS = {
+  search: '', make: '', model: '', yearMin: '', yearMax: '', priceMin: '', priceMax: '', mileageMax: '', condition: '',
+}
+
+/** Read the inventory filters and sort from the URL. The server render and the client both use this. */
+export function inventoryQueryFromSearch(search: string) {
+  const params = new URLSearchParams(search)
+  const year = params.get('year') || ''
+  return {
+    filters: {
+      search: params.get('search') || '',
+      make: params.get('make') || '',
+      model: params.get('model') || '',
+      yearMin: params.get('yearMin') || year,
+      yearMax: params.get('yearMax') || year,
+      priceMin: params.get('priceMin') || '',
+      priceMax: params.get('priceMax') || '',
+      mileageMax: params.get('mileageMax') || '',
+      condition: params.get('condition') || '',
+    },
+    sortBy: params.get('sort') || 'year-desc',
+    page: params.get('page'),
+  }
+}
+
 function parseNonNegativeInteger(value: string | undefined, label: string) {
   const normalized = value?.trim() || ''
   if (!normalized) return undefined

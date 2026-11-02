@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, X } from 'lucide-
 import { fetchGraphQL } from '@/features/storefront/lib/data/graphql-client'
 import { GET_VEHICLES } from '@/features/storefront/lib/data/queries'
 import { Vehicle } from '@/features/storefront/lib/types'
-import { buildVehicleOrderBy, buildVehicleWhereInput } from '@/features/storefront/lib/data/vehicle-inventory'
+import { buildVehicleOrderBy, buildVehicleWhereInput, EMPTY_INVENTORY_FILTERS, inventoryQueryFromSearch } from '@/features/storefront/lib/data/vehicle-inventory'
 import { buildInventoryFacets, facetModels, fetchListedInventoryOptions, type InventoryFacets } from '@/features/storefront/lib/data/inventory-facets'
 import { INVENTORY_PAGE_SIZE, parseInventoryPage, resolveInventoryPage } from '@/features/storefront/lib/data/inventory-pagination'
 import { Container } from '../components/Container'
@@ -37,10 +37,15 @@ function isSheetViewport() {
   return typeof window !== 'undefined' && window.matchMedia(SHEET_QUERY).matches
 }
 
-export function InventoryPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+// The first page as the server rendered it, so the grid is in the HTML instead of a skeleton that
+// the results then push the footer down from.
+export type InitialInventory = { search: string; items: Vehicle[]; totalCount: number }
+
+export function InventoryPage({ initial }: { initial?: InitialInventory | null }) {
+  const [vehicles, setVehicles] = useState<Vehicle[]>(initial?.items ?? [])
+  const [totalCount, setTotalCount] = useState(initial?.totalCount ?? 0)
+  const [loading, setLoading] = useState(!initial)
+  const initialSearch = useRef(initial ? initial.search : null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [hydratedFromUrl, setHydratedFromUrl] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -53,18 +58,8 @@ export function InventoryPage() {
   const searchKey = searchParams?.toString() ?? ''
   const itemsPerPage = INVENTORY_PAGE_SIZE
 
-  const [filters, setFilters] = useState({
-    search: '',
-    make: '',
-    model: '',
-    yearMin: '',
-    yearMax: '',
-    priceMin: '',
-    priceMax: '',
-    mileageMax: '',
-    condition: '',
-  })
-  const [sortBy, setSortBy] = useState('year-desc')
+  const [filters, setFilters] = useState(() => (initial ? inventoryQueryFromSearch(initial.search).filters : EMPTY_INVENTORY_FILTERS))
+  const [sortBy, setSortBy] = useState(() => (initial ? inventoryQueryFromSearch(initial.search).sortBy : 'year-desc'))
   const [facets, setFacets] = useState<InventoryFacets | null>(null)
 
   useEffect(() => {
@@ -77,21 +72,10 @@ export function InventoryPage() {
 
   useEffect(() => {
     if (lastWrittenQuery.current === searchKey) return
-    const params = new URLSearchParams(searchKey)
-    const year = params.get('year') || ''
-    setFilters({
-      search: params.get('search') || '',
-      make: params.get('make') || '',
-      model: params.get('model') || '',
-      yearMin: params.get('yearMin') || year,
-      yearMax: params.get('yearMax') || year,
-      priceMin: params.get('priceMin') || '',
-      priceMax: params.get('priceMax') || '',
-      mileageMax: params.get('mileageMax') || '',
-      condition: params.get('condition') || '',
-    })
-    setSortBy(params.get('sort') || 'year-desc')
-    const page = parseInventoryPage(params.get('page'))
+    const query = inventoryQueryFromSearch(searchKey)
+    setFilters(query.filters)
+    setSortBy(query.sortBy)
+    const page = parseInventoryPage(query.page)
     if (page.status === 'valid') {
       setCurrentPage(page.page)
       setInvalidPage(false)
@@ -109,6 +93,12 @@ export function InventoryPage() {
       setLoadError(null)
       setLoading(false)
       return
+    }
+    // The server already rendered this exact query; fetch again only once the shopper changes it.
+    if (initialSearch.current !== null) {
+      const served = initialSearch.current === searchKey
+      initialSearch.current = null
+      if (served) return
     }
     void loadVehicles()
   }, [filters, sortBy, currentPage, hydratedFromUrl, invalidPage])
@@ -223,17 +213,7 @@ export function InventoryPage() {
   }
 
   const clearFilters = () => {
-    setFilters({
-      search: '',
-      make: '',
-      model: '',
-      yearMin: '',
-      yearMax: '',
-      priceMin: '',
-      priceMax: '',
-      mileageMax: '',
-      condition: '',
-    })
+    setFilters(EMPTY_INVENTORY_FILTERS)
     setSortBy('year-desc')
     setCurrentPage(1)
     setInvalidPage(false)
@@ -647,6 +627,7 @@ export function InventoryPage() {
               </ul>
             )}
 
+            <h2 className="sr-only">Results</h2>
             {pageNotice && !loading && !loadError && !invalidPage && (
               <p role="status" className="sf-notice mb-6" data-tone="warn">{pageNotice}</p>
             )}
@@ -693,8 +674,8 @@ export function InventoryPage() {
             ) : vehicles.length > 0 ? (
               <>
                 <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
-                  {vehicles.map((vehicle) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} priority />
+                  {vehicles.map((vehicle, index) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 3} />
                   ))}
                 </div>
 
