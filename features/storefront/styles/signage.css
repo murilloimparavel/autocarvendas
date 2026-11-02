@@ -1060,3 +1060,10 @@ body:has(.sf-dock) .sf-compare-bar {
 .sf-hero-field-input.sf-hero-trigger:focus-visible,
 .sf-line-field-input.sf-line-trigger:focus-visible { box-shadow: none; }
 .sf-line-field-input.sf-line-trigger svg { display: none; }
+
+/* The floating dock (phone home) must not cover the end of the page: clear it below the footer. */
+@media (max-width: 767px) {
+  .storefront:has(.sf-dock) > footer {
+    padding-bottom: calc(3.5rem + max(1rem, env(safe-area-inset-bottom)) + 1rem);
+  }
+}
