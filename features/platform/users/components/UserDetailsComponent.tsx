@@ -58,10 +58,10 @@ export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
     <>
       <Tr>
         <Td className="max-w-0 min-w-[10rem]">
-          <Link href={`${basePath}/users/${user.id}`} className="block truncate font-medium text-foreground hover:underline">
+          <Link href={`${basePath}/users/${user.id}`} className="block font-medium text-foreground [overflow-wrap:anywhere] hover:underline">
             {displayName}
           </Link>
-          <span className="block truncate text-xs text-muted-foreground">
+          <span className="block text-xs text-muted-foreground [overflow-wrap:anywhere]">
             {user.email}
             {user.phone && <span className="max-sm:hidden"> · {user.phone}</span>}
           </span>
