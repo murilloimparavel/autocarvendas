@@ -11,16 +11,6 @@ export type PhotoAttribution = {
 }
 
 export const BUILT_IN_PHOTO_ATTRIBUTIONS: readonly PhotoAttribution[] = [
-  {
-    path: '/images/electric-coupe.jpg',
-    vehicle: '2025 Ford Mustang Mach-E Premium',
-    title: 'Ford Mustang Mach-E RWD (51423802260).jpg',
-    author: 'Alexandre Prévot',
-    sourceUrl: 'https://commons.wikimedia.org/w/index.php?curid=113670975',
-    license: 'CC BY-SA 2.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
-    changes: 'Cropped to exclude the source watermark and normalize to 16:10, resized to 1600×1000, recompressed, metadata removed.',
-  },
 ]
 
 // Matches only the root-relative built-in paths, so an uploaded or remote
