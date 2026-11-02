@@ -95,6 +95,7 @@ import {
   UNCONFIRMED_PUBLIC_FEED_RUN_MESSAGE,
   type PublicFeedRunAttempt,
 } from '../lib/publicFeedRunOutcome'
+import { countLabel } from '@/features/platform/lib/format'
 
 type Vehicle = InventoryVehicle
 
@@ -405,7 +406,7 @@ export function VehicleListPageClient({
         if (intakeResponse.success && intakePhotos.length) {
           const failed = await uploadIntakePhotos(intakeResponse.data.intakeInventoryVehicle.stockId, task.idempotencyKey)
           if (failed) {
-            taskSuccessMessage = `Unit stocked. ${failed} of ${intakePhotos.length} photos did not upload; add them from Photos.`
+            taskSuccessMessage = `Unit stocked. ${failed} of ${countLabel(intakePhotos.length, 'photo')} did not upload; add them from Photos.`
             taskSuccessTone = 'warn'
           } else {
             taskSuccessMessage = `Unit stocked with ${intakePhotos.length} ${intakePhotos.length === 1 ? 'photo' : 'photos'}.`
@@ -834,7 +835,7 @@ export function VehicleListPageClient({
       tone={error ? 'bad' : agingCount > 0 ? 'warn' : 'ok'}
       status={error ? 'Unavailable' : agingCount > 0 ? `${agingCount} aging units` : 'No aging units'}
       meta={[
-        lotTotal !== undefined ? `${lotTotal} units` : null,
+        lotTotal !== undefined ? countLabel(lotTotal, 'unit') : null,
         error ? 'Unavailable' : needsYou.length ? `${needsYou.length} waiting on you` : lotTotal !== undefined ? 'Nothing waiting' : null,
         intakeRooftopName,
       ].filter(Boolean).join(' · ') || undefined}

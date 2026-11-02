@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
 import { addInventoryVehiclePhoto, arrangeInventoryVehiclePhotos, removeInventoryVehiclePhoto, type InventoryVehiclePhoto } from '../actions'
 import { PHOTO_ACCEPT, preparePhoto } from '../lib/preparePhoto'
+import { countLabel } from '@/features/platform/lib/format'
 
 export type PhotoTile = { id: string; url: string | null; name: string }
 
@@ -230,7 +231,7 @@ export function LiveVehiclePhotos({
     if (!failures.length) return null
     return failures.length === photos.length && photos.length === 1
       ? failures[0]
-      : `${failures.length} of ${photos.length} photos did not upload. ${failures[0]}`
+      : `${failures.length} of ${countLabel(photos.length, 'photo')} did not upload. ${failures[0]}`
   })
 
   return (
