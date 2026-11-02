@@ -75,3 +75,24 @@ export async function sendPasswordResetEmail(resetToken: string, to: string, bas
     console.log(`📧 Message Sent!  Preview it at ${getTestMessageUrl(info as any)}`);
   }
 }
+
+/** Receipt for a test-drive or service request: the dealership still confirms the time. */
+export async function sendRequestReceiptEmail(
+  to: string,
+  details: { dealershipName: string; kind: 'test_drive' | 'service'; what: string; whenLabel: string; requestNumber: string; customerName: string; url: string },
+): Promise<{ sent: boolean; error?: string }> {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_FROM) return { sent: false, error: 'not_configured' }
+  const escape = (value: string) => value.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch] as string)
+  const noun = details.kind === 'test_drive' ? 'test drive' : 'service appointment'
+  try {
+    await transport.sendMail({
+      to,
+      from: process.env.SMTP_FROM,
+      subject: `${details.dealershipName}: we received your ${noun} request`,
+      html: `<body style="font-family: Helvetica, Arial, sans-serif; color: #444;"><p>Hi ${escape(details.customerName)}, ${escape(details.dealershipName)} received your ${noun} request. We will contact you to confirm the time.</p><p><strong>${escape(details.what)}</strong><br>Requested time: ${escape(details.whenLabel)}<br>Request number: ${escape(details.requestNumber)}</p>${details.url ? `<p><a href="${escape(details.url)}" style="background:#346df1;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;">Visit ${escape(details.dealershipName)}</a></p>` : ''}</body>`,
+    });
+    return { sent: true };
+  } catch (error) {
+    return { sent: false, error: error instanceof Error ? error.message : 'send_failed' };
+  }
+}

@@ -2,6 +2,7 @@ import { assertTestDriveVehicleCapacity } from './bookingCapacity'
 import { requestingAccountId } from './customerAccount'
 import { resolveCustomerInTransaction } from './customerIdentity'
 import { runPublicSubmission } from './publicSubmissionPolicy'
+import { deliverRequestReceipt } from '../lib/requestReceiptEmail'
 import {
   optionalText,
   parseScheduledTime,
@@ -52,6 +53,11 @@ export async function submitTestDrive(_root: unknown, { data }: { data: SubmitTe
     aggregateType: 'TestDrive',
     topic: 'public-test-drive.submitted',
     aggregateId: result => String(result.testDriveId),
+    afterCommit: (r, rooftopId) => deliverRequestReceipt(context, ((result: any) => ({
+      kind: 'test_drive', requestId: String(result.testDriveId), rooftopId, to: email, customerName,
+      what: result.vehicle ? [result.vehicle.year, result.vehicle.make, result.vehicle.model].filter(Boolean).join(' ') : 'Test drive',
+      scheduledTime: new Date(result.scheduledTime).toISOString(), vehicleId: result.vehicle?.id || '',
+    }))(r)),
     handler: async (transactionContext, { rooftopId }) => {
       // The public policy has validated this active rooftop and request token.
       const location = await transactionContext.prisma.rooftop.findUnique({ where: { id: rooftopId }, select: { timezone: true } })

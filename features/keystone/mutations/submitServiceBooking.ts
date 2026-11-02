@@ -2,6 +2,7 @@ import { assertServiceSlotCapacity } from './bookingCapacity'
 import { requestingAccountId } from './customerAccount'
 import { resolveCustomerInTransaction } from './customerIdentity'
 import { runPublicSubmission } from './publicSubmissionPolicy'
+import { deliverRequestReceipt } from '../lib/requestReceiptEmail'
 import { SubmissionError } from './submissionErrors'
 import {
   finiteNumber,
@@ -87,6 +88,11 @@ export async function submitServiceBooking(_root: unknown, { data }: { data: any
     aggregateType: 'ServiceAppointment',
     topic: 'public-service-appointment.submitted',
     aggregateId: result => String(result.serviceAppointmentId),
+    afterCommit: (r, rooftopId) => deliverRequestReceipt(context, ((result: any) => ({
+      kind: 'service', requestId: String(result.serviceAppointmentId), rooftopId, to: email, customerName,
+      what: String(result.requestedServiceLabel || 'Service appointment'),
+      scheduledTime: new Date(result.appointmentDate).toISOString(), vehicleId: '',
+    }))(r)),
     handler: async (transactionContext, { rooftopId }) => {
       const location = await transactionContext.prisma.rooftop.findUnique({ where: { id: rooftopId }, select: { timezone: true } })
       const scheduled = parseScheduledTime(requestedDate, requestedTime, 'Appointment', location?.timezone || 'UTC')

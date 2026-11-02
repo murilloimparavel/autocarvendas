@@ -26,6 +26,8 @@ type PublicSubmissionOptions<T extends Record<string, unknown>> = {
   topic: string
   handler: (transactionContext: any, submission: SubmissionContext) => Promise<T>
   aggregateId: (result: T) => string
+  /** Runs once, after the submission has committed; never on a replay. Failures are swallowed. */
+  afterCommit?: (result: T, rooftopId: string) => Promise<void>
 }
 
 export function publicSubmissionIdempotencyKey(value: unknown) {
@@ -99,7 +101,7 @@ export async function runPublicSubmission<T extends Record<string, unknown>>(
     requestingAccountId: options.context.session?.listKey === 'User' ? options.context.session.itemId : null,
   })
 
-  return options.context.transaction(async (transactionContext: any) => {
+  const outcome = await options.context.transaction(async (transactionContext: any) => {
     await transactionContext.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${eventKey}, 0))`
     const existing = await transactionContext.prisma.domainAuditEvent.findUnique({
       where: { eventKey },
@@ -139,4 +141,12 @@ export async function runPublicSubmission<T extends Record<string, unknown>>(
     })
     return { ...result, reused: false }
   }, { timeout: 30_000 })
+  if (!outcome.reused && options.afterCommit) {
+    try {
+      await options.afterCommit(outcome, rooftopId)
+    } catch (error) {
+      console.error('Post-submission step failed:', error instanceof Error ? error.message : 'Unknown error')
+    }
+  }
+  return outcome
 }
