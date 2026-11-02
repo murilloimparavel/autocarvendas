@@ -9193,6 +9193,7 @@ type Query {
   publicInventoryVehicle(id: ID!): PublicInventoryVehicle
   publicInventoryVehicleRecord(id: ID!): PublicInventoryVehicle
   publicInventoryCount(where: JSON): Int!
+  publicInventoryFeed(rooftop: String, condition: String, createdSince: String, updatedSince: String, take: Int, skip: Int): JSON!
   storefrontProfile(rooftopSlug: String): StorefrontProfilePayload!
   paymentReturnStatus(reference: String!): PaymentReturnStatus
   domainTimeline(aggregateType: String!, aggregateId: ID!, limit: Int = 50): [DomainAuditEvent!]!

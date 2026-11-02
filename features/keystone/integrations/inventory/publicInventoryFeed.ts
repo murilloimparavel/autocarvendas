@@ -103,25 +103,16 @@ const DEFAULT_TAKE = 100
 const MAX_TAKE = 200
 const CONDITIONS = new Set(['new', 'used', 'certified'])
 
-export type PublicInventoryFeedRequest = {
-  baseUrl: string
-  pathname: string
-  search: string
-  searchParams: URLSearchParams
+export type PublicInventoryFeedArgs = {
+  rooftop?: string | null
+  condition?: string | null
+  createdSince?: string | null
+  updatedSince?: string | null
+  take?: number | null
+  skip?: number | null
 }
 
-export type PublicInventoryFeedResponse = {
-  status: number
-  body: Record<string, unknown>
-}
-
-function parseInteger(value: string | null, fallback: number) {
-  if (!value) return fallback
-  const parsed = Number.parseInt(value, 10)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
-function parseDate(value: string | null, label: string) {
+function parseDate(value: string | null | undefined, label: string) {
   if (!value) return undefined
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) throw new Error(`${label} must be a valid ISO date.`)
@@ -129,6 +120,7 @@ function parseDate(value: string | null, label: string) {
 }
 
 function absoluteUrl(baseUrl: string, path: string) {
+  if (!baseUrl) return path
   return new URL(path, `${baseUrl.replace(/\/$/, '')}/`).toString()
 }
 
@@ -177,88 +169,70 @@ function normalizeStock(stock: any, baseUrl: string, currency: string) {
   }
 }
 
-export async function getPublicInventoryFeedResponse(
-  context: any,
-  request: PublicInventoryFeedRequest
-): Promise<PublicInventoryFeedResponse> {
-  const { baseUrl, pathname, search, searchParams } = request
-  try {
-    if (searchParams.has('includeUnavailable')) {
-      return { status: 400, body: { error: 'Unavailable inventory is never exposed by the public feed.' } }
-    }
-    const rooftopSlug = await storefrontRooftopSlug(context)
-    if (!rooftopSlug) {
-      return { status: 503, body: { error: 'Public inventory is not available.' } }
-    }
-    const requestedRooftop = (searchParams.get('rooftop') || rooftopSlug).trim().toLowerCase()
-    if (requestedRooftop !== rooftopSlug) {
-      return { status: 404, body: { error: 'This dealership location is not available.' } }
-    }
-    const condition = searchParams.get('condition')
-    if (condition && !CONDITIONS.has(condition)) {
-      return { status: 400, body: { error: 'Condition filter is invalid.' } }
-    }
-    const updatedSince = parseDate(searchParams.get('updatedSince'), 'updatedSince')
-    const createdSince = parseDate(searchParams.get('createdSince'), 'createdSince')
-    const take = Math.min(Math.max(parseInteger(searchParams.get('take'), DEFAULT_TAKE), 1), MAX_TAKE)
-    const skip = Math.max(parseInteger(searchParams.get('skip'), 0), 0)
-    const result = await getPublicInventoryFeed(context, {
-      rooftopSlug,
-      condition: condition as 'new' | 'used' | 'certified' | undefined,
-      updatedSince,
-      createdSince,
+/** The request origin, so vehicle links point back at the storefront that served the feed. */
+function requestOrigin(context: any) {
+  const headers = context.req?.headers || {}
+  const host = headers['x-forwarded-host'] || headers.host
+  return host ? `${headers['x-forwarded-proto'] || 'https'}://${host}` : ''
+}
+
+/**
+ * Public `publicInventoryFeed` query: the syndication document (schema
+ * openfront.inventory.v1) for frontline, approved, published units only.
+ * Bad filters and unavailable locations throw, so they surface as GraphQL errors.
+ */
+export async function publicInventoryFeed(_root: unknown, args: PublicInventoryFeedArgs, context: any) {
+  const rooftopSlug = await storefrontRooftopSlug(context)
+  if (!rooftopSlug) throw new Error('Public inventory is not available.')
+  const requestedRooftop = String(args.rooftop || rooftopSlug).trim().toLowerCase()
+  if (requestedRooftop !== rooftopSlug) throw new Error('This dealership location is not available.')
+  const condition = args.condition || null
+  if (condition && !CONDITIONS.has(condition)) throw new Error('Condition filter is invalid.')
+  const updatedSince = parseDate(args.updatedSince, 'updatedSince')
+  const createdSince = parseDate(args.createdSince, 'createdSince')
+  const take = Math.min(Math.max(Number.isFinite(args.take) ? Math.trunc(args.take as number) : DEFAULT_TAKE, 1), MAX_TAKE)
+  const skip = Math.max(Number.isFinite(args.skip) ? Math.trunc(args.skip as number) : 0, 0)
+  const result = await getPublicInventoryFeed(context, {
+    rooftopSlug,
+    condition: condition as 'new' | 'used' | 'certified' | undefined,
+    updatedSince,
+    createdSince,
+    take,
+    skip,
+  })
+  const baseUrl = requestOrigin(context)
+  const hasMore = skip + result.stocks.length < result.totalCount
+  return {
+    schema: FEED_SCHEMA,
+    generatedAt: new Date().toISOString(),
+    dealership: {
+      rooftop: result.rooftopSlug,
+      name: result.dealershipName,
+      website: result.dealershipWebsite || (baseUrl ? absoluteUrl(baseUrl, '/') : null),
+    },
+    sync: {
+      incrementalUpdatesSupported: false,
+      freshnessField: 'publication.updatedAt',
+      createdSinceParam: 'createdSince',
+      updatedSinceParam: 'updatedSince',
+      note: 'Date filters return matching current eligible inventory only; removals require a full reconciliation.',
+    },
+    sort: { field: 'publication.updatedAt', direction: 'desc' },
+    filters: {
+      rooftop: result.rooftopSlug,
+      condition,
+      createdSince: createdSince || null,
+      updatedSince: updatedSince || null,
+    },
+    pagination: {
       take,
       skip,
-    })
-    const hasMore = skip + result.stocks.length < result.totalCount
-    return {
-      status: 200,
-      body: {
-        schema: FEED_SCHEMA,
-        generatedAt: new Date().toISOString(),
-        dealership: {
-          rooftop: result.rooftopSlug,
-          name: result.dealershipName,
-          website: result.dealershipWebsite || absoluteUrl(baseUrl, '/'),
-          feedUrl: absoluteUrl(baseUrl, `${pathname}${search}`),
-        },
-        sync: {
-          incrementalUpdatesSupported: false,
-          freshnessField: 'publication.updatedAt',
-          createdSinceParam: 'createdSince',
-          updatedSinceParam: 'updatedSince',
-          note: 'Date filters return matching current eligible inventory only; removals require a full reconciliation.',
-        },
-        sort: { field: 'publication.updatedAt', direction: 'desc' },
-        filters: {
-          rooftop: result.rooftopSlug,
-          condition: condition || null,
-          createdSince: createdSince || null,
-          updatedSince: updatedSince || null,
-        },
-        pagination: {
-          take,
-          skip,
-          count: result.stocks.length,
-          totalCount: result.totalCount,
-          hasMore,
-          next: hasMore
-            ? absoluteUrl(baseUrl, `${pathname}?${new URLSearchParams({
-                ...Object.fromEntries(searchParams.entries()),
-                rooftop: result.rooftopSlug,
-                skip: String(skip + result.stocks.length),
-                take: String(take),
-              }).toString()}`)
-            : null,
-        },
-        vehicles: result.stocks.map((stock: any) => normalizeStock(stock, baseUrl, result.currencyCode)),
-      },
-    }
-  } catch (error) {
-    if (error instanceof Error && /must be a valid ISO date/.test(error.message)) {
-      return { status: 400, body: { error: error.message } }
-    }
-    console.error('Inventory feed generation failed:', error)
-    return { status: 500, body: { error: 'Unable to generate inventory feed.' } }
+      count: result.stocks.length,
+      totalCount: result.totalCount,
+      hasMore,
+      // Pass these back as the query arguments for the next page.
+      next: hasMore ? { skip: skip + result.stocks.length, take } : null,
+    },
+    vehicles: result.stocks.map((stock: any) => normalizeStock(stock, baseUrl, result.currencyCode)),
   }
 }

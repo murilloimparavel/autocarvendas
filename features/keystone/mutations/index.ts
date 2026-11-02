@@ -74,6 +74,7 @@ import { recordCashDealDeposit } from './cashDealDeposits';
 import { recordLenderSubmissionStatus } from './lenderSubmissionOperations';
 import { intakeInventoryVehicle } from './intakeInventoryVehicle';
 import { publicInventoryCount, publicInventoryVehicle, publicInventoryVehicleRecord, publicInventoryVehicles } from '../integrations/inventory/publicStorefrontInventory';;
+import { publicInventoryFeed } from '../integrations/inventory/publicInventoryFeed';
 
 const graphql = String.raw;
 
@@ -610,6 +611,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         publicInventoryVehicle(id: ID!): PublicInventoryVehicle
         publicInventoryVehicleRecord(id: ID!): PublicInventoryVehicle
         publicInventoryCount(where: JSON): Int!
+        publicInventoryFeed(rooftop: String, condition: String, createdSince: String, updatedSince: String, take: Int, skip: Int): JSON!
         storefrontProfile(rooftopSlug: String): StorefrontProfilePayload!
         paymentReturnStatus(reference: String!): PaymentReturnStatus
         domainTimeline(aggregateType: String!, aggregateId: ID!, limit: Int = 50): [DomainAuditEvent!]!
@@ -754,6 +756,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         publicInventoryVehicle,
         publicInventoryVehicleRecord,
         publicInventoryCount,
+        publicInventoryFeed,
         storefrontProfile,
         paymentReturnStatus,
         domainTimeline,
