@@ -940,7 +940,7 @@ textarea.sf-input {
 .sf-visit-card {
   position: relative;
   display: flex;
-  min-height: 4.75rem;
+  min-height: 4.5rem;
   overflow: hidden;
   border: 1px solid var(--sf-rule);
   border-radius: var(--sf-radius-sm);

@@ -50,7 +50,7 @@ export function ShowroomRow({ vehicle, currencyCode, priority = false }: { vehic
         <VehiclePhotoPlaceholder />
       )}
       <span className="sf-showroom-row-shade" aria-hidden="true" />
-      <span className="relative flex min-w-0 max-w-[64%] flex-col justify-center py-2 pl-4">
+      <span className="relative flex min-w-0 max-w-[64%] flex-col justify-center py-1.5 pl-4">
         <span className="sf-display text-[1.75rem] leading-[0.95]" style={{ fontStretch: '80%' }}>{vehicle.year}</span>
         <span className="sf-heading sf-caps mt-0.5 truncate text-[0.875rem] leading-[1.05]" style={{ fontStretch: '78%' }}>{model}</span>
         <span className="mt-0.5 flex items-center gap-1.5 text-[0.8125rem] leading-tight">
