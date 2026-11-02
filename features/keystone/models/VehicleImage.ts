@@ -51,7 +51,7 @@ export const VehicleImage = list({
     imagePath: text({
       label: 'Static Image Path',
       ui: {
-        description: 'Public storefront asset path, for example /images/luxury-sedan.jpg',
+        description: 'Public storefront asset path, for example /images/vehicles/smc-2403.jpg',
       },
     }),
 

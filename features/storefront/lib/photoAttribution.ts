@@ -12,26 +12,6 @@ export type PhotoAttribution = {
 
 export const BUILT_IN_PHOTO_ATTRIBUTIONS: readonly PhotoAttribution[] = [
   {
-    path: '/images/luxury-sedan.jpg',
-    vehicle: '2024 BMW 530i M Sport',
-    title: 'BMW G30 LCI 530i M Sport Carbon Black Metallic (7).jpg',
-    author: 'Damian B Oh',
-    sourceUrl: 'https://commons.wikimedia.org/wiki/File:BMW_G30_LCI_530i_M_Sport_Carbon_Black_Metallic_(7).jpg',
-    license: 'CC BY-SA 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-    changes: 'Cropped to 16:10, resized to 1600×1000, recompressed, metadata removed.',
-  },
-  {
-    path: '/images/family-suv.jpg',
-    vehicle: '2023 Toyota Highlander Limited AWD',
-    title: 'Toyota Highlander Hybrid (XU70) 1X7A6356.jpg',
-    author: 'Alexander Migl',
-    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Toyota_Highlander_Hybrid_(XU70)_1X7A6356.jpg',
-    license: 'CC BY-SA 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-    changes: 'Cropped to 16:10, resized to 1600×1000, recompressed, metadata removed.',
-  },
-  {
     path: '/images/electric-coupe.jpg',
     vehicle: '2025 Ford Mustang Mach-E Premium',
     title: 'Ford Mustang Mach-E RWD (51423802260).jpg',

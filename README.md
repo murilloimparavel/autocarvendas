@@ -12,7 +12,7 @@ Openfront Dealership is a self-hostable digital showroom and dealership-operatio
 
 ## Demo
 
-![Vehicle photograph included with the Dealership storefront](public/images/family-suv.jpg)
+![Vehicle photograph included with the Dealership storefront](public/images/vehicles/smc-2402.jpg)
 
 | | |
 |---|---|
