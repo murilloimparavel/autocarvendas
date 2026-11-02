@@ -254,30 +254,13 @@ export const LOGO_ICONS = [
   },
 ] as const;
 
-/**
- * OKLCH hue of the bundled logos' base blue (#155eef). The storefront derives its
- * brand hue the same way: `--sf-brand-hue: calc(262 + var(--sf-logo-hue))`.
- */
-export const BASE_LOGO_HUE = 262
-
-/** Rotation in degrees (0-359) that moves the base logo hue onto `targetHue`. */
-export function hueRotationFor(targetHue: number) {
-  return Math.round((((targetHue - BASE_LOGO_HUE) % 360) + 360) % 360)
-}
-
-// Stored logoColor stays a rotation of the base hue; each preset names the
-// OKLCH hue it lands on, so the label matches the swatch.
-const HUE_TARGETS = [
-  { name: 'Red', hue: 25 },
-  { name: 'Orange', hue: 65 },
-  { name: 'Gold', hue: 90 },
-  { name: 'Green', hue: 145 },
-  { name: 'Teal', hue: 210 },
-  { name: 'Purple', hue: 305 },
-  { name: 'Pink', hue: 350 },
-] as const
-
-export const HUE_PRESETS: ReadonlyArray<{ name: string; value: number }> = [
-  { name: 'Blue', value: 0 },
-  ...HUE_TARGETS.map(target => ({ name: target.name, value: hueRotationFor(target.hue) })),
-]
+// Preset hue values (0-360 degrees) for common color shifts
+export const HUE_PRESETS = [
+  { name: 'Original', value: 0 },
+  { name: 'Orange', value: 30 },
+  { name: 'Yellow', value: 60 },
+  { name: 'Green', value: 120 },
+  { name: 'Cyan', value: 180 },
+  { name: 'Purple', value: 270 },
+  { name: 'Pink', value: 330 },
+] as const;

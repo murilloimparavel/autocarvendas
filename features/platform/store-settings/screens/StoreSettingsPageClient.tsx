@@ -1,11 +1,13 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
-import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
-import { RadioGroup } from '@/components/ui/radio-group'
+import * as SelectPrimitive from '@radix-ui/react-select'
+import { Code } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 import { sanitizeStoreLogoSvg } from '@/features/lib/sanitize-store-logo'
-import { StoreLogo } from '../components/StoreLogo'
-import { CustomSvgEditor, LogoPicker } from '../components/LogoPicker'
+import { StoreSettingsSaveBar } from '../components/StoreSettingsSaveBar'
 import { Save } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -97,7 +99,7 @@ function TimezoneSelect({ value, onChange, disabled }: { value: string; onChange
   )
 }
 
-const labelClass = 'text-[12px] font-medium text-muted-foreground'
+const labelClass = 'text-xs font-medium text-muted-foreground'
 
 function fieldId(label: string) {
   return `store-settings-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
@@ -209,12 +211,15 @@ export function StoreSettingsPageClient({
     setIsSaving(false)
   }
 
+  // Same names as the E-commerce logo block, over this page's form state.
+  const logoIcon = form.logoIcon
+  const logoColor = form.logoColor
+  const setLogoIcon = (value: string) => update('logoIcon', value)
+  const setLogoColor = (value: string) => update('logoColor', value)
+  // Find matching preset icon, but don't default to first icon if not found
+  const selectedIcon = LOGO_ICONS.find((icon) => icon.lightSvg === logoIcon)
+
   const invalidMark = Boolean(form.logoIcon.trim()) && !safePreviewMark
-  const [svgEditorOpen, setSvgEditorOpen] = useState(() => !LOGO_ICONS.some(icon => icon.lightSvg === (initialSettings?.logoIcon || EMPTY_SETTINGS.logoIcon)))
-  const openSvgEditor = (open: boolean) => {
-    setSvgEditorOpen(open)
-    if (open) requestAnimationFrame(() => document.getElementById('store-settings-custom-svg')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
-  }
 
   // Needs you: the details shoppers look for first, still blank. Required ones first.
   const missing = [
@@ -240,20 +245,15 @@ export function StoreSettingsPageClient({
 
   const stateWord = initialError ? 'Unavailable' : !initialSettings ? 'Not set up' : missing.length ? `${countLabel(missing.length, 'detail')} missing` : 'Set up'
 
-  const presets = [
-    ...HUE_PRESETS,
-    // A rotation saved before the presets were renamed keeps its own swatch.
-    ...(HUE_PRESETS.some(preset => String(preset.value) === form.logoColor) ? [] : [{ name: 'Current', value: Number(form.logoColor) }]),
-  ]
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto min-w-0 max-w-5xl space-y-8 px-4 py-6 md:px-6">
+      <div className="mx-auto min-w-0 max-w-5xl space-y-8 px-4 pb-24 pt-6 md:px-6 md:pb-6">
         <DeskHeader
           title="Store settings"
           status={stateWord}
           meta={[stateWord, form.name || null, form.currencyCode || null].filter(Boolean).join(' · ')}
-          actions={saveButton}
+          actions={<div className="hidden md:block">{saveButton}</div>}
         />
 
         {!initialSettings && !initialError ? (
@@ -276,10 +276,10 @@ export function StoreSettingsPageClient({
                 <li key={item.label}>
                   <a
                     href={`#${fieldId(item.label)}`}
-                    className="inline-flex min-h-10 items-center gap-2 rounded-[4px] border bg-card px-3 text-[13px] text-foreground hover:bg-muted sm:min-h-8"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-[4px] border bg-card px-3 text-sm text-foreground hover:bg-muted sm:min-h-8"
                   >
                     {item.display || item.label}
-                    <Status tone={item.required ? 'bad' : 'warn'} className="text-[12px]">{item.required ? 'Required' : 'Blank'}</Status>
+                    <Status tone={item.required ? 'bad' : 'warn'} className="text-xs">{item.required ? 'Required' : 'Blank'}</Status>
                   </a>
                 </li>
               ))}
@@ -327,49 +327,132 @@ export function StoreSettingsPageClient({
         </div>
 
         <Section title="Branding">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <div className="min-w-0 space-y-1.5">
-              <p className={labelClass} id="store-settings-logo-color">Logo color</p>
-              <RadioGroup
-                value={form.logoColor}
-                onValueChange={value => update('logoColor', value)}
-                className="grid grid-cols-2 gap-1.5 min-[400px]:grid-cols-3 sm:grid-cols-4"
-                aria-labelledby="store-settings-logo-color"
-                aria-label="Logo color"
+          <div className="space-y-6">
+          {/* Logo Icon Selector */}
+          <div>
+            <Label>Logo Icon</Label>
+            <div className="mt-2 flex items-center gap-2">
+              <Select
+                value={selectedIcon?.id || ''}
+                onValueChange={(id) => {
+                  const icon = LOGO_ICONS.find((i) => i.id === id);
+                  if (icon) setLogoIcon(icon.lightSvg);
+                }}
               >
-                {presets.map(preset => {
-                  const value = String(preset.value)
-                  const selected = form.logoColor === value
-                  return (
-                    <RadioGroupPrimitive.Item
-                      key={preset.value}
-                      value={value}
-                      aria-label={preset.name}
-                      className={`flex min-h-10 min-w-0 items-center gap-2 rounded-[4px] border px-2.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring sm:min-h-9 ${selected ? 'border-foreground bg-background font-medium text-foreground' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'}`}
-                    >
-                      <span aria-hidden="true" className="size-4 shrink-0 rounded-[4px]" style={{ background: '#155eef', filter: `hue-rotate(${preset.value}deg)` }} />
-                      <span className="truncate">{preset.name}</span>
-                    </RadioGroupPrimitive.Item>
-                  )
-                })}
-              </RadioGroup>
-            </div>
+                <SelectPrimitive.Trigger
+                  className={cn(
+                    'flex h-12 w-12 shrink-0 rounded-lg border border-input bg-background focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 p-0 overflow-hidden items-center justify-center'
+                  )}
+                >
+                  <div
+                    dangerouslySetInnerHTML={{ __html: logoIcon }}
+                    style={{ filter: `hue-rotate(${logoColor}deg)` }}
+                    className="[&>svg]:w-6 [&>svg]:h-6"
+                  />
+                </SelectPrimitive.Trigger>
+                <SelectContent className="border-border dark:border-blue-700">
+                  {LOGO_ICONS.map((icon) => (
+                    <SelectItem key={icon.id} value={icon.id}>
+                      <span className="flex items-center gap-3">
+                        <div
+                          dangerouslySetInnerHTML={{ __html: icon.lightSvg }}
+                          style={{ filter: `hue-rotate(${logoColor}deg)` }}
+                          className="[&>svg]:w-6 [&>svg]:h-6"
+                        />
+                        <span>
+                          <span className="block font-medium text-gray-900 dark:text-gray-100">
+                            {icon.name}
+                          </span>
+                        </span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <div className="flex min-w-0 flex-col gap-4">
-              <LogoPicker
-                value={form.logoIcon}
-                hue={form.logoColor}
-                onChange={value => update('logoIcon', value)}
-                editing={svgEditorOpen}
-                onEditingChange={openSvgEditor}
-              />
-              {safePreviewMark ? (
-                <div aria-label="Logo" className="flex items-center gap-3 self-start rounded-md border bg-card p-3">
-                  <StoreLogo svg={safePreviewMark} color={form.logoColor} className="size-10" />
-                  {(form.shortName || form.name) && <span className="text-sm font-semibold">{form.shortName || form.name}</span>}
-                </div>
-              ) : null}
+              {/* SVG Code Editor Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-12 w-12 shrink-0"
+                    type="button"
+                  >
+                    <Code className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[min(500px,calc(100vw-2rem))]" align="start">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Edit SVG Code</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Edit the SVG code directly. Changes will be reflected in the icon preview.
+                      </p>
+                    </div>
+                    <Textarea
+                      value={logoIcon}
+                      onChange={(e) => setLogoIcon(e.target.value)}
+                      className="font-mono text-xs min-h-[300px]"
+                      placeholder="<svg>...</svg>"
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm text-muted-foreground">Preview:</div>
+                      <div
+                        dangerouslySetInnerHTML={{ __html: logoIcon }}
+                        style={{ filter: `hue-rotate(${logoColor}deg)` }}
+                        className="[&>svg]:w-8 [&>svg]:h-8 flex items-center justify-center p-2 border rounded"
+                      />
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
+          </div>
+
+          {/* Logo Color Selector */}
+          <div>
+            <Label>Logo Color</Label>
+            <div className="mt-2">
+              <Select
+                value={logoColor}
+                onValueChange={(value) => setLogoColor(value)}
+              >
+                <SelectPrimitive.Trigger
+                  className={cn(
+                    'flex h-12 w-12 shrink-0 rounded-lg border border-input bg-background focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 p-0 overflow-hidden items-center justify-center'
+                  )}
+                >
+                  <SelectValue>
+                    <div
+                      className="w-6 h-6 rounded-full"
+                      style={{
+                        background: `hsl(${(240 + parseInt(logoColor)) % 360}, 70%, 50%)`
+                      }}
+                    />
+                  </SelectValue>
+                </SelectPrimitive.Trigger>
+                <SelectContent className="border-border dark:border-blue-700">
+                  <div className="grid grid-cols-4 gap-2 p-2">
+                    {HUE_PRESETS.map((preset) => (
+                      <SelectItem
+                        key={preset.value}
+                        value={preset.value.toString()}
+                        className="cursor-pointer p-0 h-12 w-12 flex items-center justify-center [&>span:first-child]:hidden"
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full"
+                          style={{
+                            background: `hsl(${(240 + preset.value) % 360}, 70%, 50%)`
+                          }}
+                        />
+                      </SelectItem>
+                    ))}
+                  </div>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           </div>
           {invalidMark ? <Notice tone="bad">Invalid or unsupported SVG.</Notice> : null}
         </Section>
@@ -405,19 +488,7 @@ export function StoreSettingsPageClient({
           </div>
         </div>
 
-        {svgEditorOpen ? (
-          <Section title="Custom logo SVG">
-            <CustomSvgEditor
-              key={form.logoIcon}
-              value={form.logoIcon}
-              hue={form.logoColor}
-              onChange={value => update('logoIcon', value)}
-              onClose={() => setSvgEditorOpen(false)}
-            />
-          </Section>
-        ) : null}
-
-        <div className="flex justify-end border-t pt-4">{saveButton}</div>
+        <StoreSettingsSaveBar isSaving={isSaving} button={saveButton} className="justify-end border-t pt-4" />
       </div>
     </div>
   )
