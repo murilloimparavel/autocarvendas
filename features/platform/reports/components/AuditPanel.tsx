@@ -18,7 +18,7 @@ function JsonBlock({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="min-w-0 space-y-1">
       <p className="text-[12px] font-medium text-muted-foreground">{label}</p>
-      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-3 font-mono text-[11px]">{JSON.stringify(value, null, 2)}</pre>
+      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-3 font-mono text-xs">{JSON.stringify(value, null, 2)}</pre>
     </div>
   )
 }

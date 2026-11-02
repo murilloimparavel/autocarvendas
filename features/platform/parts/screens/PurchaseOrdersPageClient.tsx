@@ -109,7 +109,7 @@ export function PurchaseOrdersPageClient({
           </Pill>
           <Pill className="h-11 sm:h-8" onClick={() => setCreating({ partIds: reorderIds })} disabled={!reorderIds.length} title={reorderIds.length ? undefined : 'No low-stock parts without an order'}>
             Reorder low stock
-            <span className="text-[11px] tabular-nums text-muted-foreground">{reorderIds.length}</span>
+            <span className="text-xs tabular-nums text-muted-foreground">{reorderIds.length}</span>
           </Pill>
           <Pill variant="primary" className="h-11 sm:h-8" onClick={() => setCreating({ partIds: [] })} disabled={!parts.length} title={parts.length ? undefined : 'Create a part first'}>
             <Plus />

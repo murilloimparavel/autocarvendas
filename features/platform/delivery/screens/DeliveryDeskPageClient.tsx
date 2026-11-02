@@ -706,7 +706,7 @@ export function DeliveryDeskPageClient({
                                 <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
                                 Delivery record
                               </summary>
-                              <pre className="mb-2 ml-5 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-[4px] bg-muted/50 p-2 font-mono text-[11px] text-muted-foreground">
+                              <pre className="mb-2 ml-5 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-[4px] bg-muted/50 p-2 font-mono text-xs text-muted-foreground">
                                 {JSON.stringify(deliveryCase.deliverySnapshot, null, 2)}
                               </pre>
                             </details>

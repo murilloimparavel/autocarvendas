@@ -518,7 +518,7 @@ export function TestDriveDeskPageClient({
                             <span className="mt-1 block"><Attention>{formatElapsedSince(testDrive.scheduledTime, now)} past</Attention></span>
                           )}
                           {pastDue && !isToday(testDrive.scheduledTime, timeZone) && (
-                            <span className="block text-[11px] text-muted-foreground">{formatDay(testDrive.scheduledTime, timeZone)}</span>
+                            <span className="block text-xs text-muted-foreground">{formatDay(testDrive.scheduledTime, timeZone)}</span>
                           )}
                         </Td>
                         <Td className="min-w-0">

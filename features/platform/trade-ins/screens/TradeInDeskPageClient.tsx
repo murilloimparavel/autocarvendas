@@ -230,7 +230,7 @@ export function TradeInDeskPageClient({
                     <Tr key={tradeIn.id} className="cursor-pointer" onClick={() => router.push(detailHref(tradeIn))}>
                       <Td align="right" className="whitespace-nowrap">
                         <Figure size="sm">{days == null ? '-' : `${days}d`}</Figure>
-                        <span className="block text-[11px] text-muted-foreground">{shortDate(tradeIn.createdAt)}</span>
+                        <span className="block text-xs text-muted-foreground">{shortDate(tradeIn.createdAt)}</span>
                       </Td>
                       <Td className="min-w-0">
                         {vehicleCell(tradeIn)}

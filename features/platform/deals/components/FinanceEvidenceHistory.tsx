@@ -61,7 +61,7 @@ export function FinanceEvidenceHistory({ dealId, aggregateType, label, timeZone 
                     <span className="text-xs tabular-nums text-muted-foreground">{new Date(entry.occurredAt).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
                     <span className="text-xs text-muted-foreground">{entry.actor?.name || 'Unknown'}</span>
                   </summary>
-                  <pre className="mx-3 mb-3 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-2 font-mono text-[11px] text-muted-foreground">
+                  <pre className="mx-3 mb-3 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-2 font-mono text-xs text-muted-foreground">
                     {JSON.stringify(entry.afterSnapshot, null, 2)}
                   </pre>
                 </details>

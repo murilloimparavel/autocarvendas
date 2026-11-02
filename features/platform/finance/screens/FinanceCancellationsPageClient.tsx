@@ -344,7 +344,7 @@ export function FinanceCancellationsPageClient({
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-xs font-medium tabular-nums">{formatCents(record.refundCents ?? 0)}</p>
-                  <p className="text-[11px] tabular-nums text-muted-foreground">{formatDateTime(record.createdAt, timeZone)}</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">{formatDateTime(record.createdAt, timeZone)}</p>
                 </div>
               </li>
             ))}

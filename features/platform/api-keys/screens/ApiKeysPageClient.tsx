@@ -330,7 +330,7 @@ export function ApiKeysPageClient({ data, timeZone }: { data: ApiKeysData; timeZ
                       />
                       <span className="min-w-0">
                         {scope.label}
-                        <span className="block font-mono text-[11px] text-muted-foreground">{scope.value}{allowed ? '' : ' · not in your permissions'}</span>
+                        <span className="block font-mono text-xs text-muted-foreground">{scope.value}{allowed ? '' : ' · not in your permissions'}</span>
                       </span>
                     </label>
                   )

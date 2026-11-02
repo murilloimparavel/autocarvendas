@@ -87,7 +87,7 @@ export function VehiclePhotoEditor({
                     ? <Image src={tile.url} alt={tile.name} fill unoptimized sizes="200px" className="object-contain" />
                     : <span className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">No preview</span>}
                   {index === 0 && (
-                    <span className="absolute left-1.5 top-1.5 rounded-[2px] bg-foreground px-1.5 py-px text-[11px] font-medium text-background">Primary</span>
+                    <span className="absolute left-1.5 top-1.5 rounded-[2px] bg-foreground px-1.5 py-px text-xs font-medium text-background">Primary</span>
                   )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col items-center gap-1 p-1.5">

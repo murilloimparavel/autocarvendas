@@ -262,7 +262,7 @@ export function DealMenuPanel({
                         {quote?.evidenceReference ? ` · ${quote.evidenceReference}` : ''}
                         {quote ? ` · ${formatDay(quote.completedAt || quote.requestedAt, timeZone)}` : ''}
                       </p>
-                      <p className="pl-4 text-[11px] tabular-nums text-muted-foreground">
+                      <p className="pl-4 text-xs tabular-nums text-muted-foreground">
                         Price {formatCents(quote?.retailPriceCents ?? product.retailPriceCents)} · Cost {formatCents(quote ? quote.costCents : product.costCents, 'hidden')} · {term ? `${term} mo` : 'No term'}
                       </p>
                     </div>

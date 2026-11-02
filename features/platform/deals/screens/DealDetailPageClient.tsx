@@ -1161,7 +1161,7 @@ export function DealDetailPageClient({ id }: { id: string }) {
                         <span className="font-medium">Version {entry.snapshot?.terms?.worksheetVersion}</span>
                         <span className="text-xs tabular-nums text-muted-foreground">{formatDate(entry.occurredAt)}</span>
                       </summary>
-                      <pre className="mx-4 mb-3 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-[4px] bg-muted/50 p-2 font-mono text-[11px] text-muted-foreground">{JSON.stringify(entry.snapshot, null, 2)}</pre>
+                      <pre className="mx-4 mb-3 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-[4px] bg-muted/50 p-2 font-mono text-xs text-muted-foreground">{JSON.stringify(entry.snapshot, null, 2)}</pre>
                     </details>
                   ))}
                 </Panel>

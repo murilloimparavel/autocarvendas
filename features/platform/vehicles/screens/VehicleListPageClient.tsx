@@ -1100,7 +1100,7 @@ export function VehicleListPageClient({
                         )}
                         {thumb
                           ? null
-                          : <span className="absolute inset-0 grid place-items-center text-[10px] text-muted-foreground">No photo</span>}
+                          : <span className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">No photo</span>}
                       </div>
                     </Td>
                     <Td className="min-w-0 max-w-[22rem] max-md:max-w-[13rem]">

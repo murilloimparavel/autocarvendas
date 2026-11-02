@@ -226,7 +226,7 @@ function FieldGroup(props: {
                 <div id={labelId} className="relative text-lg/5 font-medium">
                   {props.label}
                 </div>
-                <Badge className="text-[.7rem] py-0.5 uppercase tracking-wide font-medium">
+                <Badge className="text-xs py-0.5 uppercase tracking-wide font-medium">
                   {actualFieldCount} FIELD{actualFieldCount !== 1 && "S"}
                 </Badge>
               </div>

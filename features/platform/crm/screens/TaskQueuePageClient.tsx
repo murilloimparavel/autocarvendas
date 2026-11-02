@@ -195,7 +195,7 @@ export function TaskQueuePageClient({
                           {overdue && task.dueDate ? (
                             <>
                               <Figure size="sm" attention>{formatElapsed(Date.parse(task.dueDate), now)}</Figure>
-                              <span className="block text-[11px] text-muted-foreground">overdue</span>
+                              <span className="block text-xs text-muted-foreground">overdue</span>
                             </>
                           ) : (
                             <Figure size="sm">{task.dueDate ? new Date(task.dueDate).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }) : '-'}</Figure>

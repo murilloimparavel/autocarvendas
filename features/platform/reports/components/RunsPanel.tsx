@@ -233,7 +233,7 @@ export function RunsPanel({
                 {preview && (
                   <div className="space-y-1">
                     <p className="text-[12px] font-medium text-muted-foreground">Result{preview.truncated ? ' (first 6,000 characters)' : ''}</p>
-                    <pre className="max-h-[50dvh] overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-3 font-mono text-[11px]">{preview.text}</pre>
+                    <pre className="max-h-[50dvh] overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-3 font-mono text-xs">{preview.text}</pre>
                   </div>
                 )}
               </div>

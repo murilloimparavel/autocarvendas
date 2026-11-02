@@ -1017,7 +1017,7 @@ export function FinanceDeskPageClient({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="font-medium tabular-nums">{decision.approvedAmountCents != null ? formatCurrency(decision.approvedAmountCents / 100) : '-'}</p>
-                    <p className="text-[11px] tabular-nums text-muted-foreground">
+                    <p className="text-xs tabular-nums text-muted-foreground">
                       {decision.aprBasisPoints != null ? `${(decision.aprBasisPoints / 100).toFixed(2)}%` : '-'} · {decision.termMonths ?? '-'} mo
                       {decision.monthlyPaymentCents != null ? ` · ${formatCurrency(decision.monthlyPaymentCents / 100)}` : ''}
                     </p>
@@ -1346,7 +1346,7 @@ export function FinanceDeskPageClient({
                             ? payment && payment.remainingCents > 0 ? formatCurrencyCents(payment.remainingCents) : payment ? formatCurrencyCents(payment.amountDueCents) : formatCurrency(deal.totalPrice)
                             : formatCurrency(deal.financingAmount)}
                         </Figure>
-                        {cash && <p className="text-[11px] text-muted-foreground">{payment && payment.remainingCents > 0 ? 'Cash · due' : payment ? 'Cash · paid' : 'Cash · total'}</p>}
+                        {cash && <p className="text-xs text-muted-foreground">{payment && payment.remainingCents > 0 ? 'Cash · due' : payment ? 'Cash · paid' : 'Cash · total'}</p>}
                       </Td>
                       <Td priority={2} align="right" className="whitespace-nowrap text-muted-foreground">
                         {cash ? 'Cash' : <>{deal.apr || 0}% · {deal.loanTerm || 0} mo · {formatCurrency(deal.monthlyPayment)}/mo</>}
@@ -1406,7 +1406,7 @@ export function FinanceDeskPageClient({
                       <Td priority={3} className="whitespace-nowrap text-muted-foreground">{formatDate(application.submittedAt, timeZone)}</Td>
                       <Td align="right">
                         <Figure size="sm">{application.requestedAmountCents != null ? formatCurrency(application.requestedAmountCents / 100) : '-'}</Figure>
-                        <p className="text-[11px] text-muted-foreground">Vehicle {formatCurrency((vehicle?.priceCents || 0) / 100)}</p>
+                        <p className="text-xs text-muted-foreground">Vehicle {formatCurrency((vehicle?.priceCents || 0) / 100)}</p>
                       </Td>
                       <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">
                         {decision ? `${decision.aprBasisPoints != null ? `${(decision.aprBasisPoints / 100).toFixed(2)}%` : '-'} · ${decision.termMonths ?? '-'} mo` : '-'}
