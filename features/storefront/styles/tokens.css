@@ -26,6 +26,10 @@
   --sf-accent-hover: oklch(0.6 0.19 36);
   --sf-accent-soft: oklch(0.665 0.205 38 / 0.16);
   --sf-accent-ink: oklch(0.99 0.004 80);
+  /* Filled surfaces behind --sf-accent-ink (buttons, active pills). A step deeper than the accent so
+     white text clears 4.5:1; the bright accent stays for text, lines and dots. */
+  --sf-accent-fill: oklch(0.575 0.2 37);
+  --sf-accent-fill-hover: oklch(0.53 0.185 35);
   --sf-focus: oklch(0.72 0.19 40);
   --sf-bone: oklch(0.91 0.03 75);
 

@@ -113,7 +113,7 @@ export function Header() {
               {savedCount > 0 && (
                 <span
                   className="sf-figure absolute right-1 top-1 grid h-[1.125rem] min-w-[1.125rem] place-items-center rounded-[2px] px-1 text-[10px] font-bold"
-                  style={{ background: 'var(--sf-accent)', color: 'var(--sf-accent-ink)' }}
+                  style={{ background: 'var(--sf-accent-fill)', color: 'var(--sf-accent-ink)' }}
                 >
                   {savedCount}
                 </span>

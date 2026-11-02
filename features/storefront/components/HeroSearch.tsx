@@ -137,7 +137,7 @@ export function HeroSearchCompact() {
           ))}
         </select>
       </label>
-      <button type="submit" className="grid size-11 shrink-0 place-items-center rounded-[2px]" style={{ background: 'var(--sf-accent)', color: 'var(--sf-accent-ink)' }} aria-label="Search inventory">
+      <button type="submit" className="grid size-11 shrink-0 place-items-center rounded-[2px]" style={{ background: 'var(--sf-accent-fill)', color: 'var(--sf-accent-ink)' }} aria-label="Search inventory">
         <Search className="size-5" strokeWidth={1.75} aria-hidden="true" />
       </button>
     </form>

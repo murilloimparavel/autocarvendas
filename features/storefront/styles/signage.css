@@ -14,7 +14,7 @@ body:has(.storefront) {
 }
 
 .storefront ::selection {
-  background: var(--sf-accent);
+  background: var(--sf-accent-fill);
   color: var(--sf-accent-ink);
 }
 
@@ -351,12 +351,12 @@ body:has(.storefront) {
 }
 
 .sf-btn-primary {
-  background: var(--sf-accent);
+  background: var(--sf-accent-fill);
   color: var(--sf-accent-ink);
 }
 
 .sf-btn-primary:hover:not(:disabled) {
-  background: var(--sf-accent-hover);
+  background: var(--sf-accent-fill-hover);
 }
 
 .sf-btn-secondary {
@@ -457,7 +457,7 @@ body:has(.storefront) {
 .sf-pill[aria-selected="true"],
 .sf-pill[aria-current="page"],
 .sf-pill[data-active="true"] {
-  background: var(--sf-accent);
+  background: var(--sf-accent-fill);
   color: var(--sf-accent-ink);
 }
 
@@ -468,12 +468,12 @@ body:has(.storefront) {
 
 .sf-pill-primary,
 .sf-pill-primary:hover:not(:disabled) {
-  background: var(--sf-accent);
+  background: var(--sf-accent-fill);
   color: var(--sf-accent-ink);
 }
 
 .sf-pill-primary:hover:not(:disabled) {
-  background: var(--sf-accent-hover);
+  background: var(--sf-accent-fill-hover);
 }
 
 .sf-pill:disabled {
@@ -516,7 +516,7 @@ body:has(.storefront) {
 .sf-band .sf-pill-primary:hover:not(:disabled),
 .sf-band .sf-pill[aria-pressed="true"],
 .sf-band .sf-pill[data-active="true"] {
-  background: var(--sf-accent);
+  background: var(--sf-accent-fill);
   color: var(--sf-accent-ink);
 }
 

@@ -261,7 +261,7 @@ export function ServicePage() {
                         <span
                           className="mt-0.5 grid size-6 place-items-center rounded-[var(--sf-radius-sm)] border"
                           style={selected
-                            ? { background: 'var(--sf-accent)', borderColor: 'var(--sf-accent)', color: 'var(--sf-accent-ink)' }
+                            ? { background: 'var(--sf-accent-fill)', borderColor: 'var(--sf-accent-fill)', color: 'var(--sf-accent-ink)' }
                             : { borderColor: 'var(--sf-rule)', background: 'var(--sf-paper)' }}
                           aria-hidden="true"
                         >
