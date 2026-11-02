@@ -21,7 +21,6 @@ export function BrandMark({ size = 'md', className = '' }: { size?: 'md' | 'lg';
     <Link
       href="/"
       className={`flex min-h-11 min-w-0 items-center gap-2 md:gap-2.5 ${className}`}
-      aria-label={`${business.shortName} home`}
       title={business.shortName}
     >
       {business.logoIcon && (
@@ -42,6 +41,7 @@ export function BrandMark({ size = 'md', className = '' }: { size?: 'md' | 'lg';
             {rest}
           </span>
         )}
+        <span className="sr-only"> home</span>
       </span>
     </Link>
   )

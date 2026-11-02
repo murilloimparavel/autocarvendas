@@ -17,7 +17,7 @@ export function ShowroomCard({ vehicle, currencyCode, priority = false }: { vehi
   const name = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ')
 
   return (
-    <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-card group" aria-label={`${name}${vehicle.trim ? ` ${vehicle.trim}` : ''}, ${formatPrice(vehicle.price, currencyCode)}`}>
+    <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-card group">
       {image ? (
         <Image src={image} alt="" fill unoptimized={skipImageOptimizer(image)} priority={priority} sizes="(min-width: 1024px) 22rem, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
       ) : (
@@ -26,7 +26,7 @@ export function ShowroomCard({ vehicle, currencyCode, priority = false }: { vehi
       <span className="sf-showroom-card-shade" aria-hidden="true" />
       <span className="sf-tag absolute left-3 top-3">{conditionTag(vehicle.condition)}</span>
       <span className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col items-start">
-        <span className="sf-heading max-w-full truncate text-[1.0625rem] uppercase leading-tight" style={{ color: 'var(--sf-ink)', letterSpacing: '0.005em' }}>{name}</span>
+        <span className="sf-heading max-w-full truncate text-[1.0625rem] uppercase leading-tight" style={{ color: 'var(--sf-ink)', letterSpacing: '0.005em' }}>{name}{vehicle.trim && <span className="sr-only"> {vehicle.trim}</span>}</span>
         <span className="mt-1 flex w-full items-end justify-between gap-3">
           <span className="sf-price-plate">{formatPrice(vehicle.price, currencyCode)}</span>
           <span className="text-[0.8125rem]" style={{ color: 'var(--sf-ink-2)' }}>{formatMileage(vehicle.mileage)}</span>
@@ -42,7 +42,7 @@ export function ShowroomRow({ vehicle, currencyCode, priority = false }: { vehic
   const model = [vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(' ')
 
   return (
-    <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-row group" aria-label={`${vehicle.year} ${model}, ${formatPrice(vehicle.price, currencyCode)}`}>
+    <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-row group">
       {image ? (
         <Image src={image} alt="" fill unoptimized={skipImageOptimizer(image)} priority={priority} sizes="100vw" className="object-cover object-[70%_60%]" />
       ) : (
