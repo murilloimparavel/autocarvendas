@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 
 import { StorefrontShell } from '@/features/storefront'
 import { loadStorefrontBusiness } from '@/features/storefront/lib/data/storefront-business'
+import { getBaseUrl } from '@/features/storefront/lib/getBaseUrl'
+import { storefrontMetadata } from '@/features/storefront/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,14 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return { title: "We couldn't load this page", robots: { index: false, follow: false } }
   }
 
-  const { business } = settings
-  return {
-    title: {
-      default: business.homepageTitle || business.fullName,
-      template: `%s | ${business.shortName}`,
-    },
-    description: business.homepageDescription || undefined,
-  }
+  return storefrontMetadata(settings.business, (await getBaseUrl()) || null)
 }
 
 export default async function StorefrontLayout({
