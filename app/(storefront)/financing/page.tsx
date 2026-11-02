@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 
 import { loadStorefrontBusiness } from '@/features/storefront/lib/data/storefront-business'
 import { pageMetadata } from '@/features/storefront/lib/seo'
+import { PageFallback } from '@/features/storefront/components/PageFallback'
 import { FinancingPage } from '@/features/storefront/screens/FinancingPage'
 
 export const dynamic = 'force-dynamic'
@@ -13,5 +14,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <Suspense fallback={null}><FinancingPage /></Suspense>
+  return <Suspense fallback={<PageFallback />}><FinancingPage /></Suspense>
 }

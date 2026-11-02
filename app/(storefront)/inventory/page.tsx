@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { loadStorefrontBusiness } from '@/features/storefront/lib/data/storefront-business'
 import { pageMetadata } from '@/features/storefront/lib/seo'
 import { loadInitialInventory } from '@/features/storefront/lib/data/inventory-initial'
+import { PageFallback } from '@/features/storefront/components/PageFallback'
 import { InventoryPage } from '@/features/storefront/screens/InventoryPage'
 
 export const dynamic = 'force-dynamic'
@@ -21,5 +22,5 @@ export default async function Page({ searchParams }: Props) {
     for (const item of Array.isArray(value) ? value : value == null ? [] : [value]) params.append(key, item)
   }
   const initial = await loadInitialInventory(params.toString())
-  return <Suspense fallback={null}><InventoryPage initial={initial} /></Suspense>
+  return <Suspense fallback={<PageFallback />}><InventoryPage initial={initial} /></Suspense>
 }
