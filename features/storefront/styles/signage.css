@@ -602,7 +602,7 @@ textarea.sf-input {
   padding: 0.2rem 0.5rem;
   border-radius: 2px;
   font-family: var(--sf-font-body);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -784,7 +784,7 @@ textarea.sf-input {
 
 .sf-hero-field-label {
   display: block;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -923,7 +923,7 @@ textarea.sf-input {
   padding: 0.25rem;
   border: 1px solid oklch(0.665 0.205 38 / 0.55);
   border-radius: var(--sf-radius-sm);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -992,7 +992,7 @@ textarea.sf-input {
   align-items: center;
   justify-content: center;
   gap: 0.1rem;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
