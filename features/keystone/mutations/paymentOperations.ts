@@ -121,7 +121,7 @@ export async function paymentReturnStatus(_root: unknown, { reference }: { refer
   const tx = await context.sudo().prisma.paymentTransaction.findUnique({
     where: { id: transactionId },
     select: {
-      status: true, amountCents: true, currency: true, checkoutUrl: true, sourceType: true, updatedAt: true,
+      status: true, amountCents: true, currency: true, checkoutUrl: true, sourceType: true,
       deal: { select: { vehicle: { select: { year: true, make: true, model: true, trim: true, stockNumber: true } } } },
       serviceOrder: { select: { invoiceNumber: true } },
     },
@@ -138,7 +138,6 @@ export async function paymentReturnStatus(_root: unknown, { reference }: { refer
     purpose: tx.sourceType === 'deal' ? 'Vehicle payment' : 'Service payment',
     item: vehicle ? [vehicle.year, vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(' ') : tx.serviceOrder?.invoiceNumber ? `Invoice ${tx.serviceOrder.invoiceNumber}` : null,
     stockNumber: vehicle?.stockNumber || null,
-    updatedAt: tx.updatedAt.toISOString(),
   }
 }
 

@@ -566,7 +566,6 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         purpose: String!
         item: String
         stockNumber: String
-        updatedAt: DateTime!
       }
 
       type StorefrontProfilePayload {

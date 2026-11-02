@@ -9,13 +9,12 @@ export type PaymentReturn = {
   purpose: string
   item: string | null
   stockNumber: string | null
-  updatedAt: string
 }
 
 const PAYMENT_RETURN = `
   query PaymentReturn($reference: String!) {
     paymentReturnStatus(reference: $reference) {
-      state retryUrl amountCents currency reference purpose item stockNumber updatedAt
+      state retryUrl amountCents currency reference purpose item stockNumber
     }
   }
 `
