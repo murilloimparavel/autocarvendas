@@ -75,7 +75,7 @@ export async function deliverRequestReceipt(context: any, receipt: RequestReceip
       customerName: receipt.customerName,
       url: base ? `${base}${path}` : '',
     })
-    if (result.sent) await mark('sent', { sentAt: new Date().toISOString() })
+    if (result.sent) await mark('sent', { sentAt: new Date().toISOString(), messageId: result.messageId || '' })
     else await mark('failed', { error: result.error || 'send_failed' })
   } catch (error) {
     console.error('Request receipt email failed:', error instanceof Error ? error.message : 'Unknown error')
