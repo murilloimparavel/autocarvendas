@@ -281,7 +281,7 @@ export function Readout({
       <p className="mt-0.5 truncate text-foreground">
         <Figure size="md">{value}</Figure>
       </p>
-      {sub && <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[12px] text-muted-foreground">{sub}</p>}
     </div>
   )
 }
@@ -416,7 +416,7 @@ export function Facts({
         return (
           <div key={index} className="flex min-w-0 items-baseline justify-between gap-4 py-2">
             <dt className="shrink-0 text-muted-foreground">{row.label}</dt>
-            <dd className={cn('min-w-0 break-words text-right text-foreground', row.mono && 'font-mono text-[12px] tabular-nums')}>{row.value}</dd>
+            <dd className={cn('min-w-0 break-words text-right text-foreground', row.mono && 'break-all font-mono text-[12px] tabular-nums')}>{row.value}</dd>
           </div>
         )
       })}

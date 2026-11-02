@@ -188,7 +188,7 @@ export function CustomerListPageClient({
                         <Link href={`${basePath}/platform/customers/${customer.id}`} onClick={event => event.stopPropagation()} className="font-medium text-foreground hover:underline">
                           {personName(customer.firstName, customer.lastName)}
                         </Link>
-                        <p className="truncate text-xs text-muted-foreground md:hidden">{contact}</p>
+                        <p className="text-xs text-muted-foreground [overflow-wrap:anywhere] md:hidden">{contact}</p>
                         {merged && <p className="text-xs md:hidden"><Status tone="idle" className="text-xs">Merged</Status></p>}
                         {notes && <p className="break-words text-xs text-muted-foreground">{notes}</p>}
                       </Td>

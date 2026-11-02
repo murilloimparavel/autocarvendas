@@ -210,7 +210,7 @@ export function UserListPageClient({
                     <Tr key={user.id}>
                       <Td className="max-w-0 min-w-[9rem]">
                         <span className="block truncate font-medium text-foreground">{user.name || user.email}</span>
-                        <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
+                        <span className="block text-xs text-muted-foreground [overflow-wrap:anywhere]">{user.email}</span>
                       </Td>
                       <Td priority={2} className="text-muted-foreground">{functions.length ? functions.map((item) => item.label).join(', ') : 'None'}</Td>
                       <Td><Status tone="warn">No role</Status></Td>

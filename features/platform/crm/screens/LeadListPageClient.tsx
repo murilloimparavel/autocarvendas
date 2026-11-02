@@ -396,7 +396,7 @@ export function LeadListPageClient({
                             {lead.firstName} {lead.lastName}
                           </Link>
                           {hot && <span className="ml-2 text-[12px] font-medium text-red-700 dark:text-red-300">Hot</span>}
-                          <p className="truncate text-xs text-muted-foreground">
+                          <p className="break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
                             {[lead.email, formatPhone(lead.phone), lead.timeframe && lead.timeframe !== 'immediately' ? timeframeLabel(lead.timeframe) : null].filter(Boolean).join(' · ')}
                           </p>
                           <p className="truncate text-xs md:hidden">
