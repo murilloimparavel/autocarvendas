@@ -25,7 +25,7 @@ function revalidatePayments(id?: string) {
 }
 
 const LIST_FIELDS =
-  'id rooftop { id name } sourceType amountCents currency providerKey status capturedCents refundedCents failureCode reconciliationReference reconciledAt createdAt updatedAt deal { id vehicle { year make model stockNumber } lead { firstName lastName } } serviceOrder { id invoiceNumber }'
+  'id rooftop { id name } sourceType amountCents currency providerKey status capturedCents refundedCents failureCode reconciliationReference reconciledAt createdAt updatedAt deal { id vehicle { year make model stockNumber } lead { firstName lastName } } serviceOrder { id invoiceNumber } lead { id firstName lastName interestedVehicle { year make model stockNumber } }'
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 

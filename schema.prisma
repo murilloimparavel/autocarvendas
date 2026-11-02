@@ -301,6 +301,7 @@ model Lead {
   tasks                 Task[]                 @relation("Task_lead")
   salesVisits           SalesVisit[]           @relation("SalesVisit_lead")
   financingApplications FinancingApplication[] @relation("FinancingApplication_lead")
+  paymentTransactions   PaymentTransaction[]   @relation("PaymentTransaction_lead")
 
   @@index([rooftopId])
   @@index([customerId])
@@ -1691,6 +1692,8 @@ model PaymentTransaction {
   dealId                                String?                @map("deal")
   serviceOrder                          ServiceOrder?          @relation("PaymentTransaction_serviceOrder", fields: [serviceOrderId], references: [id])
   serviceOrderId                        String?                @map("serviceOrder")
+  lead                                  Lead?                  @relation("PaymentTransaction_lead", fields: [leadId], references: [id])
+  leadId                                String?                @map("lead")
   sourceType                            String
   amountCents                           Int
   currency                              String                 @default("usd")
@@ -1715,6 +1718,7 @@ model PaymentTransaction {
   @@index([rooftopId])
   @@index([dealId])
   @@index([serviceOrderId])
+  @@index([leadId])
   @@index([paymentProviderId])
 }
 

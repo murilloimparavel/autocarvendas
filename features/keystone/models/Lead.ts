@@ -280,5 +280,12 @@ export const Lead = list({
       ui: { displayMode: 'count' },
       label: 'Restricted Financing Applications',
     }),
+    paymentTransactions: relationship({
+      ref: 'PaymentTransaction.lead',
+      many: true,
+      access: { read: permissions.canViewReports, create: denyAll, update: denyAll },
+      ui: { displayMode: 'count' },
+      label: 'Reservation deposits',
+    }),
   },
 })

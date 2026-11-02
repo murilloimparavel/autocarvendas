@@ -14,6 +14,13 @@ import { vehicleTitle } from '../lib/format'
 import { DEFAULT_TEST_DRIVE_SLOTS, closedDayLabel, dayAvailability, localDateString } from '../lib/bookingSlots'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
 
+// Mirrors RESERVATION_DEPOSIT_CENTS in features/keystone/mutations/reserveVehicle.ts: $500, or the price if lower.
+function formatDeposit(price: unknown) {
+  const dollars = Number(price)
+  const amount = Number.isFinite(dollars) && dollars > 0 ? Math.min(500, dollars) : 500
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount)
+}
+
 export type LeadIntent = 'contact' | 'test-drive' | 'get-quote' | 'reserve'
 
 export type LeadSubmissionFeedback = {
@@ -293,6 +300,12 @@ export function LeadCaptureModal({
             />
           </div>
 
+          {intent === 'reserve' && (
+            <p className="sf-muted text-[length:var(--sf-text-sm)]">
+              A refundable deposit of {formatDeposit(vehicle.price)} holds this vehicle. You pay by card on the next screen, and the deposit counts toward the purchase or is refunded in full if you change your mind.
+            </p>
+          )}
+
           {feedback.status === 'error' && (
             <p role="alert" className="sf-notice" data-tone="bad">
               {feedback.message || 'Something went wrong. Please try again.'}
@@ -301,7 +314,7 @@ export function LeadCaptureModal({
 
           <button type="submit" disabled={isSubmitting} className="sf-btn sf-btn-primary w-full" aria-busy={isSubmitting || undefined}>
             {isSubmitting && <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}
-            {isSubmitting ? 'Sending' : 'Submit request'}
+            {isSubmitting ? (intent === 'reserve' ? 'Opening secure checkout' : 'Sending') : intent === 'reserve' ? `Pay ${formatDeposit(vehicle.price)} deposit` : 'Submit request'}
           </button>
         </form>
         )}

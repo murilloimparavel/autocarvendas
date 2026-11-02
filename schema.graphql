@@ -1735,6 +1735,8 @@ type Lead {
   salesVisitsCount(where: SalesVisitWhereInput! = {}): Int
   financingApplications(where: FinancingApplicationWhereInput! = {}, orderBy: [FinancingApplicationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: FinancingApplicationWhereUniqueInput): [FinancingApplication!]
   financingApplicationsCount(where: FinancingApplicationWhereInput! = {}): Int
+  paymentTransactions(where: PaymentTransactionWhereInput! = {}, orderBy: [PaymentTransactionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentTransactionWhereUniqueInput): [PaymentTransaction!]
+  paymentTransactionsCount(where: PaymentTransactionWhereInput! = {}): Int
 }
 
 input LeadWhereUniqueInput {
@@ -1782,12 +1784,19 @@ input LeadWhereInput {
   tasks: TaskManyRelationFilter
   salesVisits: SalesVisitManyRelationFilter
   financingApplications: FinancingApplicationManyRelationFilter
+  paymentTransactions: PaymentTransactionManyRelationFilter
 }
 
 input TradeInManyRelationFilter {
   every: TradeInWhereInput
   some: TradeInWhereInput
   none: TradeInWhereInput
+}
+
+input PaymentTransactionManyRelationFilter {
+  every: PaymentTransactionWhereInput
+  some: PaymentTransactionWhereInput
+  none: PaymentTransactionWhereInput
 }
 
 input LeadOrderByInput {
@@ -1854,6 +1863,7 @@ input LeadUpdateInput {
   tasks: TaskRelateToManyForUpdateInput
   salesVisits: SalesVisitRelateToManyForUpdateInput
   financingApplications: FinancingApplicationRelateToManyForUpdateInput
+  paymentTransactions: PaymentTransactionRelateToManyForUpdateInput
 }
 
 input CustomerRelateToOneForUpdateInput {
@@ -1867,6 +1877,13 @@ input TradeInRelateToManyForUpdateInput {
   set: [TradeInWhereUniqueInput!]
   create: [TradeInCreateInput!]
   connect: [TradeInWhereUniqueInput!]
+}
+
+input PaymentTransactionRelateToManyForUpdateInput {
+  disconnect: [PaymentTransactionWhereUniqueInput!]
+  set: [PaymentTransactionWhereUniqueInput!]
+  create: [PaymentTransactionCreateInput!]
+  connect: [PaymentTransactionWhereUniqueInput!]
 }
 
 input LeadUpdateArgs {
@@ -1911,6 +1928,7 @@ input LeadCreateInput {
   tasks: TaskRelateToManyForCreateInput
   salesVisits: SalesVisitRelateToManyForCreateInput
   financingApplications: FinancingApplicationRelateToManyForCreateInput
+  paymentTransactions: PaymentTransactionRelateToManyForCreateInput
 }
 
 input CustomerRelateToOneForCreateInput {
@@ -1921,6 +1939,11 @@ input CustomerRelateToOneForCreateInput {
 input TradeInRelateToManyForCreateInput {
   create: [TradeInCreateInput!]
   connect: [TradeInWhereUniqueInput!]
+}
+
+input PaymentTransactionRelateToManyForCreateInput {
+  create: [PaymentTransactionCreateInput!]
+  connect: [PaymentTransactionWhereUniqueInput!]
 }
 
 type CustomerInteraction {
@@ -2351,12 +2374,6 @@ input FinanceFundingCaseManyRelationFilter {
   none: FinanceFundingCaseWhereInput
 }
 
-input PaymentTransactionManyRelationFilter {
-  every: PaymentTransactionWhereInput
-  some: PaymentTransactionWhereInput
-  none: PaymentTransactionWhereInput
-}
-
 input DealOrderByInput {
   id: OrderDirection
   createdAt: OrderDirection
@@ -2488,13 +2505,6 @@ input FinanceFundingCaseRelateToManyForUpdateInput {
   connect: [FinanceFundingCaseWhereUniqueInput!]
 }
 
-input PaymentTransactionRelateToManyForUpdateInput {
-  disconnect: [PaymentTransactionWhereUniqueInput!]
-  set: [PaymentTransactionWhereUniqueInput!]
-  create: [PaymentTransactionCreateInput!]
-  connect: [PaymentTransactionWhereUniqueInput!]
-}
-
 input DealUpdateArgs {
   where: DealWhereUniqueInput!
   data: DealUpdateInput!
@@ -2589,11 +2599,6 @@ input FinanceContractPackageRelateToManyForCreateInput {
 input FinanceFundingCaseRelateToManyForCreateInput {
   create: [FinanceFundingCaseCreateInput!]
   connect: [FinanceFundingCaseWhereUniqueInput!]
-}
-
-input PaymentTransactionRelateToManyForCreateInput {
-  create: [PaymentTransactionCreateInput!]
-  connect: [PaymentTransactionWhereUniqueInput!]
 }
 
 type DealApproval {
@@ -7633,6 +7638,7 @@ type PaymentTransaction {
   rooftop: Rooftop
   deal: Deal
   serviceOrder: ServiceOrder
+  lead: Lead
   sourceType: String
   amountCents: Int
   currency: String
@@ -7667,6 +7673,7 @@ input PaymentTransactionWhereInput {
   rooftop: RooftopWhereInput
   deal: DealWhereInput
   serviceOrder: ServiceOrderWhereInput
+  lead: LeadWhereInput
   sourceType: StringFilter
   amountCents: IntFilter
   currency: StringFilter
@@ -7714,6 +7721,7 @@ input PaymentTransactionUpdateInput {
   rooftop: RooftopRelateToOneForUpdateInput
   deal: DealRelateToOneForUpdateInput
   serviceOrder: ServiceOrderRelateToOneForUpdateInput
+  lead: LeadRelateToOneForUpdateInput
   sourceType: String
   amountCents: Int
   currency: String
@@ -7750,6 +7758,7 @@ input PaymentTransactionCreateInput {
   rooftop: RooftopRelateToOneForCreateInput
   deal: DealRelateToOneForCreateInput
   serviceOrder: ServiceOrderRelateToOneForCreateInput
+  lead: LeadRelateToOneForCreateInput
   sourceType: String
   amountCents: Int
   currency: String
@@ -8847,6 +8856,7 @@ type Mutation {
   rescheduleCustomerBooking(kind: String!, id: ID!, date: String!, time: String!, idempotencyKey: String!): CustomerBookingResult!
   updateActiveUser(data: UserUpdateProfileInput!): ActiveUserProfile
   submitInquiry(data: SubmitInquiryInput!): SubmitInquiryPayload!
+  reserveVehicle(data: ReserveVehicleInput!): ReserveVehiclePayload!
   submitTestDrive(data: SubmitTestDriveInput!): SubmitTestDrivePayload!
   submitTradeIn(data: SubmitTradeInInput!): SubmitTradeInPayload!
   submitFinancing(data: SubmitFinancingInput!): SubmitFinancingPayload!
@@ -9416,6 +9426,29 @@ input SubmitInquiryInput {
   rooftopSlug: String
   idempotencyKey: String!
   website: String
+}
+
+input ReserveVehicleInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  phone: String!
+  message: String
+  vehicleId: ID!
+  rooftopSlug: String
+  idempotencyKey: String!
+  website: String
+}
+
+type ReserveVehiclePayload {
+  ok: Boolean!
+  errorCode: String
+  errorMessage: String
+  leadId: ID
+  amountCents: Int
+  checkoutUrl: String
+  selectedVehicle: PublicSubmissionVehicle
+  reused: Boolean
 }
 
 type SubmitInquiryPayload {

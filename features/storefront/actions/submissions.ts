@@ -69,6 +69,25 @@ export async function submitStorefrontInquiry(input: CommonSubmissionInput & {
   )
 }
 
+export async function reserveStorefrontVehicle(input: CommonSubmissionInput & {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  message?: string
+  vehicleId: string
+}) {
+  return executeSubmission<SubmissionPayload & { leadId?: string; amountCents?: number; checkoutUrl?: string; reused?: boolean }>(
+    'reserveVehicle',
+    `mutation ReserveVehicle($data: ReserveVehicleInput!) {
+      reserveVehicle(data: $data) {
+        ok errorCode errorMessage leadId amountCents checkoutUrl reused
+      }
+    }`,
+    input
+  )
+}
+
 export async function submitStorefrontTestDrive(input: CommonSubmissionInput & {
   customerName: string
   customerEmail: string

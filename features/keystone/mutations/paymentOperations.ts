@@ -124,18 +124,19 @@ export async function paymentReturnStatus(_root: unknown, { reference }: { refer
       status: true, amountCents: true, currency: true, checkoutUrl: true, sourceType: true,
       deal: { select: { vehicle: { select: { year: true, make: true, model: true, trim: true, stockNumber: true } } } },
       serviceOrder: { select: { invoiceNumber: true } },
+      lead: { select: { interestedVehicle: { select: { year: true, make: true, model: true, trim: true, stockNumber: true } } } },
     },
   })
   if (!tx) return null
   const { state, retryUrl } = paymentReturnState(tx.status, tx.checkoutUrl)
-  const vehicle = tx.deal?.vehicle
+  const vehicle = tx.deal?.vehicle || tx.lead?.interestedVehicle
   return {
     state,
     retryUrl,
     amountCents: tx.amountCents,
     currency: String(tx.currency || 'usd').toUpperCase(),
     reference: `PAY-${transactionId.slice(-8).toUpperCase()}`,
-    purpose: tx.sourceType === 'deal' ? 'Vehicle payment' : 'Service payment',
+    purpose: tx.sourceType === 'deal' ? 'Vehicle payment' : tx.sourceType === 'reservation' ? 'Reservation deposit' : 'Service payment',
     item: vehicle ? [vehicle.year, vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(' ') : tx.serviceOrder?.invoiceNumber ? `Invoice ${tx.serviceOrder.invoiceNumber}` : null,
     stockNumber: vehicle?.stockNumber || null,
   }

@@ -13,6 +13,7 @@ export const PaymentTransaction = list({
     validate: (args: any) => validateRooftopRecord(args, [
       { field: 'deal', listKey: 'Deal' },
       { field: 'serviceOrder', listKey: 'ServiceOrder' },
+      { field: 'lead', listKey: 'Lead' },
     ]),
   },
   ui: { hideCreate: true, hideDelete: true, listView: { initialColumns: ['sourceType', 'amountCents', 'status', 'providerKey', 'updatedAt'] } },
@@ -21,7 +22,9 @@ export const PaymentTransaction = list({
     rooftop: rooftopField(),
     deal: relationship({ ref: 'Deal.paymentTransactions' }),
     serviceOrder: relationship({ ref: 'ServiceOrder.paymentTransactions' }),
-    sourceType: select({ type: 'string', options: ['deal', 'service'].map(value => ({ label: value, value })), validation: { isRequired: true } }),
+    // A storefront vehicle reservation: the shopper's refundable deposit, tied to the lead it created.
+    lead: relationship({ ref: 'Lead.paymentTransactions' }),
+    sourceType: select({ type: 'string', options: ['deal', 'service', 'reservation'].map(value => ({ label: value, value })), validation: { isRequired: true } }),
     amountCents: integer({ validation: { isRequired: true, min: 1 } }),
     currency: text({ validation: { isRequired: true }, defaultValue: 'usd' }),
     providerKey: text({ validation: { isRequired: true } }),

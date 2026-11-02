@@ -8,6 +8,7 @@ export type PublicSubmissionWorkflow =
   | 'trade-in'
   | 'financing'
   | 'service'
+  | 'reservation'
 
 type SubmissionContext = {
   rooftopId: string

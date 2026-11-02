@@ -14,6 +14,7 @@ export type PaymentListItem = {
   createdAt: string
   updatedAt: string
   deal: { id: string; vehicle: { year: number; make: string; model: string; stockNumber: string } | null; lead: { firstName: string; lastName: string } | null } | null
+  lead?: { id: string; firstName: string; lastName: string; interestedVehicle: { year: number; make: string; model: string; stockNumber: string } | null } | null
   serviceOrder: { id: string; invoiceNumber: string | null } | null
 }
 

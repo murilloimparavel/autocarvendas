@@ -11,7 +11,7 @@ import {
   isInComparison,
   removeFromComparison,
 } from '@/features/storefront/lib/comparison'
-import { submitStorefrontInquiry, submitStorefrontTestDrive } from '../actions/submissions'
+import { reserveStorefrontVehicle, submitStorefrontInquiry, submitStorefrontTestDrive } from '../actions/submissions'
 import { Container } from '../components/Container'
 import { LeadCaptureModal, LeadIntent, type LeadSubmissionFeedback } from '../components/LeadCaptureModal'
 import { VehicleGallery } from '../components/vdp/VehicleGallery'
@@ -139,6 +139,22 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
           message: `${business.fullName} received your test-drive request.`,
           reference: customerRequestReference('test-drive', result.data.testDriveId),
         })
+      } else if (intent === 'reserve') {
+        const result = await reserveStorefrontVehicle({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+          vehicleId: vehicle.id,
+          website: formData.website,
+          rooftopSlug: business.rooftopSlug,
+          idempotencyKey,
+        })
+        if (!result.success) throw new Error(result.error)
+        if (!result.data.checkoutUrl || !/^https:\/\//.test(result.data.checkoutUrl)) throw new Error('Card checkout could not be started. Please try again.')
+        window.location.assign(result.data.checkoutUrl)
+        return
       } else {
         const result = await submitStorefrontInquiry({
           firstName: formData.firstName,
@@ -146,7 +162,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
           email: formData.email,
           phone: formData.phone,
           preferredContact: 'email',
-          intent: intent === 'get-quote' ? 'get-quote' : intent === 'reserve' ? 'reserve-vehicle' : 'vehicle-question',
+          intent: intent === 'get-quote' ? 'get-quote' : 'vehicle-question',
           message: formData.message,
           vehicleId: vehicle.id,
           website: formData.website,
@@ -158,9 +174,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
           status: 'success',
           message: intent === 'get-quote'
             ? `${business.fullName} received your price-quote request.`
-            : intent === 'reserve'
-              ? `${business.fullName} received your reservation request. The vehicle is held once the dealership confirms.`
-              : `${business.fullName} received your question.`,
+            : `${business.fullName} received your question.`,
           reference: customerRequestReference('inquiry', result.data.leadId),
         })
       }

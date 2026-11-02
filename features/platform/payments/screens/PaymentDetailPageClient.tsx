@@ -275,7 +275,7 @@ export function PaymentDetailPageClient({
               { label: 'Captured', value: money(payment.capturedCents, payment.currency) },
               { label: 'Refunded', value: money(payment.refundedCents, payment.currency) },
               { label: 'Refundable', value: money(refundable, payment.currency) },
-              { label: 'Source', value: payment.sourceType === 'deal' ? 'Deal' : payment.sourceType === 'service' ? 'Service order' : payment.sourceType },
+              { label: 'Source', value: payment.sourceType === 'deal' ? 'Deal' : payment.sourceType === 'service' ? 'Service order' : payment.sourceType === 'reservation' ? 'Vehicle reservation' : payment.sourceType },
               { label: 'Record', value: source.href ? <Link href={`${basePath}${source.href}`} className="underline underline-offset-2">{source.label}</Link> : source.label },
               source.detail ? { label: 'Customer', value: source.detail } : null,
             ]}

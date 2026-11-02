@@ -7,6 +7,7 @@ import { cancelCustomerBooking, rescheduleCustomerBooking } from './customerBook
 import { confirmCustomerEmailVerification, customerEmailLinkStatus, requestCustomerEmailVerification } from './customerEmailVerification';
 import updateActiveUser from "./updateActiveUser";
 import { submitInquiry } from './submitInquiry';
+import { reserveVehicle } from './reserveVehicle';
 import { submitTestDrive } from './submitTestDrive';
 import { submitTradeIn } from './submitTradeIn';
 import { submitFinancing } from './submitFinancing';
@@ -141,6 +142,29 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         rooftopSlug: String
         idempotencyKey: String!
         website: String
+      }
+
+      input ReserveVehicleInput {
+        firstName: String!
+        lastName: String!
+        email: String!
+        phone: String!
+        message: String
+        vehicleId: ID!
+        rooftopSlug: String
+        idempotencyKey: String!
+        website: String
+      }
+
+      type ReserveVehiclePayload {
+        ok: Boolean!
+        errorCode: String
+        errorMessage: String
+        leadId: ID
+        amountCents: Int
+        checkoutUrl: String
+        selectedVehicle: PublicSubmissionVehicle
+        reused: Boolean
       }
 
       type SubmitInquiryPayload {
@@ -637,6 +661,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         rescheduleCustomerBooking(kind: String!, id: ID!, date: String!, time: String!, idempotencyKey: String!): CustomerBookingResult!
         updateActiveUser(data: UserUpdateProfileInput!): ActiveUserProfile
         submitInquiry(data: SubmitInquiryInput!): SubmitInquiryPayload!
+        reserveVehicle(data: ReserveVehicleInput!): ReserveVehiclePayload!
         submitTestDrive(data: SubmitTestDriveInput!): SubmitTestDrivePayload!
         submitTradeIn(data: SubmitTradeInInput!): SubmitTradeInPayload!
         submitFinancing(data: SubmitFinancingInput!): SubmitFinancingPayload!
@@ -781,6 +806,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         rescheduleCustomerBooking: operatorCommand(rescheduleCustomerBooking),
         updateActiveUser,
         submitInquiry: publicSubmissionResolver(submitInquiry),
+        reserveVehicle: publicSubmissionResolver(reserveVehicle),
         submitTestDrive: publicSubmissionResolver(submitTestDrive),
         submitTradeIn: publicSubmissionResolver(submitTradeIn),
         submitFinancing: publicSubmissionResolver(submitFinancing),
