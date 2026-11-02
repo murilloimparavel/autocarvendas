@@ -1,3 +1,4 @@
+import { formatInZone } from '@/features/dashboard/lib/storeTime';
 /**
  * UserListPageClient - Client Component  
  * Based on dashboard ListPageClient but hardcoded for users
@@ -215,7 +216,7 @@ export function UserListPageClient({
                       <Td priority={2} className="text-muted-foreground">{functions.length ? functions.map((item) => item.label).join(', ') : 'None'}</Td>
                       <Td><Status tone="warn">No role</Status></Td>
                       <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}
+                        {user.createdAt ? formatInZone(user.createdAt, undefined, "date") : 'Unknown'}
                       </Td>
                       <Td align="right" className="w-px">
                         <Pill size="sm" asChild className="max-sm:h-10">

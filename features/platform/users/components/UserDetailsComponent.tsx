@@ -1,4 +1,5 @@
 "use client";
+import { formatInZone } from '@/features/dashboard/lib/storeTime';
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -51,7 +52,7 @@ export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
   const functions = staffFunctions(user);
   const displayName = user.name || user.email;
   const joined = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+    ? formatInZone(user.createdAt, undefined, "date")
     : null;
 
   return (

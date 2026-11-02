@@ -1,4 +1,5 @@
 'use client'
+import { formatInZone } from '@/features/dashboard/lib/storeTime';
 
 import { useState, useEffect, useRef, type FormEvent, type ReactNode } from 'react'
 import Link from 'next/link'
@@ -584,9 +585,7 @@ export function DealDetailPageClient({ id }: { id: string }) {
 
   const formatDate = (date: string | null) => {
     if (!date) return '-'
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    })
+    return formatInZone(date, undefined, "datetime")
   }
 
   const breadcrumbs = (label: string) => [

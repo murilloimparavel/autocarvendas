@@ -1,4 +1,6 @@
 'use client'
+import { ViewerTime } from '@/features/dashboard/components/ViewerTime';
+import { formatInZone } from '@/features/dashboard/lib/storeTime';
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -78,7 +80,7 @@ type QueueItem = {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return formatInZone(value, undefined, "date")
 }
 
 function comparisonLabel(metric: PeriodMetric) {
@@ -345,7 +347,7 @@ export function OverviewDashboardPageClient({
         report ? (
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="font-medium text-foreground">{waiting.length > 0 ? `${waiting.length} ${plural(waiting.length, 'item')} need you` : 'Nothing waiting'}</span>
-            {hydrated && <span>Updated {new Date(report.generatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>}
+            {hydrated && <span>Updated <ViewerTime value={report.generatedAt} style="datetime" /></span>}
           </span>
         ) : 'Unavailable'
       }
