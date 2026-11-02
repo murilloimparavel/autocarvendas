@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react'
 import { ArrowLeft, ExternalLink, RefreshCw, Scale, Undo2 } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
-import { Attention, Code, DeskHeader, DeskSection, DeskTable, Facts, Figure, Notice, Panel, Pill, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
+import { Code, DeskHeader, DeskSection, DeskTable, Facts, Figure, Notice, Panel, Pill, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { recordReference } from '@/features/platform/lib/format'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
 import { CommandDialog, type FieldErrors } from '@/features/platform/accounting/components/CommandDialog'
@@ -107,7 +107,9 @@ export function PaymentDetailPageClient({
   const settled = SETTLED_STATUSES.includes(payment.status)
   const reconciled = Boolean(payment.reconciledAt)
   const reconcileWhy = reconciled ? 'Already reconciled' : !settled ? 'Needs a captured or refunded payment' : null
-  const refundWhy = !REFUNDABLE_STATUSES.includes(payment.status)
+  const refundWhy = payment.status === 'refunded'
+    ? 'Fully refunded'
+    : !REFUNDABLE_STATUSES.includes(payment.status)
     ? 'Needs a captured payment'
     : !payment.providerTransactionId
       ? 'No provider transaction ID yet'
@@ -255,7 +257,7 @@ export function PaymentDetailPageClient({
               </>
             ) : reconcileWhy || (
               <>
-                Waiting <Attention>{age} {age === 1 ? 'day' : 'days'}</Attention>
+                Waiting · {age} {age === 1 ? 'day' : 'days'}
               </>
             )}
           </p>
