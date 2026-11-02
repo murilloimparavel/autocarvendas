@@ -38,11 +38,10 @@ function clean(value: unknown) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-// Only a mark the store chose in Store Settings. An empty value, or the platform's
-// placeholder that onboarding writes when none is picked, means no mark: wordmark only.
+// The icon always shows beside the name, as in E-commerce: the saved icon when it is
+// a safe SVG, otherwise the platform default icon. The text lockup stays alongside it.
 function storeOwnLogo(value: unknown) {
-  const svg = sanitizeStoreLogoSvg(clean(value))
-  return svg && svg !== DEFAULT_STORE_LOGO_ICON ? svg : ''
+  return sanitizeStoreLogoSvg(clean(value)) || sanitizeStoreLogoSvg(DEFAULT_STORE_LOGO_ICON)
 }
 
 export function createStorefrontBusiness(profile: StorefrontProfileDto = {}): StorefrontBusiness {
