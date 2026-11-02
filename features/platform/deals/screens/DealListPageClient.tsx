@@ -67,9 +67,10 @@ function countByStatus(deals: Array<{ status: string }>): StatusCounts {
 
 const formatCurrency = (value: number | null | undefined) => formatUsd(value, { whole: true })
 
-const formatDate = (date: string | null) => {
+// The dealership's zone, not the browser's, so the server and client render the same day.
+const formatDate = (date: string | null, timeZone: string) => {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone })
 }
 
 function ageDays(createdAt: string, now: number) {
@@ -89,9 +90,11 @@ const customerLabel = (deal: Deal) => (deal.lead ? `${deal.lead.firstName} ${dea
 export function DealListPageClient({
   initialDeals,
   initialError,
+  timeZone,
 }: {
   initialDeals: DealDeskDeal[] | null
   initialError: string | null
+  timeZone: string
 }) {
   const router = useRouter()
   const [deals, setDeals] = useState<Deal[]>(initialDeals ? toListDeals(initialDeals) : [])
@@ -343,7 +346,7 @@ export function DealListPageClient({
                           <Figure size="sm">{formatCurrency(deal.totalPrice)}</Figure>
                         </Td>
                         <Td align="right" priority={3} className="whitespace-nowrap text-muted-foreground">{formatCurrency(deal.vehiclePrice)}</Td>
-                        <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDate(deal.saleDate || deal.createdAt)}</Td>
+                        <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDate(deal.saleDate || deal.createdAt, timeZone)}</Td>
                       </Tr>
                     ))}
                   </tbody>
