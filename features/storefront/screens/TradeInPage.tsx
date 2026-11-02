@@ -1,5 +1,6 @@
 'use client'
 
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -265,20 +266,10 @@ export function TradeInPage() {
             <FormSection title="Your vehicle" first>
               <div className="grid gap-4">
                 <Field label="Year" htmlFor="trade-year">
-                  <select id="trade-year" required value={formData.year} onChange={(e) => setFormData((p) => ({ ...p, year: e.target.value }))} className="sf-input">
-                    <option value="">Select year</option>
-                    {YEARS.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                  <PlatformSelect id="trade-year" name="year" required value={formData.year} onValueChange={(v) => setFormData((p) => ({ ...p, year: v }))} className="sf-input sf-trigger" placeholder="Select year" searchable options={YEARS.map((y) => ({ value: String(y), label: String(y) }))} />
                 </Field>
                 <Field label="Make" htmlFor="trade-make">
-                  <select id="trade-make" required value={formData.make} onChange={(e) => setFormData((p) => ({ ...p, make: e.target.value }))} className="sf-input">
-                    <option value="">Select make</option>
-                    {MAKES.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+                  <PlatformSelect id="trade-make" name="make" required value={formData.make} onValueChange={(v) => setFormData((p) => ({ ...p, make: v }))} className="sf-input sf-trigger" placeholder="Select make" searchable options={MAKES.map((m) => ({ value: m, label: m }))} />
                 </Field>
                 <Field label="Model" htmlFor="trade-model">
                   <input id="trade-model" type="text" required value={formData.model} onChange={(e) => setFormData((p) => ({ ...p, model: e.target.value }))} className="sf-input" placeholder="e.g. Accord" />

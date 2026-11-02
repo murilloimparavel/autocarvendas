@@ -1,5 +1,7 @@
 'use client'
 
+import { PlatformDateInput } from '@/features/platform/components/PlatformDateTime'
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { useEffect, useRef } from 'react'
 import { LoaderCircle, X } from 'lucide-react'
 import { Vehicle } from '@/features/storefront/lib/types'
@@ -242,31 +244,27 @@ export function LeadCaptureModal({
             <div className="grid grid-cols-2 gap-3">
               <div className="min-w-0">
                 <label htmlFor={fieldId('preferred-date')} className="sf-label">Date</label>
-                <input
+                <PlatformDateInput
                   id={fieldId('preferred-date')}
-                  type="date"
                   value={formData.preferredDate}
-                  onChange={(e) => setFormData((p) => ({ ...p, preferredDate: e.target.value, preferredTime: '' }))}
-                  className="sf-input sf-figure"
+                  onChange={(value) => setFormData((p) => ({ ...p, preferredDate: value, preferredTime: '' }))}
+                  className="sf-input sf-trigger sf-figure"
                   required
                   min={localDateString(new Date(), business.timezone)}
                 />
               </div>
               <div className="min-w-0">
                 <label htmlFor={fieldId('preferred-time')} className="sf-label">Time</label>
-                <select
+                <PlatformSelect
                   id={fieldId('preferred-time')}
                   value={formData.preferredTime}
-                  onChange={(e) => setFormData((p) => ({ ...p, preferredTime: e.target.value }))}
-                  className="sf-input sf-figure"
+                  onValueChange={(value) => setFormData((p) => ({ ...p, preferredTime: value }))}
+                  className="sf-input sf-trigger sf-figure"
                   required
+                  placeholder="Select"
                   aria-invalid={availability.status === 'closed' && formData.preferredDate ? true : undefined}
-                >
-                  <option value="">Select</option>
-                  {availability.status === 'open' && availability.slots.map((slot) => (
-                    <option key={slot} value={slot}>{slot}</option>
-                  ))}
-                </select>
+                  options={availability.status === 'open' ? availability.slots.map((slot) => ({ value: slot, label: slot })) : []}
+                />
               </div>
               {availability.status === 'closed' && formData.preferredDate && (
                 <p role="alert" className="sf-error col-span-2 mt-0">{closedDayLabel(availability)}</p>

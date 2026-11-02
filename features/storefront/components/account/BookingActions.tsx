@@ -1,5 +1,6 @@
 'use client'
 
+import { PlatformDateInput } from '@/features/platform/components/PlatformDateTime'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarClock, X } from 'lucide-react'
@@ -128,17 +129,16 @@ export function BookingActions({
       {mode === 'reschedule' && (
         <form onSubmit={submitReschedule} className="sf-well space-y-4 p-4">
           <Field label="New date" htmlFor={`reschedule-date-${id}`}>
-            <input
+            <PlatformDateInput
               id={`reschedule-date-${id}`}
-              type="date"
               required
               min={minDate}
               value={date}
-              onChange={(event) => {
-                setDate(event.target.value)
+              onChange={(value) => {
+                setDate(value)
                 setTime('')
               }}
-              className="sf-input"
+              className="sf-input sf-trigger"
             />
           </Field>
           {date && (availability.status === 'closed' ? (

@@ -9,6 +9,7 @@ import { Vehicle } from '@/features/storefront/lib/types'
 import { buildVehicleOrderBy, buildVehicleWhereInput, EMPTY_INVENTORY_FILTERS, inventoryQueryFromSearch } from '@/features/storefront/lib/data/vehicle-inventory'
 import { buildInventoryFacets, facetModels, fetchListedInventoryOptions, type InventoryFacets } from '@/features/storefront/lib/data/inventory-facets'
 import { INVENTORY_PAGE_SIZE, parseInventoryPage, resolveInventoryPage } from '@/features/storefront/lib/data/inventory-pagination'
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { Container } from '../components/Container'
 import { VehicleCard } from '../components/VehicleCard'
 import { useStorefrontBusiness } from '../components/StorefrontBusinessProvider'
@@ -442,66 +443,44 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
               <div className="grid grid-cols-2 gap-3">
                 <div className="min-w-0">
                   <label htmlFor="inventory-make" className="sf-label">Make</label>
-                  <select
+                  <PlatformSelect
                     id="inventory-make"
                     value={filters.make}
-                    onChange={(e) => handleFilterChange('make', e.target.value)}
-                    className="sf-input"
-                    aria-busy={!facets}
-                  >
-                    <option value="">{facets ? 'Any' : 'Loading'}</option>
-                    {makeOptions.map((make) => (
-                      <option key={make} value={make}>{make}</option>
-                    ))}
-                  </select>
+                    onValueChange={(value) => handleFilterChange('make', value)}
+                    className="sf-input sf-trigger"
+                    options={[{ value: '', label: facets ? 'Any' : 'Loading' }, ...makeOptions.map((make) => ({ value: make, label: make }))]}
+                  />
                 </div>
                 <div className="min-w-0">
                   <label htmlFor="inventory-model" className="sf-label">Model</label>
-                  <select
+                  <PlatformSelect
                     id="inventory-model"
                     value={filters.model}
-                    onChange={(e) => handleFilterChange('model', e.target.value)}
-                    className="sf-input"
-                    aria-busy={!facets}
-                  >
-                    <option value="">{facets ? 'Any' : 'Loading'}</option>
-                    {modelOptions.map((model) => (
-                      <option key={model} value={model}>{model}</option>
-                    ))}
-                  </select>
+                    onValueChange={(value) => handleFilterChange('model', value)}
+                    className="sf-input sf-trigger"
+                    options={[{ value: '', label: facets ? 'Any' : 'Loading' }, ...modelOptions.map((model) => ({ value: model, label: model }))]}
+                  />
                 </div>
               </div>
 
               <div>
                 <label htmlFor="inventory-year-min" className="sf-label">Year</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <select
+                  <PlatformSelect
                     id="inventory-year-min"
                     value={filters.yearMin}
-                    onChange={(e) => handleFilterChange('yearMin', e.target.value)}
-                    className="sf-input sf-figure"
+                    onValueChange={(value) => handleFilterChange('yearMin', value)}
+                    className="sf-input sf-trigger sf-figure"
                     aria-label="Minimum year"
-                  >
-                    <option value="">Min</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                  <select
+                    options={[{ value: '', label: 'Min' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+                  />
+                  <PlatformSelect
                     value={filters.yearMax}
-                    onChange={(e) => handleFilterChange('yearMax', e.target.value)}
-                    className="sf-input sf-figure"
+                    onValueChange={(value) => handleFilterChange('yearMax', value)}
+                    className="sf-input sf-trigger sf-figure"
                     aria-label="Maximum year"
-                  >
-                    <option value="">Max</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
+                    options={[{ value: '', label: 'Max' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+                  />
                 </div>
               </div>
 
@@ -588,16 +567,16 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                   {activeFilterCount > 0 && <span className="sf-figure text-[length:var(--sf-text-xs)]" aria-label={`${activeFilterCount} active`}>{activeFilterCount}</span>}
                 </button>
                 <label htmlFor="inventory-sort-mobile" className="sr-only">Sort</label>
-                <select
-                  id="inventory-sort-mobile"
-                  value={sortBy}
-                  onChange={(e) => changeSort(e.target.value)}
-                  className="sf-input min-w-0 flex-1"
-                >
-                  {SORTS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                <div className="min-w-0 flex-1">
+                  <PlatformSelect
+                    id="inventory-sort-mobile"
+                    value={sortBy}
+                    onValueChange={changeSort}
+                    className="sf-input sf-trigger"
+                    aria-label="Sort"
+                    options={SORTS.map((option) => ({ value: option.value, label: option.label }))}
+                  />
+                </div>
               </div>
               {sortTrack('hidden lg:inline-flex')}
             </div>

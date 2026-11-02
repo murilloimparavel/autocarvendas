@@ -1013,3 +1013,50 @@ body:has(.sf-dock) .sf-compare-bar {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
+
+/* Popover select and date triggers (PlatformSelect, PlatformDateInput) in storefront fields. */
+
+.sf-input.sf-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  height: auto;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--sf-radius-sm);
+  border: 1px solid var(--sf-rule-strong);
+  background: var(--sf-paper-2);
+  color: var(--sf-ink);
+  font-size: var(--sf-text-md);
+  text-align: left;
+}
+
+.sf-input.sf-trigger > span:first-of-type { flex: 1 1 auto; }
+.sf-input.sf-trigger svg:last-child { margin-left: auto; }
+.sf-input.sf-trigger:hover { background: var(--sf-paper-2); border-color: var(--sf-ink-3); }
+.sf-input.sf-trigger:focus-visible { border-color: var(--sf-accent); box-shadow: 0 0 0 3px var(--sf-accent-soft); }
+
+@media (min-width: 768px) {
+  .sf-input.sf-trigger { font-size: var(--sf-text-sm); }
+}
+
+.sf-hero-field-input.sf-hero-trigger,
+.sf-line-field-input.sf-line-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.9375rem;
+  color: var(--sf-ink-2);
+}
+
+.sf-hero-field-input.sf-hero-trigger:hover,
+.sf-line-field-input.sf-line-trigger:hover { background: transparent; }
+.sf-hero-field-input.sf-hero-trigger:focus-visible,
+.sf-line-field-input.sf-line-trigger:focus-visible { box-shadow: none; }
+.sf-line-field-input.sf-line-trigger svg { display: none; }

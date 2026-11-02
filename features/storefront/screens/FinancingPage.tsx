@@ -1,5 +1,6 @@
 'use client'
 
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -614,20 +615,22 @@ function FinancingContent() {
                   />
                 </Field>
                 <Field label="Employment status" htmlFor="financing-employment">
-                  <select
+                  <PlatformSelect
                     id="financing-employment"
+                    name="employmentStatus"
                     required
                     value={applicationForm.employmentStatus}
-                    onChange={(e) => setApplicationForm((prev) => ({ ...prev, employmentStatus: e.target.value }))}
-                    className="sf-input"
-                  >
-                    <option value="">Select</option>
-                    <option value="employed">Employed</option>
-                    <option value="self-employed">Self-employed</option>
-                    <option value="retired">Retired</option>
-                    <option value="student">Student</option>
-                    <option value="other">Other</option>
-                  </select>
+                    onValueChange={(value) => setApplicationForm((prev) => ({ ...prev, employmentStatus: value }))}
+                    className="sf-input sf-trigger"
+                    placeholder="Select"
+                    options={[
+                      { value: 'employed', label: 'Employed' },
+                      { value: 'self-employed', label: 'Self-employed' },
+                      { value: 'retired', label: 'Retired' },
+                      { value: 'student', label: 'Student' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                  />
                 </Field>
                 <Field label="Annual income" htmlFor="financing-income">
                   <div className="relative">
@@ -646,20 +649,22 @@ function FinancingContent() {
                   </div>
                 </Field>
                 <Field label="Credit range" htmlFor="financing-credit" className="sm:col-span-2">
-                  <select
+                  <PlatformSelect
                     id="financing-credit"
+                    name="creditTier"
                     required
                     value={applicationForm.creditTier}
-                    onChange={(e) => setApplicationForm((prev) => ({ ...prev, creditTier: e.target.value }))}
-                    className="sf-input"
-                  >
-                    <option value="">Self-reported credit range</option>
-                    <option value="excellent-720-plus">Excellent (720+)</option>
-                    <option value="good-680-719">Good (680–719)</option>
-                    <option value="fair-620-679">Fair (620–679)</option>
-                    <option value="rebuilding-under-620">Rebuilding (&lt;620)</option>
-                    <option value="unknown">Not sure</option>
-                  </select>
+                    onValueChange={(value) => setApplicationForm((prev) => ({ ...prev, creditTier: value }))}
+                    className="sf-input sf-trigger"
+                    placeholder="Self-reported credit range"
+                    options={[
+                      { value: 'excellent-720-plus', label: 'Excellent (720+)' },
+                      { value: 'good-680-719', label: 'Good (680–719)' },
+                      { value: 'fair-620-679', label: 'Fair (620–679)' },
+                      { value: 'rebuilding-under-620', label: 'Rebuilding (<620)' },
+                      { value: 'unknown', label: 'Not sure' },
+                    ]}
+                  />
                 </Field>
                 <label className="sf-muted flex min-h-11 cursor-pointer items-start gap-3 text-[length:var(--sf-text-sm)] sm:col-span-2">
                   <input

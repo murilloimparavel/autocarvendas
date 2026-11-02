@@ -1,5 +1,7 @@
 'use client'
 
+import { PlatformDateInput } from '@/features/platform/components/PlatformDateTime'
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Check, X } from 'lucide-react'
@@ -310,44 +312,30 @@ export function ServicePage() {
                 <div className="space-y-5">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Date" htmlFor="appointmentDate">
-                      <input
+                      <PlatformDateInput
                         id="appointmentDate"
                         name="appointmentDate"
-                        type="date"
                         required
                         min={minDate}
                         value={formData.appointmentDate}
-                        onChange={handleChange}
-                        className="sf-input"
+                        onChange={(value) => setFormData((prev) => ({ ...prev, appointmentDate: value, appointmentTime: '' }))}
+                        className="sf-input sf-trigger"
                       />
                     </Field>
                     <Field label="Service" htmlFor="serviceType">
-                      <select
+                      <PlatformSelect
                         id="serviceType"
                         name="serviceType"
                         required
                         value={serviceChoice}
-                        onChange={(e) => chooseService(e.target.value)}
-                        className="sf-input"
-                      >
-                        <option value="">Select service</option>
-                        {menuPackages.length > 0 && (
-                          <optgroup label="Service menu">
-                            {menuPackages.map((pkg) => (
-                              <option key={pkg.id} value={`${PACKAGE_CHOICE}${pkg.name}`}>{pkg.name}</option>
-                            ))}
-                          </optgroup>
-                        )}
-                        {menuPackages.length > 0 ? (
-                          <optgroup label="Other service">
-                            {SERVICE_TYPES.map((type) => (
-                              <option key={type.value} value={type.value}>{type.label}</option>
-                            ))}
-                          </optgroup>
-                        ) : SERVICE_TYPES.map((type) => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                      </select>
+                        onValueChange={chooseService}
+                        className="sf-input sf-trigger"
+                        placeholder="Select service"
+                        options={[
+                          ...menuPackages.map((pkg) => ({ value: `${PACKAGE_CHOICE}${pkg.name}`, label: pkg.name })),
+                          ...SERVICE_TYPES.map((type) => ({ value: type.value, label: type.label })),
+                        ]}
+                      />
                     </Field>
                   </div>
 

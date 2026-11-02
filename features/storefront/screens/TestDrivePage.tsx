@@ -1,5 +1,7 @@
 'use client'
 
+import { PlatformDateInput } from '@/features/platform/components/PlatformDateTime'
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -209,15 +211,14 @@ export function TestDrivePage() {
           <FormSection title="Date and time" first>
             <div className="space-y-5">
               <Field label="Date" htmlFor="preferredDate" className="sm:max-w-xs">
-                <input
+                <PlatformDateInput
                   id="preferredDate"
                   name="preferredDate"
-                  type="date"
                   required
                   min={minDate}
                   value={formData.preferredDate}
-                  onChange={handleChange}
-                  className="sf-input"
+                  onChange={(value) => setFormData((prev) => ({ ...prev, preferredDate: value, preferredTime: '' }))}
+                  className="sf-input sf-trigger"
                 />
               </Field>
 
@@ -248,24 +249,21 @@ export function TestDrivePage() {
 
           <FormSection title="Vehicle">
             <Field label="Vehicle" htmlFor="vehicleId" optional>
-              <select
+              <PlatformSelect
                 id="vehicleId"
                 name="vehicleId"
                 value={formData.vehicleId}
-                onChange={handleChange}
-                className="sf-input"
-                aria-busy={inventoryOptions === null}
-              >
-                <option value="">{inventoryOptions === null ? 'Loading inventory' : 'No specific vehicle'}</option>
-                {missingSelected && selectedVehicle && (
-                  <option value={formData.vehicleId}>
-                    {[selectedVehicle.year, selectedVehicle.make, selectedVehicle.model, selectedVehicle.trim].filter(Boolean).join(' ')}
-                  </option>
-                )}
-                {pickerOptions.map((item) => (
-                  <option key={item.id} value={item.id}>{optionLabel(item)}</option>
-                ))}
-              </select>
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, vehicleId: value }))}
+                className="sf-input sf-trigger"
+                placeholder={inventoryOptions === null ? 'Loading inventory' : 'No specific vehicle'}
+                options={[
+                  { value: '', label: inventoryOptions === null ? 'Loading inventory' : 'No specific vehicle' },
+                  ...(missingSelected && selectedVehicle
+                    ? [{ value: formData.vehicleId, label: [selectedVehicle.year, selectedVehicle.make, selectedVehicle.model, selectedVehicle.trim].filter(Boolean).join(' ') }]
+                    : []),
+                  ...pickerOptions.map((item) => ({ value: item.id, label: optionLabel(item) })),
+                ]}
+              />
             </Field>
             {inventoryError && (
               <p className="sf-muted mt-2 text-[length:var(--sf-text-sm)]" role="status">Inventory list unavailable.</p>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarDays, CarFront, DollarSign, Gem, Search, Tag } from 'lucide-react'
+import { PlatformSelect } from '@/features/platform/components/PlatformSelect'
 import { formatPrice } from '../lib/format'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
 
@@ -71,23 +72,14 @@ export function HeroSearch() {
         <Gem className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="sf-hero-field-label">Condition</span>
-          <select value={s.condition} onChange={(e) => s.setCondition(e.target.value)} className="sf-hero-field-input">
-            {CONDITIONS.map((option) => (
-              <option key={option.value || 'any'} value={option.value}>{option.label}</option>
-            ))}
-          </select>
+          <PlatformSelect aria-label="Condition" value={s.condition} onValueChange={s.setCondition} className="sf-hero-field-input sf-hero-trigger" options={CONDITIONS} />
         </span>
       </label>
       <label className="sf-hero-field">
         <DollarSign className="size-5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="sf-hero-field-label">Price</span>
-          <select value={s.priceMax} onChange={(e) => s.setPriceMax(e.target.value)} className="sf-hero-field-input">
-            <option value="">Max Price</option>
-            {PRICES.map((value) => (
-              <option key={value} value={value}>{formatPrice(value, currencyCode)}</option>
-            ))}
-          </select>
+          <PlatformSelect aria-label="Max price" value={s.priceMax} onValueChange={s.setPriceMax} className="sf-hero-field-input sf-hero-trigger" options={[{ value: '', label: 'Max Price' }, ...PRICES.map((value) => ({ value: String(value), label: formatPrice(value, currencyCode) }))]} />
         </span>
       </label>
       <button type="submit" className="sf-btn sf-btn-primary h-10 w-[17rem] gap-3 rounded-[6px] text-[1rem] font-medium">
@@ -120,22 +112,12 @@ export function HeroSearchCompact() {
       <label className="sf-line-field">
         <CarFront className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
         <span className="sr-only">Condition</span>
-        <select value={s.condition} onChange={(e) => s.setCondition(e.target.value)} className="sf-line-field-input">
-          <option value="">Any type</option>
-          {CONDITIONS.slice(1).map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
+        <PlatformSelect aria-label="Condition" value={s.condition} onValueChange={s.setCondition} className="sf-line-field-input sf-line-trigger" options={[{ value: '', label: 'Any type' }, ...CONDITIONS.slice(1)]} />
       </label>
       <label className="sf-line-field">
         <Tag className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
         <span className="sr-only">Max price</span>
-        <select value={s.priceMax} onChange={(e) => s.setPriceMax(e.target.value)} className="sf-line-field-input">
-          <option value="">Max price</option>
-          {PRICES.map((value) => (
-            <option key={value} value={value}>{formatPrice(value, currencyCode)}</option>
-          ))}
-        </select>
+        <PlatformSelect aria-label="Max price" value={s.priceMax} onValueChange={s.setPriceMax} className="sf-line-field-input sf-line-trigger" options={[{ value: '', label: 'Max price' }, ...PRICES.map((value) => ({ value: String(value), label: formatPrice(value, currencyCode) }))]} />
       </label>
       <button type="submit" className="grid size-11 shrink-0 place-items-center rounded-[2px]" style={{ background: 'var(--sf-accent-fill)', color: 'var(--sf-accent-ink)' }} aria-label="Search inventory">
         <Search className="size-5" strokeWidth={1.75} aria-hidden="true" />
