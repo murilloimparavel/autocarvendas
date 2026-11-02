@@ -167,7 +167,7 @@ export async function HomePage() {
             </span>
           </h1>
 
-          <p className="sf-eyebrow sf-eyebrow-accent mt-3 text-[0.9375rem] font-bold">Find your next ride</p>
+          <p className="sf-eyebrow sf-eyebrow-accent mt-3 font-bold">Find your next ride</p>
           <div className="mt-2">
             <HeroSearchCompact />
           </div>
@@ -184,7 +184,7 @@ export async function HomePage() {
           <div className="mt-5 flex items-end gap-3">
             <div className="min-w-0">
               <p className="sf-eyebrow sf-eyebrow-accent" style={{ letterSpacing: '0.04em' }}>Inventory</p>
-              <h2 className="sf-display whitespace-nowrap text-[1.375rem] leading-none" style={{ fontStretch: '80%' }}>Real cars. Real deals.</h2>
+              <h2 className="sf-display whitespace-nowrap text-[1.1875rem] leading-none" style={{ fontStretch: '80%' }}>Real cars. Real deals.</h2>
             </div>
             <span className="mb-1 h-px min-w-4 flex-1" style={{ background: 'var(--sf-accent)' }} aria-hidden="true" />
             <Link href="/inventory" className="sf-caps inline-flex shrink-0 items-center gap-1 text-[0.8125rem] font-medium" style={{ color: 'var(--sf-accent)' }}>
@@ -205,8 +205,8 @@ export async function HomePage() {
             <section className="sf-visit-card" aria-labelledby="home-visit">
               <Image src={HERO_PHOTO} alt="" fill sizes="(max-width: 767px) 100vw, 1px" className="object-cover object-[88%_60%]" />
               <span className="sf-showroom-row-shade" aria-hidden="true" />
-              <div className="relative max-w-[70%] px-4 py-4">
-                <h2 id="home-visit" className="sf-display text-[1.5rem] leading-[0.95]" style={{ fontStretch: '100%' }}>
+              <div className="relative max-w-[70%] px-4 py-3">
+                <h2 id="home-visit" className="sf-display text-[1.25rem] leading-[0.95]" style={{ fontStretch: '100%' }}>
                   <span className="block" style={{ color: 'var(--sf-accent)' }}>{city ? `Visit ${city}` : 'Visit us'}</span>
                   <span className="mt-0.5 block text-[1.0625rem]">{business.fullName}</span>
                 </h2>
