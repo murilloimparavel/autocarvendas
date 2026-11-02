@@ -43,6 +43,7 @@ import {
   type PartsRooftop,
   type PurchaseOrder,
 } from '../lib/types'
+import { countLabel } from '@/features/platform/lib/format'
 
 type StockFilter = 'all' | 'low' | 'out' | 'on-order'
 
@@ -148,7 +149,7 @@ export function PartsPageClient({
       title="Parts"
       tone={error ? 'bad' : counts.out ? 'bad' : counts.low ? 'warn' : 'ok'}
       status={error ? 'Unavailable' : `${counts.out} out of stock, ${counts.low} low`}
-      meta={`${counts.all} parts · ${counts.low} low · ${counts.out} out · ${toReceive.length} POs to receive`}
+      meta={`${countLabel(counts.all, 'part')} · ${counts.low} low · ${counts.out} out · ${countLabel(toReceive.length, 'PO')} to receive`}
       actions={
         <>
           <Pill variant="plain" onClick={load} disabled={loading} className="h-11 sm:h-8">

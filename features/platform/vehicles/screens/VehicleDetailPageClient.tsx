@@ -24,7 +24,7 @@ import {
   type DeskTone,
 } from '@/features/platform/components/desk'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
-import { recordReference } from '@/features/platform/lib/format'
+import { recordReference, countLabel } from '@/features/platform/lib/format'
 import {
   decideInventoryMerchandising,
   moveInventoryStock,
@@ -661,7 +661,7 @@ export function VehicleDetailPageClient({
                             <span>Submitted {formatDateTime(version.submittedAt, timeZone)} by {personName(version.submittedBy)}</span>
                             {version.decidedAt && <span>· Decided {formatDateTime(version.decidedAt, timeZone)} by {personName(version.decidedBy)}</span>}
                             {version.snapshot?.priceCents != null && <span>· {money(version.snapshot.priceCents)}</span>}
-                            {Array.isArray(version.snapshot?.images) && <span>· {version.snapshot.images.length} photos</span>}
+                            {Array.isArray(version.snapshot?.images) && <span>· {countLabel(version.snapshot.images.length, 'photo')}</span>}
                           </p>
                           {version.decisionReason && <p className="mt-1 break-words pl-4 text-xs">{version.decisionReason}</p>}
                           {current && version.status === 'submitted' && stock?.merchandisingStatus === 'submitted' && (

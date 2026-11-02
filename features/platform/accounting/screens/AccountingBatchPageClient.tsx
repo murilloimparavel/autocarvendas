@@ -6,7 +6,7 @@ import { ArrowLeft, CheckCircle2, FileLock2, RefreshCw, Send, XCircle, Scale } f
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, DeskTable, Facts, Notice, Panel, Pill, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
-import { recordReference } from '@/features/platform/lib/format'
+import { recordReference, countLabel } from '@/features/platform/lib/format'
 
 import { getAccountingBatch, manageAccountingBatch } from '../actions'
 import { CommandDialog, type CommandField, type FieldErrors } from '../components/CommandDialog'
@@ -156,7 +156,7 @@ export function AccountingBatchPageClient({
   const allowedActions = ACTIONS.filter(item => item.from.includes(batch.status))
   const blockedActions = ACTIONS.filter(item => !item.from.includes(batch.status))
   const nextAction = allowedActions.find(item => item.primary) ?? null
-  const stateWords = [statusLabel, balanced ? 'balanced' : 'out of balance', batch.status === 'failed' && batch.attemptCount ? `${batch.attemptCount} attempts` : ''].filter(Boolean).join(', ')
+  const stateWords = [statusLabel, balanced ? 'balanced' : 'out of balance', batch.status === 'failed' && batch.attemptCount ? countLabel(batch.attemptCount, 'attempt') : ''].filter(Boolean).join(', ')
 
   const header = (
     <DeskHeader

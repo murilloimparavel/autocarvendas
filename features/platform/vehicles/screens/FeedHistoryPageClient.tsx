@@ -20,6 +20,7 @@ import {
   type PublicFeedRunAttempt,
 } from '../lib/publicFeedRunOutcome'
 import { feedChannelLabels, feedStatusLabels, feedStatusTones, formatDateTime } from '../lib/inventoryLabels'
+import { countLabel } from '@/features/platform/lib/format'
 
 type StatusFilter = 'all' | 'succeeded' | 'partial' | 'failed'
 type ExportRow = { included: boolean; error: string }
@@ -157,7 +158,7 @@ export function FeedHistoryPageClient({
       }
       const run = response.data.recordInventoryFeedRun
       setExportOpen(false)
-      setMessage({ text: `Export recorded: ${run.attemptedCount} units, ${run.failedCount} refused.`, tone: run.failedCount ? 'warn' : 'ok' })
+      setMessage({ text: `Export recorded: ${countLabel(run.attemptedCount, 'unit')}, ${run.failedCount} refused.`, tone: run.failedCount ? 'warn' : 'ok' })
       await load()
     } catch {
       setExportError('Unable to confirm the export was recorded. Retry to finish.')

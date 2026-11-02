@@ -10,6 +10,7 @@ import { LeadRoutingPanel } from '../components/LeadRoutingPanel'
 import { MakesModelsPanel } from '../components/MakesModelsPanel'
 import { ServicePackagesPanel } from '../components/ServicePackagesPanel'
 import { TAP } from '../components/formKit'
+import { countLabel } from '@/features/platform/lib/format'
 
 export type CatalogTab = 'makes' | 'services' | 'routing'
 
@@ -50,7 +51,7 @@ export function CatalogPageClient({ initialData, initialTab }: { initialData: Ca
     <DeskHeader
       title="Catalog"
       status={anyError ? 'Partly unavailable' : modelCount === 0 ? 'No models' : activeRules === 0 ? 'No active routing' : 'Ready'}
-      meta={`${anyError ? 'Partly unavailable' : modelCount === 0 ? 'No models' : activeRules === 0 ? 'No active routing' : 'Ready'} · ${data.makes.data.length} makes · ${modelCount} models · ${data.servicePackages.data.length} service packages · ${activeRules} active routing rules`}
+      meta={`${anyError ? 'Partly unavailable' : modelCount === 0 ? 'No models' : activeRules === 0 ? 'No active routing' : 'Ready'} · ${countLabel(data.makes.data.length, 'make')} · ${countLabel(modelCount, 'model')} · ${countLabel(data.servicePackages.data.length, 'service package')} · ${countLabel(activeRules, 'active routing rule')}`}
       actions={
         <Pill variant="plain" className={TAP} onClick={reload} disabled={loading}>
           <RefreshCw className={loading ? 'animate-spin' : undefined} />

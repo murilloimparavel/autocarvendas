@@ -770,7 +770,7 @@ export function ServiceOrderDetailPageClient({
                 items={[
                   { label: 'Total', value: <Figure size="md">{formatCents(order.grandTotalCents)}</Figure> },
                   { label: 'Tax', value: <span className="tabular-nums">{formatCents(order.taxCents)}</span> },
-                  { label: 'Line sum', value: <span className="tabular-nums">{formatCents(lineSubtotal)} · {order.lineItems.length} lines</span> },
+                  { label: 'Line sum', value: <span className="tabular-nums">{formatCents(lineSubtotal)} · {order.lineItems.length} {order.lineItems.length === 1 ? 'line' : 'lines'}</span> },
                   { label: 'Labor ops closed', value: <span className="tabular-nums">{order.laborOperations.length - openOps} of {order.laborOperations.length}</span> },
                   { label: 'Authorization', value: <Status tone={authTone} className="capitalize">{order.authorizationStatus || 'pending'}</Status> },
                 ]}

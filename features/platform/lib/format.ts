@@ -1,5 +1,10 @@
 /** Display helpers shared by the platform desks. */
 
+/** "1 photo", "3 photos"; pass the plural when it is not just the singular plus s. */
+export function countLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`
+}
+
 /** "2025550147" -> "(202) 555-0147"; NANP numbers with or without a leading 1. Anything else is returned trimmed. */
 export function formatPhone(value: string | null | undefined) {
   const raw = String(value ?? '').trim()

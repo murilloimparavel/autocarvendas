@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Panel, Pill, Readout, ReadoutStrip, Segmented, Status, Td, Th, Tr, Track, type DeskTone } from '@/features/platform/components/desk'
-import { recordReference } from '@/features/platform/lib/format'
+import { recordReference, countLabel } from '@/features/platform/lib/format'
 import { parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
 import { CommandDialog, type CommandField, type FieldErrors } from '@/features/platform/accounting/components/CommandDialog'
 import { PAYMENT_STATUS_LABEL, dateTime, money, nonce, paymentTone } from '@/features/platform/accounting/lib/format'
@@ -350,7 +350,7 @@ export function PaymentsPageClient({
               (counts.failed || 0) > 0 ? `${counts.failed} failed` : '',
               (counts.unreconciled || 0) > 0 ? `${counts.unreconciled} not reconciled` : '',
               `${counts.all || 0} transactions`,
-              `${installed.length} of ${providers.length} providers enabled`,
+              `${installed.length} of ${countLabel(providers.length, 'provider')} enabled`,
             ].filter(Boolean).join(' · ')
       }
       actions={

@@ -9,6 +9,7 @@ import { decideDealFinanceMenu, getDealFinanceMenu, presentDealFinanceMenu, quot
 import { FinanceFormDialog, type FieldErrors, type FinanceFormField } from './FinanceFormDialog'
 import type { DealMenuData, MenuOption, MenuProduct, MenuQuote, MenuVersion } from '../lib/menuTypes'
 import { categoryLabels, formatCents, formatDay, newIdempotencyKey, stateTone } from '../lib/display'
+import { countLabel } from '@/features/platform/lib/format'
 
 export type MenuRequest = { kind: 'quotes' | 'present-menu' | 'decide-menu'; nonce: number }
 
@@ -153,7 +154,7 @@ export function DealMenuPanel({
       message = `${dialog.product.code} quote recorded.`
     } else if (dialog.kind === 'present') {
       run = () => presentDealFinanceMenu({ dealId: deal.id, expectedUpdatedAt: deal.updatedAt, productCodes: dialog.picked, idempotencyKey: dialog.idempotencyKey })
-      message = dialog.picked.length ? `Menu presented with ${dialog.picked.length} products.` : 'Menu presented with no products.'
+      message = dialog.picked.length ? `Menu presented with ${countLabel(dialog.picked.length, 'product')}.` : 'Menu presented with no products.'
     } else {
       const codes = Object.keys(dialog.choices)
       for (const code of codes) if (!dialog.choices[code]) errors[`choice:${code}`] = 'Choose or decline.'

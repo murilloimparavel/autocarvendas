@@ -28,6 +28,7 @@ import { getOperationalReport, type OperationalReport, type PeriodMetric } from 
 import { useHydrated } from '../../lib/useHydrated'
 import { monthLabel } from '../../analytics/lib/monthLabel'
 import { HairlineChart } from '../../analytics/components/HairlineChart'
+import { countLabel } from '@/features/platform/lib/format'
 
 const DAY_MS = 86_400_000
 /** Same threshold the deal desk uses: a pencil or submitted deal is stale after two days. */
@@ -568,7 +569,7 @@ export function OverviewDashboardPageClient({
             <Readout label="Gross" value={formatCurrencyCents(pc.deliveredGrossCents.current)} sub={metrics.deliveredDeals ? `Avg ${formatCurrencyCents(metrics.averageDeliveredGrossCents)} all time` : comparisonLabel(pc.deliveredGrossCents)} tone={comparisonTone(pc.deliveredGrossCents)} />
             <Readout label="Delivered revenue" value={formatCurrencyCents(pc.deliveredRevenueCents.current)} sub={comparisonLabel(pc.deliveredRevenueCents)} tone={comparisonTone(pc.deliveredRevenueCents)} />
             <Readout label="New leads" value={pc.newLeads.current} sub={comparisonLabel(pc.newLeads)} tone={comparisonTone(pc.newLeads)} />
-            <Readout label="Lead conversion" value={`${metrics.leadConversionPercent.toFixed(1)}%`} sub={metrics.convertedLeads != null ? `${metrics.convertedLeads} of ${metrics.totalLeads} leads` : `${metrics.totalLeads} leads`} />
+            <Readout label="Lead conversion" value={`${metrics.leadConversionPercent.toFixed(1)}%`} sub={metrics.convertedLeads != null ? `${metrics.convertedLeads} of ${countLabel(metrics.totalLeads, 'lead')}` : countLabel(metrics.totalLeads, 'lead')} />
             <Readout label="Service revenue" value={formatCurrencyCents(pc.settledServiceRevenueCents.current)} sub={comparisonLabel(pc.settledServiceRevenueCents)} tone={comparisonTone(pc.settledServiceRevenueCents)} />
           </ReadoutStrip>
         </DeskSection>
@@ -576,7 +577,7 @@ export function OverviewDashboardPageClient({
 
         <DeskSection id="overview-stock-service" title="Stock and shop">
           <ReadoutStrip>
-            <Readout label="Units in stock" value={metrics.inventory.available} sub={metrics.inventory.available ? `Avg age ${averageAge} days` : undefined} />
+            <Readout label="Units in stock" value={metrics.inventory.available} sub={metrics.inventory.available ? `Avg age ${countLabel(averageAge, 'day')}` : undefined} />
             <Readout label="Retail" value={formatCurrencyCents(metrics.inventory.retailCents)} />
             <Readout label="Cost" value={formatCurrencyCents(metrics.inventory.costCents)} sub={`Spread ${formatCurrencyCents(metrics.inventory.retailCents - metrics.inventory.costCents)}`} />
             <Readout label="Sold hours" value={metrics.service.soldHours.toFixed(1)} sub={`Actual ${metrics.service.actualHours.toFixed(1)} · ELR ${formatCurrencyCents(metrics.service.effectiveLaborRateCents)}`} />

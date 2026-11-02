@@ -21,6 +21,7 @@ import {
 import { DEFAULT_STORE_LOGO_COLOR, normalizeStoreLogoColor } from '@/features/lib/store-logo'
 import { HUE_PRESETS, LOGO_ICONS } from '../lib/icon-registry'
 import { formatBpsForInput, formatCentsForInput, parseDollarsToCents, parsePercentToBps } from '@/features/platform/deals/lib/moneyInput'
+import { countLabel } from '@/features/platform/lib/format'
 
 const EMPTY_SETTINGS: DealershipStoreSettings = {
   name: '',
@@ -237,7 +238,7 @@ export function StoreSettingsPageClient({
     </Pill>
   )
 
-  const stateWord = initialError ? 'Unavailable' : !initialSettings ? 'Not set up' : missing.length ? `${missing.length} details missing` : 'Set up'
+  const stateWord = initialError ? 'Unavailable' : !initialSettings ? 'Not set up' : missing.length ? `${countLabel(missing.length, 'detail')} missing` : 'Set up'
 
   const presets = [
     ...HUE_PRESETS,

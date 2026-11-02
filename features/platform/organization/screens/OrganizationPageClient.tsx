@@ -13,6 +13,7 @@ import { RetentionSection } from '../components/RetentionSection'
 import { RolesSection } from '../components/RolesSection'
 import { RooftopsSection } from '../components/RooftopsSection'
 import type { OrganizationData, OrganizationTab } from '../lib/types'
+import { countLabel } from '@/features/platform/lib/format'
 
 export function OrganizationPageClient({
   data,
@@ -72,7 +73,7 @@ export function OrganizationPageClient({
     <DeskHeader
       title={group?.name || 'Organization'}
       status={groupState}
-      meta={`${groupState} · ${activeRooftops} active rooftops · ${activeMembers} active members${pendingInvites ? ` · ${pendingInvites} invited` : ''} · ${data.roles.length} roles`}
+      meta={`${groupState} · ${countLabel(activeRooftops, 'active rooftop')} · ${countLabel(activeMembers, 'active member')}${pendingInvites ? ` · ${pendingInvites} invited` : ''} · ${countLabel(data.roles.length, 'role')}`}
       actions={
         <Pill variant="plain" className="h-11 sm:h-8" onClick={refresh} disabled={refreshing}>
           <RefreshCw className={refreshing ? 'animate-spin' : undefined} />

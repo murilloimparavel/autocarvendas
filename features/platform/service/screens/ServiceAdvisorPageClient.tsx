@@ -28,7 +28,7 @@ import {
   Track,
   type DeskTone,
 } from '@/features/platform/components/desk'
-import { dayKey, formatPhone } from '@/features/platform/lib/format'
+import { dayKey, formatPhone, countLabel } from '@/features/platform/lib/format'
 import { bookServiceAppointment, getFixedOpsWorkspace, openServiceOrder, transitionServiceAppointment } from '../actions'
 import { createAttemptKeys } from '../lib/attemptKeys'
 import { formatAge, formatCents, formatDateTime, formatTime } from '../lib/serviceFormat'
@@ -273,7 +273,7 @@ export function ServiceAdvisorPageClient({
       title="Service"
       tone={error ? 'bad' : appointmentCounts['waiting-parts'] > 0 ? 'warn' : 'ok'}
       status={error ? 'Unavailable' : `${appointmentCounts['waiting-parts']} waiting parts`}
-      meta={error ? 'Unavailable' : `${appointmentCounts.today} appointments today · ${waitingOrders.length} ROs waiting · ${workingOrders.length} open ROs`}
+      meta={error ? 'Unavailable' : `${countLabel(appointmentCounts.today, 'appointment')} today · ${countLabel(waitingOrders.length, 'RO')} waiting · ${countLabel(workingOrders.length, 'open RO')}`}
       actions={
         <>
           <Pill variant="plain" className="max-sm:h-11" onClick={loadServiceData} disabled={loading} aria-label="Refresh">
@@ -673,7 +673,7 @@ export function ServiceAdvisorPageClient({
           <Readout label="Open ROs" value={workingOrders.length} />
           <Readout label="Open RO value" value={formatCents(workingValue)} />
           <Readout label="Waiting parts" value={appointmentCounts['waiting-parts']} tone={appointmentCounts['waiting-parts'] > 0 ? 'warn' : undefined} />
-          <Readout label="Low stock" value={lowParts.length} tone={lowParts.length > 0 ? 'bad' : undefined} sub={`${parts.length} parts`} />
+          <Readout label="Low stock" value={lowParts.length} tone={lowParts.length > 0 ? 'bad' : undefined} sub={countLabel(parts.length, 'part')} />
         </ReadoutStrip>
       </div>
     </PageContainer>

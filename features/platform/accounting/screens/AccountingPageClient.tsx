@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Panel, Pill, Readout, ReadoutStrip, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
-import { recordReference } from '@/features/platform/lib/format'
+import { recordReference, countLabel } from '@/features/platform/lib/format'
 
 import {
   configureAccountingMapping,
@@ -372,8 +372,8 @@ export function AccountingPageClient({
           : [
               counts.failed > 0 ? `${counts.failed} failed` : '',
               counts.staged + counts.posting > 0 ? `${counts.staged + counts.posting} not posted` : '',
-              `${counts.all} batches`,
-              `${mappings.length} mappings`,
+              countLabel(counts.all, 'batch', 'batches'),
+              countLabel(mappings.length, 'mapping'),
             ].filter(Boolean).join(' · ')
       }
       actions={

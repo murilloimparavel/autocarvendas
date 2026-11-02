@@ -13,6 +13,7 @@ import { RunsPanel, type RunStatusFilter } from '../components/RunsPanel'
 import { SavedReportsPanel } from '../components/SavedReportsPanel'
 import { effectiveRunStatus, reportTypeLabel } from '../lib/reportOptions'
 import { formatDateTime } from '../lib/time'
+import { countLabel } from '@/features/platform/lib/format'
 
 export type ReportsTab = 'saved' | 'runs' | 'audit' | 'outbox'
 
@@ -117,7 +118,7 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
       meta={
         <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="font-medium text-foreground">{stateWords}</span>
-          <span>{activeReports} active saved reports · {data.runs.data.length} runs · {queuedRuns.length} queued</span>
+          <span>{countLabel(activeReports, 'active saved report')} · {countLabel(data.runs.data.length, 'run')} · {queuedRuns.length} queued</span>
         </span>
       }
       actions={
