@@ -106,7 +106,7 @@ export function VehicleGallery({
               <button
                 type="button"
                 onClick={() => step(-1)}
-                className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] bg-[var(--sf-asphalt)] text-[var(--sf-on-dark)] transition-colors hover:bg-[var(--sf-ink)]"
+                className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] bg-[var(--sf-asphalt)] text-[var(--sf-on-dark)] transition-colors hover:bg-[var(--sf-ink)] hover:text-[var(--sf-asphalt)]"
                 aria-label="Previous photo"
               >
                 <ChevronLeft className="size-5" aria-hidden="true" />
@@ -114,7 +114,7 @@ export function VehicleGallery({
               <button
                 type="button"
                 onClick={() => step(1)}
-                className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] bg-[var(--sf-asphalt)] text-[var(--sf-on-dark)] transition-colors hover:bg-[var(--sf-ink)]"
+                className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] bg-[var(--sf-asphalt)] text-[var(--sf-on-dark)] transition-colors hover:bg-[var(--sf-ink)] hover:text-[var(--sf-asphalt)]"
                 aria-label="Next photo"
               >
                 <ChevronRight className="size-5" aria-hidden="true" />
