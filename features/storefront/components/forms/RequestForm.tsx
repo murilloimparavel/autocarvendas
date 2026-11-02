@@ -2,7 +2,7 @@ import Image from 'next/image'
 import type { ChangeEvent, ReactNode } from 'react'
 import type { Vehicle } from '@/features/storefront/lib/types'
 import { vehicleTitle } from '../../lib/format'
-import { primaryVehicleImage, vehicleImageUrl } from '../../lib/images'
+import { primaryVehicleImage, vehicleImageUrl, skipImageOptimizer } from '../../lib/images'
 import { Container } from '../Container'
 import { VehiclePhotoPlaceholder } from '../VehiclePhotoPlaceholder'
 
@@ -186,7 +186,7 @@ export function StickerVehicle({ vehicle, label }: { vehicle: Vehicle; label: st
     <div className="flex items-center gap-3 border-b border-dashed p-3" style={{ borderColor: 'var(--sf-rule)' }}>
       <div className="sf-photo relative h-16 w-24 shrink-0">
         {src ? (
-          <Image src={src} alt={vehicleTitle(vehicle)} fill className="object-cover" sizes="96px" unoptimized />
+          <Image src={src} alt={vehicleTitle(vehicle)} fill className="object-cover" sizes="96px" unoptimized={skipImageOptimizer(src)} />
         ) : (
           <VehiclePhotoPlaceholder className="origin-center scale-[0.6]" />
         )}

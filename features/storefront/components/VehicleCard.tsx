@@ -11,7 +11,7 @@ import {
   removeFromComparison,
 } from '@/features/storefront/lib/comparison'
 import { formatMileage, formatPrice } from '../lib/format'
-import { primaryVehicleImage, vehicleImageUrl } from '../lib/images'
+import { primaryVehicleImage, vehicleImageUrl, skipImageOptimizer } from '../lib/images'
 import { vehicleConditionLabel, vehicleStatus } from '../lib/vehicleStatus'
 import { PhotoAttribution } from './PhotoAttribution'
 import { isRepresentativePhoto } from '../lib/photoAttribution'
@@ -76,7 +76,7 @@ export function VehicleCard({
       <article className="sf-lift grid min-w-0 gap-5 md:grid-cols-[1.25fr_1fr] md:gap-8">
         <Link href={href} className="sf-photo block aspect-[4/3]" tabIndex={-1} aria-hidden="true">
           {imageUrl ? (
-            <Image src={imageUrl} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 55vw" priority={priority} unoptimized />
+            <Image src={imageUrl} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 55vw" priority={priority} unoptimized={skipImageOptimizer(imageUrl)} />
           ) : (
             <VehiclePhotoPlaceholder />
           )}
@@ -127,7 +127,7 @@ export function VehicleCard({
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             priority={priority}
-            unoptimized
+            unoptimized={skipImageOptimizer(imageUrl)}
           />
         ) : (
           <VehiclePhotoPlaceholder />

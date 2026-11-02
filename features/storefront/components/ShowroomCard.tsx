@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import type { Vehicle } from '../lib/types'
 import { formatMileage, formatPrice } from '../lib/format'
-import { primaryVehicleImage, vehicleImageUrl } from '../lib/images'
+import { primaryVehicleImage, vehicleImageUrl, skipImageOptimizer } from '../lib/images'
 import { vehicleConditionLabel } from '../lib/vehicleStatus'
 import { VehiclePhotoPlaceholder } from './VehiclePhotoPlaceholder'
 
@@ -19,7 +19,7 @@ export function ShowroomCard({ vehicle, currencyCode, priority = false }: { vehi
   return (
     <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-card group" aria-label={`${name}${vehicle.trim ? ` ${vehicle.trim}` : ''}, ${formatPrice(vehicle.price, currencyCode)}`}>
       {image ? (
-        <Image src={image} alt="" fill unoptimized priority={priority} sizes="(min-width: 1024px) 22rem, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+        <Image src={image} alt="" fill unoptimized={skipImageOptimizer(image)} priority={priority} sizes="(min-width: 1024px) 22rem, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
       ) : (
         <VehiclePhotoPlaceholder />
       )}
@@ -44,7 +44,7 @@ export function ShowroomRow({ vehicle, currencyCode, priority = false }: { vehic
   return (
     <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-row group" aria-label={`${vehicle.year} ${model}, ${formatPrice(vehicle.price, currencyCode)}`}>
       {image ? (
-        <Image src={image} alt="" fill unoptimized priority={priority} sizes="100vw" className="object-cover object-[70%_60%]" />
+        <Image src={image} alt="" fill unoptimized={skipImageOptimizer(image)} priority={priority} sizes="100vw" className="object-cover object-[70%_60%]" />
       ) : (
         <VehiclePhotoPlaceholder />
       )}

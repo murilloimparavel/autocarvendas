@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { VehicleImage } from '@/features/storefront/lib/types'
-import { vehicleImageUrl } from '../../lib/images'
+import { vehicleImageUrl, skipImageOptimizer } from '../../lib/images'
 import { PhotoAttribution } from '../PhotoAttribution'
 import { isRepresentativePhoto } from '../../lib/photoAttribution'
 import { VehiclePhotoPlaceholder } from '../VehiclePhotoPlaceholder'
@@ -84,7 +84,7 @@ export function VehicleGallery({
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 62vw"
             priority
-            unoptimized
+            unoptimized={skipImageOptimizer(currentImageUrl)}
             draggable={false}
           />
         ) : (
@@ -149,7 +149,7 @@ export function VehicleGallery({
                 aria-label={`View image ${index + 1}`}
                 aria-pressed={active}
               >
-                {url && <Image src={url} alt="" fill className="object-cover" sizes="96px" unoptimized />}
+                {url && <Image src={url} alt="" fill className="object-cover" sizes="96px" unoptimized={skipImageOptimizer(url)} />}
               </button>
             )
           })}

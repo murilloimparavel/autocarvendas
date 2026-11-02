@@ -101,7 +101,7 @@ export async function HomePage() {
     <div className="sf-home" data-flush-end>
       {/* ---------- Desktop and tablet ---------- */}
       <section className="relative hidden overflow-hidden md:block">
-        <Image src={HERO_PHOTO} alt="" fill priority unoptimized sizes="100vw" className="object-cover object-[60%_55%]" />
+        <Image src={HERO_PHOTO} alt="" fill priority sizes="100vw" className="object-cover object-[60%_55%]" />
         <span className="sf-hero-shade" aria-hidden="true" />
         <Container className="relative flex min-h-[26.25rem] flex-col pb-[1.125rem] pt-[3.25rem]">
           <h1 className="sf-display sf-hero-title">
@@ -155,7 +155,8 @@ export async function HomePage() {
       {/* ---------- Phone ---------- */}
       <section className="sf-dock-clear relative overflow-hidden md:hidden">
         <span className="sf-phone-glow" aria-hidden="true">
-          <Image src={HERO_PHOTO} alt="" fill priority unoptimized sizes="100vw" className="object-cover object-[45%_70%]" />
+          {/* Drawn blurred at a third opacity, so a thumbnail-sized source looks the same and lands first. */}
+          <Image src={HERO_PHOTO} alt="" fill priority sizes="160px" className="object-cover object-[45%_70%]" />
         </span>
         <Container className="relative">
           <h1 className="sf-display sf-phone-title mx-auto mt-2 w-fit" aria-label={`Driven by you. ${business.fullName}`}>
@@ -202,7 +203,7 @@ export async function HomePage() {
             )}
 
             <section className="sf-visit-card" aria-labelledby="home-visit">
-              <Image src={HERO_PHOTO} alt="" fill unoptimized sizes="100vw" className="object-cover object-[88%_60%]" />
+              <Image src={HERO_PHOTO} alt="" fill sizes="(max-width: 767px) 100vw, 1px" className="object-cover object-[88%_60%]" />
               <span className="sf-showroom-row-shade" aria-hidden="true" />
               <div className="relative max-w-[70%] px-4 py-4">
                 <h2 id="home-visit" className="sf-display text-[1.5rem] leading-[0.95]" style={{ fontStretch: '100%' }}>

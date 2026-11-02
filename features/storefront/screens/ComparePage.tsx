@@ -17,7 +17,7 @@ import { PageHeader } from '../components/PageHeader'
 import { useStorefrontBusiness } from '../components/StorefrontBusinessProvider'
 import { VehiclePhotoPlaceholder } from '../components/VehiclePhotoPlaceholder'
 import { formatPrice, formatMileage, vehicleTitle } from '../lib/format'
-import { primaryVehicleImage, vehicleImageUrl } from '../lib/images'
+import { primaryVehicleImage, vehicleImageUrl, skipImageOptimizer } from '../lib/images'
 import { vehicleConditionLabel, vehicleStatus } from '../lib/vehicleStatus'
 import { partitionSavedVehicleResults } from '../lib/data/compare-inventory'
 
@@ -269,7 +269,7 @@ export function ComparePage() {
                     <th key={vehicle.id} scope="col" className="min-w-[13rem] p-3 text-left align-top font-normal sm:min-w-[15rem] sm:p-4">
                       <Link href={`/inventory/${vehicle.id}`} className="sf-photo block aspect-[4/3]" tabIndex={-1} aria-hidden="true">
                         {imageUrl ? (
-                          <Image src={imageUrl} alt="" fill className="object-cover" sizes="240px" unoptimized />
+                          <Image src={imageUrl} alt="" fill className="object-cover" sizes="240px" unoptimized={skipImageOptimizer(imageUrl)} />
                         ) : (
                           <VehiclePhotoPlaceholder />
                         )}
