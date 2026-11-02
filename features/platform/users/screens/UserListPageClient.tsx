@@ -1,10 +1,10 @@
-import { formatInZone } from '@/features/dashboard/lib/storeTime';
 /**
  * UserListPageClient - Client Component  
  * Based on dashboard ListPageClient but hardcoded for users
  */
 
 'use client'
+import { formatInZone } from '@/features/dashboard/lib/storeTime';
 
 import React, { useState, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
