@@ -1,7 +1,7 @@
 import { permissions } from '../access'
 import { inventoryCommand } from './inventoryCommandErrors'
 import { assertActiveInventory } from './inventoryActiveStatus'
-import { lockInventoryStock } from '../lifecycle/inventoryPublication'
+import { lockInventoryStock, photoArrangementUnchanged } from '../lifecycle/inventoryPublication'
 import { recordDomainEventInTransaction, type DomainEventInput } from '../lifecycle/domainEvents'
 import { assertSessionRooftopPermission } from '../tenantRecords'
 
@@ -46,7 +46,11 @@ async function priorEvent(context: any, eventKey: string) {
   return context.sudo().prisma.domainAuditEvent.findUnique({ where: { eventKey }, select: { id: true } })
 }
 
-/** Photos are part of the reviewed listing snapshot, so any change returns the listing to draft. */
+/**
+ * Deliberate: photos are part of the approved snapshot (`merchandisingSnapshot`), and the storefront and
+ * feed re-check that hash on every read, so a reviewer must see the photos customers will see. A real
+ * photo change therefore reopens review; a no-op arrange does not reach here.
+ */
 async function returnListingToDraft(tx: any, stock: any, actorId: string) {
   await tx.prisma.inventoryStock.update({ where: { id: stock.id }, data: { merchandisingStatus: 'draft', approvedRevisionHash: '', feedStatus: 'not-published' } })
   await tx.prisma.inventoryMerchandisingVersion.updateMany({ where: { stockId: stock.id, status: 'submitted' }, data: { status: 'rejected', decisionReason: 'Superseded by photo change', decidedById: actorId, decidedAt: new Date() } })
@@ -146,9 +150,10 @@ async function arrangeInventoryVehiclePhotosCommand(_root: unknown, { data }: an
   const reused = await context.transaction(async (tx: any) => {
     await lockInventoryStock(tx, stock.id)
     if (await recordPhotoEvent(tx, stock, context, eventKey, 'merchandising-photos-arranged', reason, evidence)) return true
-    const current = await tx.prisma.vehicleImage.findMany({ where: { vehicleId: stock.vehicle.id }, select: { id: true } })
+    const current = await tx.prisma.vehicleImage.findMany({ where: { vehicleId: stock.vehicle.id }, select: { id: true, sortOrder: true, isPrimary: true } })
     const currentIds = new Set(current.map((image: any) => image.id))
     if (current.length !== imageIds.length || imageIds.some(id => !currentIds.has(id))) throw new Error('Photos changed; reload and try again')
+    if (photoArrangementUnchanged(current, imageIds)) return false
     for (const [index, id] of imageIds.entries()) {
       await tx.prisma.vehicleImage.update({ where: { id }, data: { sortOrder: index, isPrimary: index === 0 } })
     }

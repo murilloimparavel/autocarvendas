@@ -36,6 +36,20 @@ export function merchandisingSnapshot(stock: any) {
   }
 }
 
+/**
+ * True when arranging photos as `imageIds` (primary first) would leave every photo's `sortOrder` and
+ * `isPrimary` as they are. Such a command changes nothing the reviewer approved, so it must not
+ * reopen review; any real reorder or primary change does alter the approved snapshot.
+ */
+export function photoArrangementUnchanged(current: Array<{ id: string; sortOrder?: number | null; isPrimary?: boolean | null }>, imageIds: string[]) {
+  const byId = new Map(current.map(image => [String(image.id), image]))
+  if (current.length !== imageIds.length || byId.size !== imageIds.length) return false
+  return imageIds.every((id, index) => {
+    const image = byId.get(id)
+    return Boolean(image) && (image!.sortOrder ?? 0) === index && Boolean(image!.isPrimary) === (index === 0)
+  })
+}
+
 export function assertMerchandisingContent(stock: any) {
   const snapshot = merchandisingSnapshot(stock)
   if (!snapshot.description || !Number.isInteger(snapshot.priceCents) || snapshot.priceCents <= 0 || !snapshot.images.some((image: any) => image.imagePath || image.imageId)) {
