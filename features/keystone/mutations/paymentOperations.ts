@@ -3,6 +3,9 @@ import { calculateDealPrice } from '../lifecycle/dealPricing'
 import { executeAdapterFunction } from '../utils/paymentProviderAdapter'
 import { recordDomainEventInTransaction } from '../lifecycle/domainEvents'
 import { assertSessionRooftopPermission } from '../tenantRecords'
+import { paymentReturnState, paymentReturnUrls, readPaymentReturnReference } from '../lib/paymentReturn'
+
+const paymentReturnSecret = () => process.env.SESSION_SECRET || ''
 
 const required = (value: unknown, name: string, max = 500) => {
   const text = String(value || '').trim()
@@ -60,13 +63,13 @@ async function payableSource(context: any, sourceType: string, sourceId: string)
     const rooftop = deal && await canManageSourcePayments(context, deal.rooftopId) ? await context.query.Rooftop.findOne({ where: { id: deal.rooftopId }, query: 'id currencyCode' }) : null
     if (!deal || !rooftop?.id || !['approved', 'financed', 'delivered'].includes(deal.status)) throw new Error('Accessible approved deal source required')
     const total = calculateDealPrice(deal).cashPayableCents
-    return { rooftopId: rooftop.id, currency: String(rooftop.currencyCode || 'USD').toLowerCase(), maximumCents: Math.max(0, total), description: `${deal.vehicle?.year || ''} ${deal.vehicle?.make || ''} ${deal.vehicle?.model || ''} deal payment`.trim(), returnPath: `/dashboard/platform/deals/${deal.id}`, relation: { dealId: deal.id } }
+    return { rooftopId: rooftop.id, currency: String(rooftop.currencyCode || 'USD').toLowerCase(), maximumCents: Math.max(0, total), description: `${deal.vehicle?.year || ''} ${deal.vehicle?.make || ''} ${deal.vehicle?.model || ''} deal payment`.trim(), relation: { dealId: deal.id } }
   }
   if (sourceType === 'service') {
     const order = await context.sudo().prisma.serviceOrder.findUnique({ where: { id: sourceId } })
     const rooftop = order && await canManageSourcePayments(context, order.rooftopId) ? await context.query.Rooftop.findOne({ where: { id: order.rooftopId }, query: 'id currencyCode' }) : null
     if (!order || !rooftop?.id || !['invoiced', 'paid'].includes(order.status)) throw new Error('Accessible invoiced service-order source required')
-    return { rooftopId: rooftop.id, currency: String(rooftop.currencyCode || 'USD').toLowerCase(), maximumCents: Number(order.grandTotalCents || 0), description: `Service invoice ${order.invoiceNumber || order.id}`, returnPath: '/dashboard/platform/service', relation: { serviceOrderId: order.id } }
+    return { rooftopId: rooftop.id, currency: String(rooftop.currencyCode || 'USD').toLowerCase(), maximumCents: Number(order.grandTotalCents || 0), description: `Service invoice ${order.invoiceNumber || order.id}`, relation: { serviceOrderId: order.id } }
   }
   throw new Error('Unsupported payment source')
 }
@@ -100,13 +103,43 @@ export async function createPaymentCheckout(_root: unknown, { data }: any, conte
   try {
     const requestHeaders = context.req?.headers || {}
     const origin = `${requestHeaders['x-forwarded-proto'] || 'https'}://${requestHeaders['x-forwarded-host'] || requestHeaders.host}`
-    const response = await executeAdapterFunction({ provider, functionName: 'createPaymentFunction', args: { amount: amountCents, currency, description: source.description, metadata: { openfront_transaction_id: transactionId }, idempotencyKey, successUrl: `${origin}${source.returnPath}?payment=success`, cancelUrl: `${origin}${source.returnPath}?payment=cancelled` } })
+    // The customer pays, so they return to the storefront, never to the dashboard that staff used.
+    const { successUrl, cancelUrl } = paymentReturnUrls(origin, transactionId, paymentReturnSecret())
+    const response = await executeAdapterFunction({ provider, functionName: 'createPaymentFunction', args: { amount: amountCents, currency, description: source.description, metadata: { openfront_transaction_id: transactionId }, idempotencyKey, successUrl, cancelUrl } })
     await context.sudo().prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'pending', checkoutUrl: response?.checkoutUrl, providerSessionId: response?.providerSessionId, providerTransactionId: response?.providerTransactionId, version: { increment: 1 } } })
   } catch (error: any) {
     await context.sudo().prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'failed', failureCode: String(error?.code || error?.message || 'PROVIDER_ERROR').slice(0, 100), version: { increment: 1 } } })
     throw error
   }
   return context.db.PaymentTransaction.findOne({ where: { id: transactionId } })
+}
+
+/** Public: what a customer returning from checkout may see about their own payment. */
+export async function paymentReturnStatus(_root: unknown, { reference }: { reference?: string }, context: any) {
+  const transactionId = readPaymentReturnReference(reference, paymentReturnSecret())
+  if (!transactionId) return null
+  const tx = await context.sudo().prisma.paymentTransaction.findUnique({
+    where: { id: transactionId },
+    select: {
+      status: true, amountCents: true, currency: true, checkoutUrl: true, sourceType: true, updatedAt: true,
+      deal: { select: { vehicle: { select: { year: true, make: true, model: true, trim: true, stockNumber: true } } } },
+      serviceOrder: { select: { invoiceNumber: true } },
+    },
+  })
+  if (!tx) return null
+  const { state, retryUrl } = paymentReturnState(tx.status, tx.checkoutUrl)
+  const vehicle = tx.deal?.vehicle
+  return {
+    state,
+    retryUrl,
+    amountCents: tx.amountCents,
+    currency: String(tx.currency || 'usd').toUpperCase(),
+    reference: `PAY-${transactionId.slice(-8).toUpperCase()}`,
+    purpose: tx.sourceType === 'deal' ? 'Vehicle payment' : 'Service payment',
+    item: vehicle ? [vehicle.year, vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(' ') : tx.serviceOrder?.invoiceNumber ? `Invoice ${tx.serviceOrder.invoiceNumber}` : null,
+    stockNumber: vehicle?.stockNumber || null,
+    updatedAt: tx.updatedAt.toISOString(),
+  }
 }
 
 export async function requestPaymentRefund(_root: unknown, { data }: any, context: any) {

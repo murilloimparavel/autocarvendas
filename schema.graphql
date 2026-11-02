@@ -9194,6 +9194,7 @@ type Query {
   publicInventoryVehicleRecord(id: ID!): PublicInventoryVehicle
   publicInventoryCount(where: JSON): Int!
   storefrontProfile(rooftopSlug: String): StorefrontProfilePayload!
+  paymentReturnStatus(reference: String!): PaymentReturnStatus
   domainTimeline(aggregateType: String!, aggregateId: ID!, limit: Int = 50): [DomainAuditEvent!]!
   inventoryWorkspace(status: String, search: String, limit: Int = 50, offset: Int = 0): InventoryWorkspaceResult!
   crmWorkspace(status: String, search: String, limit: Int = 50, offset: Int = 0): CRMWorkspaceResult!
@@ -11213,6 +11214,18 @@ input RecordInventoryFeedRunInput {
   startedAt: DateTime
   completedAt: DateTime
   idempotencyKey: String!
+}
+
+type PaymentReturnStatus {
+  state: String!
+  retryUrl: String
+  amountCents: Int!
+  currency: String!
+  reference: String!
+  purpose: String!
+  item: String
+  stockNumber: String
+  updatedAt: DateTime!
 }
 
 type StorefrontProfilePayload {

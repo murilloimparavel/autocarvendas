@@ -60,7 +60,7 @@ import { unlinkCustomerHousehold, updateCustomerContact } from './crmCustomerCom
 import { dealLenderOffers } from './dealLenderOffers';
 import { configureAccountingMapping, manageAccountingBatch, stageAccountingBatch } from './accountingOperations';
 import { accountingWorkspace } from './accountingWorkspace';
-import { createPaymentCheckout, reconcilePaymentTransaction, requestPaymentRefund } from './paymentOperations';
+import { createPaymentCheckout, paymentReturnStatus, reconcilePaymentTransaction, requestPaymentRefund } from './paymentOperations';
 import handlePaymentProviderWebhook from './handlePaymentProviderWebhook';
 import { auditSearch, operationalReport, queueDueSavedReports, runSavedReport, saveOperationalReport } from './reportingOperations';
 import { configurePart, manageLaborOperation, managePartsPurchaseOrder, recordPartsMovement, recordServiceOrderEvidence } from './fixedOpsOperations';
@@ -557,6 +557,18 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
       input InventoryFeedErrorInput { stockId: ID, errorCode: String!, message: String!, rowReference: String }
       input RecordInventoryFeedRunInput { channelKey: String!, stockIds: [ID!]!, errors: [InventoryFeedErrorInput!], startedAt: DateTime, completedAt: DateTime, idempotencyKey: String! }
 
+      type PaymentReturnStatus {
+        state: String!
+        retryUrl: String
+        amountCents: Int!
+        currency: String!
+        reference: String!
+        purpose: String!
+        item: String
+        stockNumber: String
+        updatedAt: DateTime!
+      }
+
       type StorefrontProfilePayload {
         configured: Boolean!
         rooftopId: ID!
@@ -600,6 +612,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         publicInventoryVehicleRecord(id: ID!): PublicInventoryVehicle
         publicInventoryCount(where: JSON): Int!
         storefrontProfile(rooftopSlug: String): StorefrontProfilePayload!
+        paymentReturnStatus(reference: String!): PaymentReturnStatus
         domainTimeline(aggregateType: String!, aggregateId: ID!, limit: Int = 50): [DomainAuditEvent!]!
         inventoryWorkspace(status: String, search: String, limit: Int = 50, offset: Int = 0): InventoryWorkspaceResult!
         crmWorkspace(status: String, search: String, limit: Int = 50, offset: Int = 0): CRMWorkspaceResult!
@@ -743,6 +756,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         publicInventoryVehicleRecord,
         publicInventoryCount,
         storefrontProfile,
+        paymentReturnStatus,
         domainTimeline,
         inventoryWorkspace,
         crmWorkspace,
