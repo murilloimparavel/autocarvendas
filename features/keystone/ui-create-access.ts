@@ -131,3 +131,44 @@ export function withItemViewAwareUi<T extends Record<string, ListConfig>>(lists:
   }
   return out as T
 }
+
+/**
+ * Delete buttons follow the list's own operation-level delete access (cannabis 2f96739 pattern).
+ * Lists that set `ui.hideDelete` themselves keep it. hideDelete has no item argument, so a
+ * per-item delete filter still decides on the server. Access rules are not changed.
+ */
+function deleteRule(access: any): ((args: any) => unknown) | undefined {
+  if (typeof access === 'function') return access
+  const operation = access?.operation
+  if (typeof operation === 'function') return operation
+  if (typeof operation?.delete === 'function') return operation.delete
+  return undefined
+}
+
+export async function deleteAllowed(listKey: string, list: ListConfig, args: { session?: unknown; context: unknown }) {
+  const rule = deleteRule(list.access)
+  if (!rule) return true
+  try {
+    return Boolean(await rule({ session: args.session, context: args.context, listKey, operation: 'delete' }))
+  } catch {
+    return false
+  }
+}
+
+export function withDeleteAwareUi<T extends Record<string, ListConfig>>(lists: T): T {
+  const out: Record<string, ListConfig> = {}
+  for (const [listKey, list] of Object.entries(lists)) {
+    if ((list.ui as any)?.hideDelete !== undefined || !deleteRule(list.access)) {
+      out[listKey] = list
+      continue
+    }
+    out[listKey] = {
+      ...list,
+      ui: {
+        ...list.ui,
+        hideDelete: async (args: { session?: unknown; context: unknown }) => !(await deleteAllowed(listKey, list, args)),
+      },
+    }
+  }
+  return out as T
+}

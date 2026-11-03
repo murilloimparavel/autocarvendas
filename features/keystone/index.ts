@@ -2,7 +2,7 @@ import { createAuth } from "@keystone-6/auth";
 import { config } from "@keystone-6/core";
 import "dotenv/config";
 import { models } from "./models";
-import { withCreateAwareUi, withItemViewAwareUi } from "./ui-create-access";
+import { withCreateAwareUi, withDeleteAwareUi, withItemViewAwareUi } from "./ui-create-access";
 import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
 import { permissions } from "./access";
@@ -232,7 +232,7 @@ export default withAuth(
       provider: "postgresql",
       url: databaseURL,
     },
-    lists: withItemViewAwareUi(withCreateAwareUi(models)),
+    lists: withItemViewAwareUi(withDeleteAwareUi(withCreateAwareUi(models))),
     storage: {
       my_images: {
         kind: "s3",
