@@ -207,7 +207,7 @@ export function ClientField({
         <div className="flex gap-2 flex-wrap">
           {foreignList && (
             <Fragment>
-              {!field?.hideCreate && onChange !== undefined && (
+              {!field?.hideCreate && !foreignList.hideCreate && onChange !== undefined && (
                 <>
                   <Button 
                     variant="outline"
