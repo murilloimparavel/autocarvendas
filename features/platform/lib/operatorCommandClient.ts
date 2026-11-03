@@ -1,7 +1,7 @@
 import { ClientError, GraphQLClient } from 'graphql-request'
 
 import { getAuthHeaders } from '@/features/dashboard/lib/cookies'
-import { getGraphQLEndpoint } from '@/features/dashboard/lib/getBaseUrl'
+import { getServerGraphQLTarget } from '@/features/dashboard/lib/getBaseUrl'
 import { PUBLIC_REQUEST_ERROR, safeErrorSummary } from '@/features/dashboard/lib/security'
 
 /** Matches `OPERATOR_COMMAND_REJECTED` in features/keystone/mutations/operatorCommandErrors.ts. */
@@ -25,9 +25,11 @@ function rejectionMessage(error: unknown) {
 /** Server-action helper for finance, funding and delivery mutations. */
 export async function operatorCommandRequest<T>(query: string, variables: Record<string, unknown>): Promise<OperatorCommandResponse<T>> {
   try {
-    const client = new GraphQLClient(await getGraphQLEndpoint(), {
+    const target = await getServerGraphQLTarget()
+    const client = new GraphQLClient(target.endpoint, {
       credentials: 'include',
       redirect: 'error',
+      ...(target.fetch ? { fetch: target.fetch } : {}),
       headers: (await getAuthHeaders()) || {},
     })
     return { success: true, data: await client.request<T>(query, variables) }

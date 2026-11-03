@@ -1,7 +1,7 @@
 import { ClientError, GraphQLClient } from 'graphql-request'
 
 import { getAuthHeaders } from '@/features/dashboard/lib/cookies'
-import { getGraphQLEndpoint } from '@/features/dashboard/lib/getBaseUrl'
+import { getServerGraphQLTarget } from '@/features/dashboard/lib/getBaseUrl'
 import { PUBLIC_REQUEST_ERROR, safeErrorSummary } from '@/features/dashboard/lib/security'
 
 /** Matches `INVENTORY_COMMAND_REJECTED` in features/keystone/mutations/inventoryCommandErrors.ts. */
@@ -24,9 +24,11 @@ function rejectionMessage(error: unknown) {
 
 export async function inventoryCommandRequest<T>(query: string, variables: Record<string, unknown>): Promise<InventoryCommandResponse<T>> {
   try {
-    const client = new GraphQLClient(await getGraphQLEndpoint(), {
+    const target = await getServerGraphQLTarget()
+    const client = new GraphQLClient(target.endpoint, {
       credentials: 'include',
       redirect: 'error',
+      ...(target.fetch ? { fetch: target.fetch } : {}),
       headers: (await getAuthHeaders()) || {},
     })
     return { success: true, data: await client.request<T>(query, variables) }
@@ -48,7 +50,8 @@ export async function inventoryCommandUpload<T>(query: string, variables: Record
     form.append('operations', JSON.stringify({ query, variables }))
     form.append('map', JSON.stringify({ 1: [`variables.${filePath}`] }))
     form.append('1', file, file.name)
-    const response = await fetch(await getGraphQLEndpoint(), {
+    const target = await getServerGraphQLTarget()
+    const response = await (target.fetch ?? fetch)(target.endpoint, {
       method: 'POST',
       headers: (await getAuthHeaders()) || {},
       body: form,

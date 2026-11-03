@@ -5,24 +5,24 @@
 
 import { GraphQLClient, RequestDocument, Variables } from 'graphql-request';
 import { getGraphQLEndpoint } from './getBaseUrl';
+import { getServerGraphQLTarget } from '@/features/dashboard/lib/getBaseUrl';
 
 class OpenfrontClient {
-  private clientPromise: Promise<GraphQLClient> | null = null;
-
+  // Built PER REQUEST: the loopback fetch signs the CURRENT visitor's identity, so nothing about one
+  // visitor (endpoint, identity or headers) may be cached on this instance.
   private async getClient(): Promise<GraphQLClient> {
-    if (!this.clientPromise) {
-      this.clientPromise = (async () => {
-        const endpoint = await getGraphQLEndpoint();
-        return new GraphQLClient(endpoint, {
-          credentials: 'include',
-          headers: {
-            'Connection': 'keep-alive',
-          },
-          timeout: 10000,
-        });
-      })();
-    }
-    return this.clientPromise;
+    // An explicit NEXT_PUBLIC_BACKEND_URL points at another backend: keep that exactly as before.
+    const target = process.env.NEXT_PUBLIC_BACKEND_URL
+      ? { endpoint: await getGraphQLEndpoint(), fetch: undefined }
+      : await getServerGraphQLTarget();
+    return new GraphQLClient(target.endpoint, {
+      credentials: 'include',
+      headers: {
+        'Connection': 'keep-alive',
+      },
+      timeout: 10000,
+      ...(target.fetch ? { fetch: target.fetch } : {}),
+    });
   }
 
   async request<T = any, V extends Variables = Variables>(
