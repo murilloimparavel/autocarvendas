@@ -8,6 +8,7 @@ import {
   internalGraphqlEndpoint,
   internalIdentityHeaders,
   loopbackOrigin,
+  publicForwardHeaders,
 } from './internal-origin'
 
 const SECRET = 'a'.repeat(40)
@@ -177,5 +178,26 @@ test('two visitors through per-request internal fetches get two different signed
     globalThis.fetch = original
     if (prev === undefined) delete process.env.SESSION_SECRET
     else process.env.SESSION_SECRET = prev
+  }
+})
+
+
+test('loopback calls keep the visitor public host so payment return URLs are not 127.0.0.1', async () => {
+  const h = (o: Record<string, string>) => ({ get: (n: string) => o[n] ?? null })
+  assert.deepEqual(publicForwardHeaders(h({ 'x-forwarded-host': 'shop.example.org', 'x-forwarded-proto': 'https' })), { 'x-forwarded-host': 'shop.example.org', 'x-forwarded-proto': 'https' })
+  assert.deepEqual(publicForwardHeaders(h({ host: 'shop.example.org' })), { 'x-forwarded-host': 'shop.example.org', 'x-forwarded-proto': 'https' })
+  assert.deepEqual(publicForwardHeaders(h({ host: '127.0.0.1:3000' })), {})
+  assert.deepEqual(publicForwardHeaders(h({ 'x-forwarded-host': 'evil/x' })), {})
+  assert.deepEqual(publicForwardHeaders(null), {})
+  const original = globalThis.fetch
+  let seen: Headers | undefined
+  globalThis.fetch = (async (_url: any, init: any) => { seen = new Headers(init.headers); return new Response('{}') }) as typeof fetch
+  try {
+    const endpoint = 'http://127.0.0.1:4321/api/graphql'
+    await createInternalGraphqlFetch(null, endpoint, publicForwardHeaders(h({ 'x-forwarded-host': 'shop.example.org' })))(endpoint, {})
+    assert.equal(seen?.get('x-forwarded-host'), 'shop.example.org')
+    assert.equal(seen?.get('x-forwarded-proto'), 'https')
+  } finally {
+    globalThis.fetch = original
   }
 })

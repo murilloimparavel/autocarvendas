@@ -50,10 +50,28 @@ export function internalIdentityHeaders(
   }
 }
 
+/**
+ * The visitor's PUBLIC host and protocol, so a loopback GraphQL call still builds customer-facing
+ * links (payment success/cancel URLs, receipt links) on the public domain rather than 127.0.0.1.
+ * Only well-formed host names are kept; anything else is dropped.
+ */
+export function publicForwardHeaders(headers: HeaderReader | null | undefined): Record<string, string> {
+  if (!headers) return {}
+  const first = (value: string | null) => String(value || '').split(',')[0].trim()
+  const host = first(headers.get('x-forwarded-host')) || first(headers.get('host'))
+  if (!host || !/^[a-z0-9.-]+(?::\d+)?$/i.test(host) || /^(127\.|localhost(?::|$)|0\.0\.0\.0)/i.test(host)) return {}
+  const proto = first(headers.get('x-forwarded-proto')).toLowerCase()
+  return { 'x-forwarded-host': host, 'x-forwarded-proto': proto === 'http' ? 'http' : 'https' }
+}
+
 const INTERNAL_GRAPHQL_TIMEOUT_MS = 10_000
 
 /** A fetch for loopback GraphQL: same endpoint only, no redirects, timeout, fresh signature per call. */
-export function createInternalGraphqlFetch(source: string | null | undefined, endpoint: string): typeof fetch {
+export function createInternalGraphqlFetch(
+  source: string | null | undefined,
+  endpoint: string,
+  forwarded: Record<string, string> = {},
+): typeof fetch {
   const target = new URL(endpoint)
   return async (input, init) => {
     const rawUrl = input instanceof Request ? input.url : String(input)
@@ -62,6 +80,7 @@ export function createInternalGraphqlFetch(source: string | null | undefined, en
       throw new Error('Internal GraphQL requests must target the loopback GraphQL endpoint')
     }
     const headers = new Headers(init?.headers)
+    for (const [name, value] of Object.entries(forwarded)) headers.set(name, value)
     for (const [name, value] of Object.entries(internalIdentityHeaders(source))) headers.set(name, value)
     const controller = new AbortController()
     const callerSignal = init?.signal

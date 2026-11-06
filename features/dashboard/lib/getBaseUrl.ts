@@ -51,14 +51,14 @@ export async function getServerGraphQLTarget(
   sourceHeaders?: { get(name: string): string | null } | null,
 ): Promise<{ endpoint: string; fetch?: typeof fetch }> {
   if (typeof window === 'undefined') {
-    const { internalGraphqlEndpoint, createInternalGraphqlFetch, clientSourceFromHeaders } = await import('@/features/keystone/lib/internal-origin');
+    const { internalGraphqlEndpoint, createInternalGraphqlFetch, clientSourceFromHeaders, publicForwardHeaders } = await import('@/features/keystone/lib/internal-origin');
     const endpoint = internalGraphqlEndpoint();
     if (endpoint) {
       let headersList = sourceHeaders ?? null;
       if (!headersList) {
         try { headersList = await headers(); } catch { headersList = null; }
       }
-      return { endpoint, fetch: createInternalGraphqlFetch(clientSourceFromHeaders(headersList), endpoint) };
+      return { endpoint, fetch: createInternalGraphqlFetch(clientSourceFromHeaders(headersList), endpoint, publicForwardHeaders(headersList)) };
     }
   }
   return { endpoint: await getGraphQLEndpoint() };
