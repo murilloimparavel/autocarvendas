@@ -8,6 +8,7 @@ import { confirmCustomerEmailVerification, customerEmailLinkStatus, requestCusto
 import updateActiveUser from "./updateActiveUser";
 import { submitInquiry } from './submitInquiry';
 import { reserveVehicle } from './reserveVehicle';
+import { payServiceInvoice } from './payServiceInvoice';
 import { submitTestDrive } from './submitTestDrive';
 import { submitTradeIn } from './submitTradeIn';
 import { submitFinancing } from './submitFinancing';
@@ -658,6 +659,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         requestCustomerEmailVerification: CustomerEmailVerificationRequest!
         confirmCustomerEmailVerification(token: String!): CustomerEmailLinkResult!
         cancelCustomerBooking(kind: String!, id: ID!, idempotencyKey: String!): CustomerBookingResult!
+        payServiceInvoice(serviceOrderId: ID!): JSON!
         rescheduleCustomerBooking(kind: String!, id: ID!, date: String!, time: String!, idempotencyKey: String!): CustomerBookingResult!
         updateActiveUser(data: UserUpdateProfileInput!): ActiveUserProfile
         submitInquiry(data: SubmitInquiryInput!): SubmitInquiryPayload!
@@ -803,6 +805,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         requestCustomerEmailVerification: operatorCommand(requestCustomerEmailVerification),
         confirmCustomerEmailVerification: operatorCommand(confirmCustomerEmailVerification),
         cancelCustomerBooking: operatorCommand(cancelCustomerBooking),
+        payServiceInvoice: operatorCommand(payServiceInvoice),
         rescheduleCustomerBooking: operatorCommand(rescheduleCustomerBooking),
         updateActiveUser,
         submitInquiry: publicSubmissionResolver(submitInquiry),

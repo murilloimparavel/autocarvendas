@@ -153,3 +153,23 @@ export async function rescheduleCustomerBooking(input: { kind: 'test-drive' | 's
     return { ok: false, error: errorMessage(error, 'This booking could not be rescheduled.') }
   }
 }
+
+/** Form action on /account/service/<id>: open a card checkout for the invoice's open balance. */
+export async function payServiceInvoiceAction(formData: FormData): Promise<void> {
+  const { redirect } = await import('next/navigation')
+  const id = String(formData.get('serviceOrderId') || '')
+  let checkoutUrl = ''
+  let failure = ''
+  try {
+    const data = await request<{ payServiceInvoice: { checkoutUrl?: string } }>(
+      `mutation PayServiceInvoice($id: ID!) { payServiceInvoice(serviceOrderId: $id) }`,
+      { id }
+    )
+    checkoutUrl = String(data.payServiceInvoice?.checkoutUrl || '')
+    if (!/^https:\/\//.test(checkoutUrl)) failure = 'Card checkout could not be started. Please try again.'
+  } catch (error) {
+    failure = errorMessage(error, 'Card checkout could not be started. Please try again.')
+  }
+  if (failure) redirect(`/account/service/${encodeURIComponent(id)}?payError=${encodeURIComponent(failure)}`)
+  redirect(checkoutUrl)
+}

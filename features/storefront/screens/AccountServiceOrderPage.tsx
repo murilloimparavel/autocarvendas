@@ -1,4 +1,4 @@
-import { getCustomerServiceOrder } from '../actions/customerRecords'
+import { getCustomerServiceOrder, payServiceInvoiceAction } from '../actions/customerRecords'
 import { AccountBack, AccountEmpty, AccountError, AccountHeader, AccountSection } from '../components/account/AccountStates'
 import { Sticker, type StickerRowData } from '../components/forms/RequestForm'
 import { formatCents, formatDate, formatDateTime, serviceOrderStatusLabel, statusLabel, statusTone } from '../lib/accountRecords'
@@ -11,7 +11,7 @@ const STORY: Array<{ key: 'concern' | 'cause' | 'correction' | 'workPerformed' |
   { key: 'recommendations', label: 'Recommendations' },
 ]
 
-export async function AccountServiceOrderPage({ id }: { id: string }) {
+export async function AccountServiceOrderPage({ id, payError = null }: { id: string; payError?: string | null }) {
   const result = await getCustomerServiceOrder(id)
   if (!result.ok) {
     return (
@@ -43,6 +43,7 @@ export async function AccountServiceOrderPage({ id }: { id: string }) {
       { label: 'Balance', value: order.status === 'paid' ? formatCents(0) : formatCents(order.balanceCents), strong: true },
     ] : []),
   ]
+  const canPay = order.status === 'invoiced' && Number(order.balanceCents || 0) > 0
   const story = STORY.filter((item) => String(order[item.key] || '').trim())
 
   return (
@@ -132,7 +133,21 @@ export async function AccountServiceOrderPage({ id }: { id: string }) {
           </AccountSection>
         </div>
 
-        <Sticker title={invoiced ? 'Invoice' : 'Estimate'} meta={order.invoiceNumber || undefined} rows={totals} />
+        <div className="space-y-3">
+          <Sticker
+            title={invoiced ? 'Invoice' : 'Estimate'}
+            meta={order.invoiceNumber || undefined}
+            rows={totals}
+            footer={canPay ? (
+              <form action={payServiceInvoiceAction} className="space-y-2">
+                <input type="hidden" name="serviceOrderId" value={order.id} />
+                <button type="submit" className="sf-btn sf-btn-primary w-full min-h-11">Pay {formatCents(order.balanceCents)} by card</button>
+                <p className="sf-muted text-[length:var(--sf-text-sm)]">Secure card checkout. Your receipt shows here once paid.</p>
+              </form>
+            ) : undefined}
+          />
+          {payError && canPay && <p role="alert" className="text-[length:var(--sf-text-sm)]" style={{ color: 'var(--sf-bad)' }}>{payError}</p>}
+        </div>
       </div>
     </section>
   )

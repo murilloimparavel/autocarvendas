@@ -4,9 +4,10 @@ import { AccountServiceOrderPage } from '@/features/storefront/screens/AccountSe
 
 export const metadata: Metadata = { title: 'Repair order' }
 
-type Props = { params: Promise<{ id: string }> }
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ payError?: string | string[] }> }
 
-export default async function Page({ params }: Props) {
+export default async function Page({ params, searchParams }: Props) {
   const { id } = await params
-  return <AccountServiceOrderPage id={id} />
+  const { payError } = await searchParams
+  return <AccountServiceOrderPage id={id} payError={typeof payError === 'string' ? payError.slice(0, 200) : null} />
 }

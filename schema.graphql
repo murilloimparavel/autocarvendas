@@ -8853,6 +8853,7 @@ type Mutation {
   requestCustomerEmailVerification: CustomerEmailVerificationRequest!
   confirmCustomerEmailVerification(token: String!): CustomerEmailLinkResult!
   cancelCustomerBooking(kind: String!, id: ID!, idempotencyKey: String!): CustomerBookingResult!
+  payServiceInvoice(serviceOrderId: ID!): JSON!
   rescheduleCustomerBooking(kind: String!, id: ID!, date: String!, time: String!, idempotencyKey: String!): CustomerBookingResult!
   updateActiveUser(data: UserUpdateProfileInput!): ActiveUserProfile
   submitInquiry(data: SubmitInquiryInput!): SubmitInquiryPayload!
