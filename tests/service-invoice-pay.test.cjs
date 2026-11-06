@@ -33,6 +33,7 @@ function harness({ owned = ['so1'], status = 'invoiced', payments = [] } = {}) {
       async update({ where, data }) { Object.assign(store.payments.find(p => p.id === where.id), data); return {} },
     },
     domainAuditEvent: { async create() { return { id: 'e' } } },
+    user: { async findUnique() { return { email: 'buyer@example.com' } } },
   };
   const sudo = { prisma, transaction: async (fn) => fn({ prisma }), query: { PaymentProvider: { async findMany() { return [{ id: 'pp', code: 'stripe' }] } } } };
   const context = { session: { listKey: 'User', itemId: 'acct' }, prisma: {}, sudo: () => sudo, req: { headers: { host: 'dealership.openship.org', 'x-forwarded-proto': 'https' } } };
@@ -52,6 +53,7 @@ test('charges exactly the open balance and reuses the open checkout on retry', a
   assert.equal(h.created[0].amountCents, 32000);
   assert.equal(h.created[0].sourceType, 'service');
   assert.equal(h.charges[0].amount, 32000);
+  assert.equal(h.charges[0].customerEmail, 'buyer@example.com');
   const again = await h.mod.payServiceInvoice(null, { serviceOrderId: 'so1' }, h.context);
   assert.equal(again.checkoutUrl, 'https://checkout.stripe.test/s1');
   assert.equal(h.created.length, 1);

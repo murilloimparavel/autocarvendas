@@ -133,6 +133,7 @@ export async function reserveVehicle(_root: unknown, { data }: { data: any }, co
         idempotencyKey: current.idempotencyKey,
         successUrl,
         cancelUrl,
+        customerEmail: email,
       },
     })
     await context.sudo().prisma.paymentTransaction.update({

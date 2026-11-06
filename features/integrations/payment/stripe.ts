@@ -8,6 +8,7 @@ type CreatePaymentInput = {
   successUrl: string;
   cancelUrl: string;
   idempotencyKey?: string;
+  customerEmail?: string;
 };
 
 type PaymentOperationInput = {
@@ -31,7 +32,7 @@ const getStripeClient = () => {
   return new Stripe(stripeKey);
 };
 
-export async function createPaymentFunction({ amount, currency, description, metadata, successUrl, cancelUrl, idempotencyKey }: CreatePaymentInput) {
+export async function createPaymentFunction({ amount, currency, description, metadata, successUrl, cancelUrl, idempotencyKey, customerEmail }: CreatePaymentInput) {
   const stripe = getStripeClient();
 
   const session = await stripe.checkout.sessions.create({
@@ -50,6 +51,8 @@ export async function createPaymentFunction({ amount, currency, description, met
     ],
     metadata,
     payment_intent_data: { metadata },
+    // Prefill the email we already have so the buyer is not asked for it again.
+    ...(customerEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail) ? { customer_email: customerEmail } : {}),
   }, idempotencyKey ? { idempotencyKey } : undefined);
 
   if (!session.id || !session.url) {

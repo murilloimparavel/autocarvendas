@@ -57,6 +57,7 @@ export async function payServiceInvoice(_root: unknown, { serviceOrderId }: { se
     return created.id
   }, { timeout: 30_000 })
 
+  const account = await sudo.prisma.user.findUnique({ where: { id: accountId }, select: { email: true } })
   const current = await sudo.prisma.paymentTransaction.findUnique({ where: { id: transactionId }, include: { serviceOrder: { select: { invoiceNumber: true } } } })
   if (current.checkoutUrl && current.providerSessionId && ['pending', 'creating'].includes(current.status)) return { checkoutUrl: current.checkoutUrl }
   try {
@@ -66,7 +67,7 @@ export async function payServiceInvoice(_root: unknown, { serviceOrderId }: { se
     const response = await executeAdapterFunction({
       provider,
       functionName: 'createPaymentFunction',
-      args: { amount: current.amountCents, currency: current.currency, description: `Service invoice ${current.serviceOrder?.invoiceNumber || ''}`.trim(), metadata: { openfront_transaction_id: transactionId }, idempotencyKey: current.idempotencyKey, successUrl, cancelUrl },
+      args: { amount: current.amountCents, currency: current.currency, description: `Service invoice ${current.serviceOrder?.invoiceNumber || ''}`.trim(), metadata: { openfront_transaction_id: transactionId }, idempotencyKey: current.idempotencyKey, successUrl, cancelUrl, customerEmail: account?.email || undefined },
     })
     await sudo.prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'pending', checkoutUrl: response?.checkoutUrl, providerSessionId: response?.providerSessionId, providerTransactionId: response?.providerTransactionId || '', version: { increment: 1 } } })
     if (!response?.checkoutUrl) throw new Error('Provider returned no checkout link')
