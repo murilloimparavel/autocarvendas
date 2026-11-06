@@ -35,7 +35,7 @@ export function BrandMark({ size = 'md', className = '' }: { size?: 'md' | 'lg';
         </span>
         {rest && (
           <span
-            className={`truncate font-extrabold uppercase ${large ? 'text-[0.8125rem]' : 'text-[0.5625rem] md:text-[0.75rem]'}`}
+            className={`truncate font-extrabold uppercase ${large ? 'text-[0.8125rem]' : 'text-[0.75rem]'}`}
             style={{ color: 'var(--sf-ink)', letterSpacing: '0.01em', fontStretch: '106%', marginTop: '0.2em' }}
           >
             {rest}

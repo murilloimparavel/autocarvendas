@@ -342,7 +342,7 @@ export function Panel({ children, className, ...props }: React.HTMLAttributes<HT
 /** Dense table inside a panel. Columns marked `priority` 2/3 drop at narrower widths. */
 export function DeskTable({ children, className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full min-w-0 max-w-full overflow-x-auto rounded-md border bg-card">
+    <div className="relative w-full min-w-0 max-w-full overflow-x-auto rounded-md border bg-card">
       <table className={cn('w-full border-collapse text-[13px]', className)} {...props}>
         {children}
       </table>
