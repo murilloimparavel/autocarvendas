@@ -1,4 +1,5 @@
 import { storefrontRooftopSlug } from '../../tenantRecords'
+import { activeReservationWhere } from '../../mutations/reservationHold'
 import { assertCurrentInventoryApproval, assertPublishableInventory } from '../../lifecycle/inventoryPublication'
 
 const MAX_CANDIDATES = 5_000
@@ -152,6 +153,13 @@ async function queryPublicInventory(context: any, options: PublicInventoryOption
     const page = matching.slice(skip, skip + take)
     if (!page.length) return { items: [], totalCount: matching.length }
 
+    // A unit held by a live reservation deposit stays listed (test drives and questions are still
+    // welcome) but reads "reserved", so the storefront stops taking a second deposit.
+    const reserved = new Set((await tx.paymentTransaction.findMany({
+      where: { rooftopId, OR: page.map((vehicle: any) => activeReservationWhere(vehicle.id)) },
+      select: { lead: { select: { interestedVehicleId: true } } },
+    })).map((row: any) => row.lead?.interestedVehicleId).filter(Boolean))
+
     const imageIds = page.flatMap((vehicle: any) => (vehicle.images || []).map((image: any) => image.id))
     const imageUrlById = await loadPublicInventoryImageUrls(sudo, imageIds)
     return {
@@ -167,7 +175,7 @@ async function queryPublicInventory(context: any, options: PublicInventoryOption
         exteriorColor: vehicle.exteriorColor,
         mileage: vehicle.mileage,
         price: vehicle.priceCents == null ? null : vehicle.priceCents / 100,
-        status: vehicle.status,
+        status: reserved.has(vehicle.id) ? 'reserved' : vehicle.status,
         condition: vehicle.condition,
         features: vehicle.features,
         description: vehicle.description,

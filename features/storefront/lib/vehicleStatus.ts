@@ -8,6 +8,7 @@ const STATUS: Record<string, { label: string; tone: VehicleStatusTone }> = {
   available: { label: 'Available', tone: 'ok' },
   pending: { label: 'Sale pending', tone: 'warn' },
   hold: { label: 'On hold', tone: 'warn' },
+  reserved: { label: 'Reserved', tone: 'warn' },
   service: { label: 'In prep', tone: 'idle' },
   sold: { label: 'Sold', tone: 'bad' },
 }

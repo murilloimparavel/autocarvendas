@@ -327,14 +327,20 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                   >
                     Get price quote
                   </button>
-                  <button
-                    ref={reserveOpenerRef}
-                    type="button"
-                    onClick={() => openLead('reserve', reserveOpenerRef)}
-                    className="sf-btn sf-btn-ghost px-3"
-                  >
-                    Reserve this vehicle
-                  </button>
+                  {vehicle.status === 'reserved' ? (
+                    <Link href={similarHref} className="sf-btn sf-btn-ghost px-3">
+                      See similar
+                    </Link>
+                  ) : (
+                    <button
+                      ref={reserveOpenerRef}
+                      type="button"
+                      onClick={() => openLead('reserve', reserveOpenerRef)}
+                      className="sf-btn sf-btn-ghost px-3"
+                    >
+                      Reserve this vehicle
+                    </button>
+                  )}
                 </div>
                 <button
                   type="button"

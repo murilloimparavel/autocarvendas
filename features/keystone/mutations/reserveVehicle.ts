@@ -1,6 +1,7 @@
 import { executeAdapterFunction } from '../utils/paymentProviderAdapter'
 import { paymentReturnUrls } from '../lib/paymentReturn'
 import { resolveCustomerInTransaction } from './customerIdentity'
+import { activeReservationWhere } from './reservationHold'
 import { runPublicSubmission } from './publicSubmissionPolicy'
 import { SubmissionError } from './submissionErrors'
 import { optionalText, requiredText, resolveAvailableVehicle, validEmail, validPhone } from './submissionUtils'
@@ -55,6 +56,11 @@ export async function reserveVehicle(_root: unknown, { data }: { data: any }, co
     handler: async (transactionContext, { rooftopId }) => {
       const vehicle = await resolveAvailableVehicle(transactionContext, vehicleId, rooftopId)
       if (!vehicle) throw new SubmissionError('This vehicle is no longer available.', 409, 'VEHICLE_UNAVAILABLE')
+      // One deposit holds one vehicle. The vehicle row is share-locked above; take an advisory lock so
+      // two shoppers paying at once can't both reserve it.
+      await transactionContext.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`vehicle-reservation:${vehicle.id}`}, 0))`
+      const held = await transactionContext.prisma.paymentTransaction.count({ where: { rooftopId, ...activeReservationWhere(vehicle.id) } })
+      if (held > 0) throw new SubmissionError('Another shopper has already reserved this vehicle. Ask about it or browse similar vehicles.', 409, 'VEHICLE_RESERVED')
       const rooftop = await transactionContext.sudo().prisma.rooftop.findUnique({ where: { id: rooftopId }, select: { currencyCode: true } })
       const amountCents = reservationDepositCents(vehicle.priceCents ?? vehicle.listPriceCents)
       const { customer } = await resolveCustomerInTransaction(transactionContext, { rooftopId, firstName, lastName, email, phone })
