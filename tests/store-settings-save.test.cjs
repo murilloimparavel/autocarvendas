@@ -14,12 +14,14 @@ function load(relative) {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   const module = { exports: {} };
-  vm.runInNewContext(output, { module, exports: module.exports }, { filename });
+  // Store-logo defaults now come from the registry, so relative imports load the same way.
+  const req = (name) => (name.startsWith('.') ? load(path.relative(root, path.resolve(path.dirname(filename), name + '.ts'))) : require(name));
+  vm.runInNewContext(output, { module, exports: module.exports, require: req }, { filename });
   return module.exports;
 }
 
 const { sanitizeStoreLogoSvg } = load('features/keystone/utils/storeLogo.ts');
-const { normalizeStoreLogoColor } = load('features/lib/store-logo.ts');
+const { DEFAULT_STORE_LOGO_COLOR, normalizeStoreLogoColor } = load('features/lib/store-logo.ts');
 const { LOGO_ICONS } = load('features/platform/store-settings/lib/icon-registry.ts');
 
 // Mirrors updateStoreSettings in features/platform/store-settings/actions/index.ts.
@@ -61,7 +63,7 @@ test('a pasted custom SVG is kept, trimmed', () => {
 test('the hue is normalized to 0-359', () => {
   assert.equal(payload({ logoColor: '-90' }).data.logoColor, '270');
   assert.equal(payload({ logoColor: '400' }).data.logoColor, '40');
-  assert.equal(payload({ logoColor: 'red' }).data.logoColor, '0');
+  assert.equal(payload({ logoColor: 'red' }).data.logoColor, DEFAULT_STORE_LOGO_COLOR);
 });
 
 test('an unsafe SVG rejects the save', () => {
