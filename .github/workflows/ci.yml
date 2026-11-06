@@ -1,6 +1,7 @@
 name: AutoCarVendas CI / QA
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
   push:
@@ -57,7 +58,7 @@ jobs:
 
   image:
     name: Build and publish immutable GHCR image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: quality
     runs-on: ubuntu-latest
     permissions:
@@ -88,7 +89,7 @@ jobs:
 
   deploy:
     name: Deploy pinned image through Coolify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.COOLIFY_APP_UUID != ''
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.COOLIFY_APP_UUID != ''
     needs: image
     runs-on: ubuntu-latest
     permissions:
@@ -110,7 +111,8 @@ jobs:
             -X PATCH "$COOLIFY_BASE_URL/api/v1/applications/$COOLIFY_APP_UUID" \
             -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
             -H 'Content-Type: application/json' \
-            --data "$(jq -n --arg tag "$IMAGE_TAG" '{docker_registry_image_tag: $tag}')"
+            --data "$(jq -n --arg tag "$IMAGE_TAG" '{docker_registry_image_tag: $tag}')" \
+            --output /dev/null
           response=$(curl --fail --silent --show-error \
             -X POST "$COOLIFY_BASE_URL/api/v1/deploy?uuid=$COOLIFY_APP_UUID" \
             -H "Authorization: Bearer $COOLIFY_API_TOKEN")
