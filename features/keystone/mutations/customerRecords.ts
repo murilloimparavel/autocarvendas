@@ -361,10 +361,13 @@ export async function customerPayments(_root: unknown, _args: unknown, context: 
     ] },
     take: PAGE,
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    select: { ...paymentSelect, deal: { select: { vehicle: vehicleSelect } }, serviceOrder: { select: { invoiceNumber: true } }, lead: { select: { interestedVehicle: vehicleSelect } } },
+    select: { ...paymentSelect, rooftopId: true, deal: { select: { vehicle: vehicleSelect } }, serviceOrder: { select: { invoiceNumber: true } }, lead: { select: { interestedVehicle: vehicleSelect } } },
   })
+  // Times read in the dealership's zone, like every other account record.
+  const timezone = await rooftopTimezones(prisma, payments)
   return payments.map((payment: any) => ({
     ...paymentRow(payment),
+    timezone: timezone(payment),
     label: payment.sourceType === 'service'
       ? `Service invoice ${payment.serviceOrder?.invoiceNumber || ''}`.trim()
       : payment.sourceType === 'reservation'

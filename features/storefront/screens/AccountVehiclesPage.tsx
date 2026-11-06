@@ -39,7 +39,7 @@ function PaymentList({ payments }: { payments: CustomerPayment[] }) {
               <span className="sf-heading">{payment.label || (payment.sourceType === 'service' ? 'Service payment' : 'Vehicle payment')}</span>
               <span className="sf-muted text-[length:var(--sf-text-sm)]">{statusLabel(payment.status)}</span>
             </p>
-            <p className="sf-muted mt-1 pl-4 text-[length:var(--sf-text-sm)]">{formatDateTime(payment.createdAt)}</p>
+            <p className="sf-muted mt-1 pl-4 text-[length:var(--sf-text-sm)]">{formatDateTime(payment.createdAt, payment.timezone)}</p>
           </div>
           <div className="pl-4 sm:pl-0 sm:text-right">
             <p className="sf-price">{formatCents(payment.amountCents, payment.currency)}</p>

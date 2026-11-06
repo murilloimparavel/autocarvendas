@@ -105,6 +105,7 @@ export type CustomerPayment = {
   dealId: string | null
   serviceOrderId: string | null
   label?: string
+  timezone?: string | null
 }
 
 export type CustomerVehicle = { id: string; year?: number | string | null; make?: string | null; model?: string | null; trim?: string | null; vin?: string | null; stockNumber?: string | null; label?: string | null }
