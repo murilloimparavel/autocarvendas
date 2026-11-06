@@ -53,6 +53,17 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
   const [formData, setFormData] = useState(emptyForm)
   const testDriveOpenerRef = useRef<HTMLButtonElement>(null)
+  // The sticky mobile action bar only shows once the in-page actions have scrolled away,
+  // so it never sits on top of "Schedule test drive" (as on Cars.com and CarMax).
+  const actionsRef = useRef<HTMLDivElement>(null)
+  const [actionsVisible, setActionsVisible] = useState(true)
+  useEffect(() => {
+    const node = actionsRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setActionsVisible(entry.isIntersecting), { rootMargin: '0px 0px -96px 0px' })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
   const quoteOpenerRef = useRef<HTMLButtonElement>(null)
   const reserveOpenerRef = useRef<HTMLButtonElement>(null)
   const contactOpenerRef = useRef<HTMLButtonElement>(null)
@@ -309,7 +320,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                 </Link>
               </div>
             ) : (
-              <div className="mt-5 space-y-2">
+              <div ref={actionsRef} className="mt-5 space-y-2">
                 <button
                   ref={testDriveOpenerRef}
                   type="button"
@@ -458,9 +469,11 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
 
       {!readOnly && (
       <div
-        className={`fixed inset-x-3 z-40 lg:hidden ${compareCount > 0 ? 'bottom-[7.25rem] md:bottom-[5.25rem]' : 'bottom-12'}`}
+        className={`fixed inset-x-3 z-40 transition-[opacity,transform] duration-200 lg:hidden ${compareCount > 0 ? 'bottom-[7.25rem] md:bottom-[5.25rem]' : 'bottom-12'} ${actionsVisible ? 'pointer-events-none translate-y-4 opacity-0' : 'opacity-100'}`}
         role="region"
         aria-label="Vehicle actions"
+        aria-hidden={actionsVisible || undefined}
+        inert={actionsVisible || undefined}
       >
         <div
           className="mx-auto grid max-w-md grid-cols-4 gap-1.5 rounded-[var(--sf-radius-md)] border p-1.5"
