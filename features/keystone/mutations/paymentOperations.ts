@@ -4,6 +4,7 @@ import { executeAdapterFunction } from '../utils/paymentProviderAdapter'
 import { recordDomainEventInTransaction } from '../lifecycle/domainEvents'
 import { assertSessionRooftopPermission } from '../tenantRecords'
 import { paymentReturnState, paymentReturnUrls, readPaymentReturnReference } from '../lib/paymentReturn'
+import { applyPaidReservationInTransaction, deliverReservationConfirmation } from '../lib/reservationFollowUp'
 
 const paymentReturnSecret = () => process.env.SESSION_SECRET || ''
 
@@ -62,7 +63,10 @@ async function payableSource(context: any, sourceType: string, sourceId: string)
     const deal = await context.sudo().prisma.deal.findUnique({ where: { id: sourceId }, include: { vehicle: { select: { year: true, make: true, model: true } } } })
     const rooftop = deal && await canManageSourcePayments(context, deal.rooftopId) ? await context.query.Rooftop.findOne({ where: { id: deal.rooftopId }, query: 'id currencyCode' }) : null
     if (!deal || !rooftop?.id || !['approved', 'financed', 'delivered'].includes(deal.status)) throw new Error('Accessible approved deal source required')
-    const total = calculateDealPrice(deal).cashPayableCents
+    // A reservation deposit the buyer already paid on this vehicle counts toward the amount due.
+    const deposits = await context.sudo().prisma.paymentTransaction.findMany({ where: { rooftopId: deal.rooftopId, sourceType: 'reservation', status: { in: ['captured', 'partially-refunded', 'refunded'] }, ...(deal.leadId ? { leadId: deal.leadId, lead: { is: { interestedVehicleId: deal.vehicleId } } } : { id: '__none__' }) }, select: { capturedCents: true, refundedCents: true }, take: 50 })
+    const depositCents = deposits.reduce((sum: number, row: any) => sum + Number(row.capturedCents || 0) - Number(row.refundedCents || 0), 0)
+    const total = calculateDealPrice(deal).cashPayableCents - depositCents
     return { rooftopId: rooftop.id, currency: String(rooftop.currencyCode || 'USD').toLowerCase(), maximumCents: Math.max(0, total), description: `${deal.vehicle?.year || ''} ${deal.vehicle?.make || ''} ${deal.vehicle?.model || ''} deal payment`.trim(), relation: { dealId: deal.id } }
   }
   if (sourceType === 'service') {
@@ -197,7 +201,7 @@ export async function reconcilePaymentTransaction(_root: unknown, { data }: any,
 export async function processVerifiedPaymentWebhook(event: VerifiedPaymentEvent, context: any) {
   const supportedEvents = ['checkout.session.completed', 'checkout.session.expired', 'payment_intent.succeeded', 'payment_intent.payment_failed', 'payment_intent.canceled', 'refund.created', 'refund.updated']
   if (!supportedEvents.includes(event.type)) throw new Error('Unsupported payment webhook event type')
-  return context.transaction(async (tx: any) => {
+  const result: { duplicate: boolean; transactionId: string; status?: string; sourceType?: string } = await context.transaction(async (tx: any) => {
     await tx.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`payment-webhook:${event.transactionId}`}, 0))`
     const duplicate = await tx.prisma.paymentProviderEvent.findUnique({ where: { providerEventId: event.id } })
     if (duplicate) return { duplicate: true, transactionId: duplicate.transactionId }
@@ -233,6 +237,11 @@ export async function processVerifiedPaymentWebhook(event: VerifiedPaymentEvent,
       const totals = await tx.prisma.paymentTransaction.aggregate({ where: { serviceOrderId: transaction.serviceOrderId, status: { in: ['captured', 'partially-refunded', 'refunded'] } }, _sum: { capturedCents: true, refundedCents: true } })
       if (order?.status === 'invoiced' && Number(totals._sum.capturedCents || 0) - Number(totals._sum.refundedCents || 0) >= Number(order.grandTotalCents || 0)) await tx.prisma.serviceOrder.update({ where: { id: transaction.serviceOrderId }, data: { status: 'paid', settledAt: new Date() } })
     }
-    return { duplicate: false, transactionId: transaction.id, status }
+    if (status === 'captured' && transaction.sourceType === 'reservation' && transaction.leadId) {
+      await applyPaidReservationInTransaction(tx, { id: transaction.id, rooftopId: transaction.rooftopId, leadId: transaction.leadId, capturedCents })
+    }
+    return { duplicate: false, transactionId: transaction.id, status, sourceType: transaction.sourceType as string }
   }, { timeout: 30_000 })
+  if (!result.duplicate && result.status === 'captured' && result.sourceType === 'reservation') await deliverReservationConfirmation(context, result.transactionId)
+  return result
 }

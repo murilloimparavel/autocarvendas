@@ -18,6 +18,7 @@ function copyFor(outcome: Outcome, payment: PaymentReturn | null) {
   if (!payment) {
     return { tone: 'warn', title: outcome === 'success' ? 'Payment received' : 'Payment not completed', line: 'We could not look up this payment link. Contact the dealership and they will confirm it for you.' }
   }
+  if (payment.state === 'received' && payment.purpose === 'Reservation deposit') return { tone: 'ok', title: 'Vehicle reserved', line: `Thank you. ${payment.item || 'The vehicle'} is held for you. A salesperson will call you shortly to set a time to sign and take delivery, and a confirmation is on its way to your email. Your deposit counts toward the purchase.` }
   if (payment.state === 'received') return { tone: 'ok', title: 'Payment received', line: 'Thank you. Your payment went through and the dealership has been notified.' }
   if (payment.state === 'refunded') return { tone: 'ok', title: 'Payment refunded', line: 'This payment has been refunded to your card. Refunds usually show up within 5 to 10 business days.' }
   if (outcome === 'success') return { tone: 'warn', title: 'Payment processing', line: 'Your bank is still confirming this payment. This page updates when you refresh it.' }
@@ -49,7 +50,7 @@ export async function PaymentReturnPage({ outcome, reference }: { outcome: Outco
           <nav aria-label="Next" className="mt-[var(--sf-space-lg)] flex flex-wrap gap-2">
             {retryUrl && <a href={retryUrl} className="sf-btn sf-btn-primary">Return to checkout</a>}
             {customer
-              ? <Link href="/account" className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>Your account</Link>
+              ? <Link href={payment?.purpose === 'Reservation deposit' ? '/account/vehicles' : payment?.purpose === 'Service payment' ? '/account/service' : '/account'} className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>Your account</Link>
               : <Link href="/inventory" className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>Browse inventory</Link>}
             <Link href="/contact" className="sf-btn sf-btn-ghost">Contact us</Link>
           </nav>

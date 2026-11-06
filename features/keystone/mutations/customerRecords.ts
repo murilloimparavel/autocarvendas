@@ -349,17 +349,26 @@ export async function customerPayments(_root: unknown, _args: unknown, context: 
   const prisma = context.prisma
   const ownership = await customerOwnership(prisma, accountId)
   const [dealIds, orderIds] = await Promise.all([ownedDealIds(prisma, ownership), ownedServiceOrderIds(prisma, ownership)])
-  if (!dealIds.length && !orderIds.length) return []
+  // Storefront reservation deposits hang off the lead the reservation created (no deal yet).
+  // Only settled deposits are shown; an abandoned checkout is not a payment.
+  const leadIds = ownership.leadIds
+  if (!dealIds.length && !orderIds.length && !leadIds.length) return []
   const payments = await prisma.paymentTransaction.findMany({
-    where: { OR: [...(dealIds.length ? [{ dealId: { in: dealIds } }] : []), ...(orderIds.length ? [{ serviceOrderId: { in: orderIds } }] : [])] },
+    where: { OR: [
+      ...(dealIds.length ? [{ dealId: { in: dealIds } }] : []),
+      ...(orderIds.length ? [{ serviceOrderId: { in: orderIds } }] : []),
+      ...(leadIds.length ? [{ sourceType: 'reservation', leadId: { in: leadIds }, status: { in: ['authorized', 'captured', 'partially-refunded', 'refunded'] } }] : []),
+    ] },
     take: PAGE,
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    select: { ...paymentSelect, deal: { select: { vehicle: vehicleSelect } }, serviceOrder: { select: { invoiceNumber: true } } },
+    select: { ...paymentSelect, deal: { select: { vehicle: vehicleSelect } }, serviceOrder: { select: { invoiceNumber: true } }, lead: { select: { interestedVehicle: vehicleSelect } } },
   })
   return payments.map((payment: any) => ({
     ...paymentRow(payment),
     label: payment.sourceType === 'service'
       ? `Service invoice ${payment.serviceOrder?.invoiceNumber || ''}`.trim()
-      : vehicleLabel(payment.deal?.vehicle) || 'Vehicle purchase',
+      : payment.sourceType === 'reservation'
+        ? `Reservation deposit · ${vehicleLabel(payment.lead?.interestedVehicle) || 'Vehicle'}`
+        : vehicleLabel(payment.deal?.vehicle) || 'Vehicle purchase',
   }))
 }

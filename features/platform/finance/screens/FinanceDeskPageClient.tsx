@@ -178,6 +178,7 @@ function label(map: Record<string, string>, value: string | null | undefined) {
 }
 
 function paymentMethodLabel(method: string, providerKey: string) {
+  if (method === 'reservation-deposit') return 'Online reservation deposit'
   if (method) return label(DEAL_PAYMENT_METHOD_LABELS, method)
   return providerKey === 'operator-recorded' ? 'Method not recorded' : label({ stripe: 'Card (online)' }, providerKey)
 }

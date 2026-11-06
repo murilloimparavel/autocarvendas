@@ -96,3 +96,31 @@ export async function sendRequestReceiptEmail(
     return { sent: false, error: error instanceof Error ? error.message : 'send_failed' };
   }
 }
+
+/** Deposit confirmation: names the car, the amount, that it is held, and the next step. */
+export async function sendReservationConfirmationEmail(
+  to: string,
+  details: { dealershipName: string; customerName: string; vehicle: string; stockNumber: string; depositLabel: string; salesperson: string; phone: string; address: string; reference: string; vehicleUrl: string; accountUrl: string },
+): Promise<{ sent: boolean; error?: string; messageId?: string }> {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_FROM) return { sent: false, error: 'not_configured' }
+  const escape = (value: string) => value.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch] as string)
+  const who = details.salesperson ? `${escape(details.salesperson)} from our sales team` : 'Our sales team'
+  const call = details.phone ? ` If you'd rather not wait, call us at ${escape(details.phone)}.` : ''
+  const lines = [
+    `<strong>${escape(details.vehicle)}</strong>`,
+    details.stockNumber ? `Stock ${escape(details.stockNumber)}` : '',
+    `Deposit paid: ${escape(details.depositLabel)} (refundable, counts toward your purchase)`,
+    `Reference: ${escape(details.reference)}`,
+  ].filter(Boolean).join('<br>')
+  try {
+    const info = await transport.sendMail({
+      to,
+      from: process.env.SMTP_FROM,
+      subject: `${details.dealershipName}: your ${details.vehicle} is reserved`,
+      html: `<body style="font-family: Helvetica, Arial, sans-serif; color: #444;"><p>Hi ${escape(details.customerName)}, thanks for your deposit. We've taken the ${escape(details.vehicle)} off the market for you.</p><p>${lines}</p><p><strong>What happens next:</strong> ${who} will call you shortly to confirm the details and set a time to sign and take delivery.${call}</p>${details.address ? `<p>${escape(details.dealershipName)}<br>${escape(details.address)}</p>` : ''}${details.accountUrl ? `<p><a href="${escape(details.accountUrl)}" style="background:#346df1;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;">View your reservation</a></p>` : ''}</body>`,
+    });
+    return { sent: true, messageId: [String((info as any)?.messageId || ''), String((info as any)?.response || '').slice(0,120)].filter(Boolean).join(' | ') };
+  } catch (error) {
+    return { sent: false, error: error instanceof Error ? error.message : 'send_failed' };
+  }
+}
