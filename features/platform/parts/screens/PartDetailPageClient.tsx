@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
@@ -18,8 +19,9 @@ import {
   STOCK_LABEL,
   STOCK_TONE,
   available,
-  formatCents,
-  formatDateTime,
+  formatCents as formatCentsBase,
+  formatDateTime as formatDateTimeBase,
+  partsLabel,
   poLines,
   stockState,
   type MovementType,
@@ -97,6 +99,7 @@ export function PartDetailPageClient({
   initialPurchaseOrders,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   id: string
   initialPart: Part | null
@@ -105,7 +108,11 @@ export function PartDetailPageClient({
   initialPurchaseOrders: PurchaseOrder[]
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string) => formatDateTimeBase(value, zone, locale)
   const [part, setPart] = useState(initialPart)
   const [movements, setMovements] = useState(initialMovements)
   const [repairOrders, setRepairOrders] = useState(initialRepairOrders)
@@ -176,10 +183,10 @@ export function PartDetailPageClient({
     <DeskHeader
       title={<><span className="font-mono">{part.partNumber}</span> <span className="font-normal">{part.description}</span></>}
       tone={STOCK_TONE[state]}
-      status={STOCK_LABEL[state]}
+      status={partsLabel(locale, STOCK_LABEL[state])}
       meta={
         <span className="flex flex-wrap items-baseline gap-x-2">
-          <Status tone={STOCK_TONE[state]}>{STOCK_LABEL[state]}</Status>
+          <Status tone={STOCK_TONE[state]}>{partsLabel(locale, STOCK_LABEL[state])}</Status>
           <span>· {part.binLocation ? <>Bin <Code>{part.binLocation}</Code></> : 'No bin'}</span>
           {part.supplier && <span>· {part.supplier}</span>}
           {part.rooftop?.name && <span>· {part.rooftop.name}</span>}
@@ -234,7 +241,7 @@ export function PartDetailPageClient({
         <DeskSection title="Stock">
           <div className="space-y-3">
             <ReadoutStrip>
-              <Readout label="Available" value={available(part)} tone={STOCK_TONE[state]} sub={STOCK_LABEL[state]} />
+              <Readout label="Available" value={available(part)} tone={STOCK_TONE[state]} sub={partsLabel(locale, STOCK_LABEL[state])} />
               <Readout label="On hand" value={part.quantity ?? 0} />
               <Readout label="Committed" value={part.committedQuantity ?? 0} />
               <Readout label="On order" value={part.onOrderQuantity ?? 0} />
@@ -330,7 +337,7 @@ export function PartDetailPageClient({
                           <span className="block truncate text-xs text-muted-foreground">{order.supplier}</span>
                         </span>
                         <span className="flex shrink-0 flex-col items-end gap-0.5">
-                          <Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status>
+                          <Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status>
                           {line && <span className="text-xs tabular-nums text-muted-foreground">{line.receivedQuantity} of {line.quantity} received</span>}
                         </span>
                       </Link>
@@ -372,6 +379,7 @@ export function PartDetailPageClient({
           open={editing}
           part={part}
           rooftops={part.rooftop ? [part.rooftop] : []}
+          currencyCode={currencyCode}
           onOpenChange={setEditing}
           onSaved={async () => {
             setNotice('Part saved')

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { ArrowRight } from 'lucide-react'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Facts, Notice, Pill, Segmented, Track } from '@/features/platform/components/desk'
 
 import { recordMovement } from '../actions'
-import { MOVEMENT_LABEL, RO_MOVEMENT_TYPES, previewMovement, repairOrderLabel, type MovementType, type OpenRepairOrder, type Part } from '../lib/types'
+import { MOVEMENT_LABEL, RO_MOVEMENT_TYPES, partsLabel, previewMovement, repairOrderLabel, type MovementType, type OpenRepairOrder, type Part } from '../lib/types'
 import { FormField, hasErrors, parseWhole, type FieldErrors } from './FormField'
 
 function Change({ from, to }: { from: number | null; to: number | null }) {
@@ -50,6 +51,7 @@ export function MovementDialog({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
 }) {
+  const { locale } = useLocale()
   const [quantity, setQuantity] = useState('')
   const [direction, setDirection] = useState<'add' | 'remove'>('add')
   const [serviceOrderId, setServiceOrderId] = useState('')
@@ -92,11 +94,11 @@ export function MovementDialog({
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const next: FieldErrors = {}
-    if (parsed === null) next.quantity = type === 'count' ? 'Whole number of 0 or more' : 'Whole number of at least 1'
-    if (needsRo && !serviceOrderId) next.serviceOrderId = 'Choose a repair order'
-    if (!reference.trim()) next.reference = 'Reference is required'
-    else if (reference.trim().length > 200) next.reference = 'At most 200 characters'
-    if (!reason.trim()) next.reason = 'Reason is required'
+    if (parsed === null) next.quantity = locale === 'pt-BR' ? (type === 'count' ? 'Informe um número inteiro igual ou maior que zero' : 'Informe um número inteiro igual ou maior que 1') : (type === 'count' ? 'Whole number of 0 or more' : 'Whole number of at least 1')
+    if (needsRo && !serviceOrderId) next.serviceOrderId = locale === 'pt-BR' ? 'Selecione uma ordem de serviço' : 'Choose a repair order'
+    if (!reference.trim()) next.reference = locale === 'pt-BR' ? 'Informe uma referência' : 'Reference is required'
+    else if (reference.trim().length > 200) next.reference = locale === 'pt-BR' ? 'Use no máximo 200 caracteres' : 'At most 200 characters'
+    if (!reason.trim()) next.reason = locale === 'pt-BR' ? 'Informe o motivo' : 'Reason is required'
     if (!next.quantity && preview?.error) next.quantity = preview.error
     setErrors(next)
     if (hasErrors(next) || parsed === null) return
@@ -126,14 +128,14 @@ export function MovementDialog({
     <Dialog open={open} onOpenChange={value => { if (!busy) onOpenChange(value) }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-md sm:rounded-md sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{MOVEMENT_LABEL[type]} · {part.partNumber}</DialogTitle>
+          <DialogTitle>{partsLabel(locale, MOVEMENT_LABEL[type])} · {part.partNumber}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} noValidate className="space-y-4">
           {needsRo && (
-            <FormField id="movement-ro" label="Repair order" error={errors.serviceOrderId}>
+            <FormField id="movement-ro" label={locale === 'pt-BR' ? 'Ordem de serviço' : 'Repair order'} error={errors.serviceOrderId}>
               <Select value={serviceOrderId} onValueChange={chooseRo}>
                 <SelectTrigger id="movement-ro" className="h-11 rounded-[4px] px-3 text-[13px] sm:h-9" aria-invalid={Boolean(errors.serviceOrderId)}>
-                  <SelectValue placeholder={repairOrders.length ? 'Select repair order' : 'No open repair orders'} />
+                  <SelectValue placeholder={repairOrders.length ? (locale === 'pt-BR' ? 'Selecione a OS' : 'Select repair order') : (locale === 'pt-BR' ? 'Nenhuma OS em aberto' : 'No open repair orders')} />
                 </SelectTrigger>
                 <SelectContent>
                   {repairOrders.map(order => <SelectItem key={order.id} value={order.id}>{repairOrderLabel(order)}</SelectItem>)}
@@ -143,14 +145,14 @@ export function MovementDialog({
           )}
           {type === 'adjustment' && (
             <Segmented<'add' | 'remove'>
-              label="Adjustment direction"
+              label={locale === 'pt-BR' ? 'Tipo de ajuste' : 'Adjustment direction'}
               value={direction}
               onChange={setDirection}
               block
-              options={[{ value: 'add', label: 'Add stock' }, { value: 'remove', label: 'Remove stock' }]}
+              options={[{ value: 'add', label: locale === 'pt-BR' ? 'Adicionar ao estoque' : 'Add stock' }, { value: 'remove', label: locale === 'pt-BR' ? 'Retirar do estoque' : 'Remove stock' }]}
             />
           )}
-          <FormField id="movement-quantity" label={QUANTITY_LABEL[type] || 'Quantity'} error={errors.quantity}>
+          <FormField id="movement-quantity" label={partsLabel(locale, QUANTITY_LABEL[type] || 'Quantity')} error={errors.quantity}>
             <Input
               id="movement-quantity"
               className="h-11 rounded-[4px] text-[13px] sm:h-9"
@@ -160,18 +162,18 @@ export function MovementDialog({
               onChange={event => { setQuantity(event.target.value); setErrors(current => ({ ...current, quantity: undefined })) }}
             />
           </FormField>
-          <FormField id="movement-reference" label="Reference" error={errors.reference}>
+          <FormField id="movement-reference" label={locale === 'pt-BR' ? 'Referência' : 'Reference'} error={errors.reference}>
             <Input
               id="movement-reference"
               className="h-11 rounded-[4px] text-[13px] sm:h-9"
               value={reference}
               maxLength={200}
-              placeholder={type === 'receipt' ? 'Packing slip or invoice' : undefined}
+              placeholder={type === 'receipt' ? (locale === 'pt-BR' ? 'Romaneio ou nota fiscal' : 'Packing slip or invoice') : undefined}
               aria-invalid={Boolean(errors.reference)}
               onChange={event => { setReference(event.target.value); setErrors(current => ({ ...current, reference: undefined })) }}
             />
           </FormField>
-          <FormField id="movement-reason" label="Reason" error={errors.reason}>
+          <FormField id="movement-reason" label={locale === 'pt-BR' ? 'Motivo' : 'Reason'} error={errors.reason}>
             <Textarea
               id="movement-reason"
               className="rounded-[4px] text-[13px]"
@@ -184,16 +186,16 @@ export function MovementDialog({
           </FormField>
           <Facts
             items={[
-              { label: 'On hand', value: <Change from={part.quantity} to={preview && !preview.error ? preview.onHand : null} />, mono: true },
-              { label: 'Committed', value: <Change from={part.committedQuantity} to={preview && !preview.error ? preview.committed : null} />, mono: true },
-              { label: 'On order', value: <Change from={part.onOrderQuantity} to={preview && !preview.error ? preview.onOrder : null} />, mono: true },
+              { label: locale === 'pt-BR' ? 'Em estoque' : 'On hand', value: <Change from={part.quantity} to={preview && !preview.error ? preview.onHand : null} />, mono: true },
+              { label: locale === 'pt-BR' ? 'Reservado' : 'Committed', value: <Change from={part.committedQuantity} to={preview && !preview.error ? preview.committed : null} />, mono: true },
+              { label: locale === 'pt-BR' ? 'Em pedido' : 'On order', value: <Change from={part.onOrderQuantity} to={preview && !preview.error ? preview.onOrder : null} />, mono: true },
             ]}
           />
           {formError && <Notice tone="bad">{formError}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" className="h-11 sm:h-8" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-              <Pill type="submit" variant="primary" className="h-11 sm:h-8" disabled={busy}>{busy ? 'Saving…' : `Record ${MOVEMENT_LABEL[type].toLowerCase()}`}</Pill>
+              <Pill variant="plain" className="h-11 sm:h-8" disabled={busy} onClick={() => onOpenChange(false)}>{locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}</Pill>
+              <Pill type="submit" variant="primary" className="h-11 sm:h-8" disabled={busy}>{busy ? (locale === 'pt-BR' ? 'Salvando…' : 'Saving…') : `${locale === 'pt-BR' ? 'Registrar' : 'Record'} ${partsLabel(locale, MOVEMENT_LABEL[type]).toLowerCase()}`}</Pill>
             </Track>
           </DialogFooter>
         </form>

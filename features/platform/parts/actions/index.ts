@@ -12,6 +12,13 @@ const PARTS_PATH = '/dashboard/platform/parts'
 const PART_FIELDS = 'id partNumber description binLocation quantity committedQuantity onOrderQuantity minimumQuantity costCents priceCents supplier supplierPartNumber updatedAt rooftop { id name }'
 const PO_FIELDS = 'id reference supplier status lines orderedAt receivedAt createdAt updatedAt rooftop { id name }'
 
+export async function getPartsCurrencyCode() {
+  const response = await keystoneClient<{ storefrontProfile: { currencyCode: string | null } | null }>(`
+    query PartsCurrency { storefrontProfile { currencyCode } }
+  `, {}, { cache: 'no-store' })
+  return response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'
+}
+
 export async function getPartsCatalog() {
   return keystoneClient<{ partsInventories: Part[]; rooftops: PartsRooftop[] }>(`
     query PartsCatalog {

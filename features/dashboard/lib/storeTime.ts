@@ -35,12 +35,13 @@ const STYLE_OPTIONS: Record<StoreTimeStyle, Intl.DateTimeFormatOptions> = {
 export function formatInZone(
   date: Date | string | number | null | undefined,
   timeZone?: string | null,
-  style: StoreTimeStyle = 'datetime'
+  style: StoreTimeStyle = 'datetime',
+  locale: string = 'en-US'
 ): string {
   if (date == null || date === '') return ''
   const d = date instanceof Date ? date : new Date(date)
   if (Number.isNaN(d.getTime())) return ''
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale, {
     ...STYLE_OPTIONS[style],
     timeZone: resolveTimeZone(timeZone),
   }).format(d)

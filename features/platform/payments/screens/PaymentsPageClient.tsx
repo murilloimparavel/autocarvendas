@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Pencil, Plus, Power, RefreshCw, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,7 +13,7 @@ import { Attention, Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Pa
 import { recordReference, countLabel } from '@/features/platform/lib/format'
 import { parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
 import { CommandDialog, type CommandField, type FieldErrors } from '@/features/platform/accounting/components/CommandDialog'
-import { PAYMENT_STATUS_LABEL, dateTime, money, nonce, paymentTone } from '@/features/platform/accounting/lib/format'
+import { PAYMENT_STATUS_LABEL, dateTime as dateTimeBase, money as moneyBase, nonce, paymentStatusLabel, paymentTone } from '@/features/platform/accounting/lib/format'
 
 import {
   createPaymentCheckout,
@@ -62,6 +63,9 @@ export function PaymentsPageClient({
   initialProviders: PaymentProviderRecord[]
   initialProviderError: string | null
 }) {
+  const { locale } = useLocale()
+  const money = (cents: number | null | undefined, currency = 'usd') => moneyBase(cents, currency, locale)
+  const dateTime = (value: string | null | undefined, zone: string) => dateTimeBase(value, zone, locale)
   const router = useRouter()
   const [view, setView] = useState<View>('transactions')
   const [message, setMessage] = useState<string | null>(null)
@@ -328,8 +332,8 @@ export function PaymentsPageClient({
   const statusOptions = [
     { value: 'all', label: 'All', count: counts.all || 0 },
     { value: 'unreconciled', label: 'Unreconciled', count: counts.unreconciled || 0, tone: 'warn' as const },
-    ...STATUS_TABS.map(value => ({ value, label: PAYMENT_STATUS_LABEL[value], count: counts[value] || 0, tone: paymentTone(value) })),
-    ...RARE_TABS.filter(value => (counts[value] || 0) > 0 || status === value).map(value => ({ value, label: PAYMENT_STATUS_LABEL[value], count: counts[value] || 0, tone: paymentTone(value) })),
+    ...STATUS_TABS.map(value => ({ value, label: paymentStatusLabel(locale, PAYMENT_STATUS_LABEL[value]), count: counts[value] || 0, tone: paymentTone(value) })),
+    ...RARE_TABS.filter(value => (counts[value] || 0) > 0 || status === value).map(value => ({ value, label: paymentStatusLabel(locale, PAYMENT_STATUS_LABEL[value]), count: counts[value] || 0, tone: paymentTone(value) })),
   ]
 
   const breadcrumbs = [
@@ -535,7 +539,7 @@ export function PaymentsPageClient({
                             </p>
                           </Td>
                           <Td>
-                            <Status tone={paymentTone(tx.status)}>{PAYMENT_STATUS_LABEL[tx.status] || tx.status}</Status>
+                            <Status tone={paymentTone(tx.status)}>{paymentStatusLabel(locale, PAYMENT_STATUS_LABEL[tx.status] || tx.status)}</Status>
                             {tx.refundedCents > 0 && <p className="mt-0.5 text-xs text-muted-foreground">{money(tx.refundedCents, tx.currency)} refunded</p>}
                           </Td>
                           <Td priority={2} className="text-muted-foreground">{providerName(tx.providerKey)}</Td>
@@ -543,7 +547,7 @@ export function PaymentsPageClient({
                             {tx.reconciledAt ? (
                               <Status tone="ok">Reconciled</Status>
                             ) : SETTLED_STATUSES.includes(tx.status) ? (
-                              <Status tone="warn">Not reconciled</Status>
+                              <Status tone="warn">{paymentStatusLabel(locale, 'Not reconciled')}</Status>
                             ) : (
                               '-'
                             )}

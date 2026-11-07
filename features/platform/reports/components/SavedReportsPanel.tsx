@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Download, History, Pencil, Play, Plus, Power, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { DeskTable, Notice, Panel, Pill, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
@@ -43,6 +44,7 @@ export function SavedReportsPanel({
   onReload: () => Promise<void>
   onShowRuns: (reportId: string) => void
 }) {
+  const { locale } = useLocale()
   const [stateFilter, setStateFilter] = useState<StateFilter>('active')
   const [typeFilter, setTypeFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -235,7 +237,7 @@ export function SavedReportsPanel({
               const latest = lastRun.get(report.id)
               const latestStatus = latest ? effectiveRunStatus(latest) : null
               const filters = describeFilters(report.reportType, report.filters)
-              const nextDue = report.active && report.schedule !== 'manual' && report.nextRunAt ? formatDateTime(report.nextRunAt, timeZone) : null
+              const nextDue = report.active && report.schedule !== 'manual' && report.nextRunAt ? formatDateTime(report.nextRunAt, timeZone, locale) : null
               const actions = (
                 <Track className="flex-wrap justify-start lg:justify-end">
                   <Pill size="sm" className={TAP_SM} disabled={workingId === report.id} onClick={() => run(report)}>
@@ -274,7 +276,7 @@ export function SavedReportsPanel({
                       {[reportTypeLabel(report.reportType), scheduleLabel(report.schedule), nextDue ? `Next due ${nextDue}` : null].filter(Boolean).join(' · ')}
                     </span>
                     <span className="block text-[12px] text-muted-foreground md:hidden">
-                      {latest && latestStatus ? `Last run ${RUN_STATE[latestStatus].label.toLowerCase()} ${formatDateTime(latest.completedAt || latest.createdAt, timeZone)}` : 'Never run'}
+                      {latest && latestStatus ? `${locale === 'pt-BR' ? 'Última execução' : 'Last run'} ${RUN_STATE[latestStatus].label.toLowerCase()} ${formatDateTime(latest.completedAt || latest.createdAt, timeZone, locale)}` : locale === 'pt-BR' ? 'Nunca executado' : 'Never run'}
                     </span>
                     <div className="mt-2 lg:hidden">{actions}</div>
                   </Td>
@@ -287,7 +289,7 @@ export function SavedReportsPanel({
                     {latest && latestStatus ? (
                       <>
                         <Status tone={RUN_STATE[latestStatus].tone} className="text-[12px]">{RUN_STATE[latestStatus].label}</Status>
-                        <span className="block text-[12px] text-muted-foreground">{formatDateTime(latest.completedAt || latest.createdAt, timeZone)}</span>
+                        <span className="block text-[12px] text-muted-foreground">{formatDateTime(latest.completedAt || latest.createdAt, timeZone, locale)}</span>
                       </>
                     ) : (
                       <span className="text-[12px] text-muted-foreground">Never run</span>

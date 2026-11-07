@@ -194,7 +194,7 @@ export function TradeInDeskPageClient({
   )
 
   const customerLine = (tradeIn: TradeIn) => {
-    const customer = tradeInCustomer(tradeIn)
+    const customer = tradeInCustomer(tradeIn, locale)
     return `${customer || t('noCustomer')}${tradeIn.lead ? ` · ${formatPhone(tradeIn.lead.phone) || tradeIn.lead.email || t('noContact')}` : ''}`
   }
 
@@ -297,7 +297,7 @@ export function TradeInDeskPageClient({
               </thead>
               <tbody>
                 {visible.map(tradeIn => {
-                  const state = tradeInState(tradeIn, acquisitions[tradeIn.id])
+                  const state = tradeInState(tradeIn, acquisitions[tradeIn.id], locale)
                   return (
                     <Tr key={tradeIn.id} className="cursor-pointer" onClick={() => router.push(detailHref(tradeIn))}>
                       <Td className="min-w-0">

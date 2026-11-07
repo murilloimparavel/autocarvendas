@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
@@ -21,6 +22,7 @@ export function ReceivePurchaseOrderDialog({
   onOpenChange: (open: boolean) => void
   onSaved: (status: string) => void
 }) {
+  const { locale } = useLocale()
   const lines = poLines(order).filter(line => line.quantity > line.receivedQuantity)
   const [quantities, setQuantities] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -44,11 +46,11 @@ export function ReceivePurchaseOrderDialog({
     for (const line of lines) {
       const outstanding = line.quantity - line.receivedQuantity
       const value = parseWhole(quantities[line.partId] || '0', 0)
-      if (value === null) next[line.partId] = 'Whole number of 0 or more'
-      else if (value > outstanding) next[line.partId] = `At most ${outstanding}`
+      if (value === null) next[line.partId] = locale === 'pt-BR' ? 'Informe um número inteiro igual ou maior que zero' : 'Whole number of 0 or more'
+      else if (value > outstanding) next[line.partId] = locale === 'pt-BR' ? `Máximo: ${outstanding}` : `At most ${outstanding}`
       else receiptLines.push({ partId: line.partId, quantity: value })
     }
-    if (!hasErrors(next) && !receiptLines.some(line => line.quantity > 0)) next.form = 'Enter a received quantity for at least one line'
+    if (!hasErrors(next) && !receiptLines.some(line => line.quantity > 0)) next.form = locale === 'pt-BR' ? 'Informe a quantidade recebida em pelo menos um item' : 'Enter a received quantity for at least one line'
     setErrors(next)
     if (hasErrors(next)) return
 
@@ -74,14 +76,14 @@ export function ReceivePurchaseOrderDialog({
     <Dialog open={open} onOpenChange={value => { if (!busy) onOpenChange(value) }}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto rounded-md sm:max-w-lg sm:rounded-md">
         <DialogHeader>
-          <DialogTitle>Receive {order.reference}</DialogTitle>
+          <DialogTitle>{locale === 'pt-BR' ? 'Receber' : 'Receive'} {order.reference}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} noValidate className="space-y-4">
           <div className="min-w-0 overflow-hidden rounded-md border">
             <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_5.5rem] items-center gap-3 border-b bg-muted/60 px-3 py-2 text-[12px] font-medium text-muted-foreground">
-              <span>Part</span>
-              <span className="text-right">Received</span>
-              <span className="text-right">Receive now</span>
+              <span>{locale === 'pt-BR' ? 'Peça' : 'Part'}</span>
+              <span className="text-right">{locale === 'pt-BR' ? 'Recebido' : 'Received'}</span>
+              <span className="text-right">{locale === 'pt-BR' ? 'Receber agora' : 'Receive now'}</span>
             </div>
             <div className="divide-y">
               {lines.map(line => (
@@ -90,8 +92,8 @@ export function ReceivePurchaseOrderDialog({
                     <p className="font-mono text-[12px] font-medium">{line.partNumber}</p>
                     <p className="break-words text-xs text-muted-foreground">{line.description}</p>
                   </div>
-                  <p className="pt-2 text-right text-[13px] tabular-nums text-muted-foreground">{line.receivedQuantity} of {line.quantity}</p>
-                  <FormField id={`receive-${line.partId}`} label={`Receive ${line.partNumber}`} labelClassName="sr-only" error={errors[line.partId]}>
+                  <p className="pt-2 text-right text-[13px] tabular-nums text-muted-foreground">{line.receivedQuantity} {locale === 'pt-BR' ? 'de' : 'of'} {line.quantity}</p>
+                  <FormField id={`receive-${line.partId}`} label={`${locale === 'pt-BR' ? 'Receber' : 'Receive'} ${line.partNumber}`} labelClassName="sr-only" error={errors[line.partId]}>
                     <Input
                       id={`receive-${line.partId}`}
                       className="h-11 rounded-[4px] text-right text-[13px] tabular-nums sm:h-9"
@@ -112,8 +114,8 @@ export function ReceivePurchaseOrderDialog({
           {formError && <Notice tone="bad">{formError}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" className="h-11 sm:h-8" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-              <Pill type="submit" variant="primary" className="h-11 sm:h-8" disabled={busy || !lines.length}>{busy ? 'Receiving…' : 'Receive'}</Pill>
+              <Pill variant="plain" className="h-11 sm:h-8" disabled={busy} onClick={() => onOpenChange(false)}>{locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}</Pill>
+              <Pill type="submit" variant="primary" className="h-11 sm:h-8" disabled={busy || !lines.length}>{busy ? (locale === 'pt-BR' ? 'Recebendo…' : 'Receiving…') : (locale === 'pt-BR' ? 'Registrar recebimento' : 'Receive')}</Pill>
             </Track>
           </DialogFooter>
         </form>

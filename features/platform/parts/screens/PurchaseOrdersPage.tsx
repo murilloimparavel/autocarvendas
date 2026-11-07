@@ -1,9 +1,9 @@
-import { getPurchaseOrders } from '../actions'
+import { getPurchaseOrders, getPartsCurrencyCode } from '../actions'
 import { PurchaseOrdersPageClient } from './PurchaseOrdersPageClient'
 import { getDealershipTimeZone } from '../../lib/dealershipTimeZone'
 
 export async function PurchaseOrdersPage() {
-  const [response, timeZone] = await Promise.all([getPurchaseOrders(), getDealershipTimeZone()])
+  const [response, timeZone, currencyCode] = await Promise.all([getPurchaseOrders(), getDealershipTimeZone(), getPartsCurrencyCode()])
 
   return (
     <PurchaseOrdersPageClient
@@ -12,6 +12,7 @@ export async function PurchaseOrdersPage() {
       initialRooftops={response.success ? response.data.rooftops || [] : []}
       initialError={response.success ? null : response.error}
       timeZone={timeZone}
+      currencyCode={currencyCode}
     />
   )
 }

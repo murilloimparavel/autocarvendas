@@ -29,6 +29,7 @@ import {
 import { getDealDeskWorkspace, type DealDeskDeal } from '../actions'
 import { DEAL_STATUSES, labelForDeal, toneForDeal } from '../lib/dealStatus'
 import { formatUsd } from '../lib/formatMoney'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface Deal {
   id: string
@@ -65,12 +66,10 @@ function countByStatus(deals: Array<{ status: string }>): StatusCounts {
   return counts
 }
 
-const formatCurrency = (value: number | null | undefined) => formatUsd(value, { whole: true })
-
 // The dealership's zone, not the browser's, so the server and client render the same day.
-const formatDate = (date: string | null, timeZone: string) => {
+const formatDate = (date: string | null, timeZone: string, locale: 'pt-BR' | 'en-US') => {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone })
+  return new Date(date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone })
 }
 
 function ageDays(createdAt: string, now: number) {
@@ -91,11 +90,15 @@ export function DealListPageClient({
   initialDeals,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialDeals: DealDeskDeal[] | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCurrency = (value: number | null | undefined) => formatUsd(value, { whole: true, currencyCode, locale })
   const router = useRouter()
   const [deals, setDeals] = useState<Deal[]>(initialDeals ? toListDeals(initialDeals) : [])
   // The desk queue always reads from the unfiltered board so status tabs never empty it.
@@ -346,7 +349,7 @@ export function DealListPageClient({
                           <Figure size="sm">{formatCurrency(deal.totalPrice)}</Figure>
                         </Td>
                         <Td align="right" priority={3} className="whitespace-nowrap text-muted-foreground">{formatCurrency(deal.vehiclePrice)}</Td>
-                        <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDate(deal.saleDate || deal.createdAt, timeZone)}</Td>
+                        <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDate(deal.saleDate || deal.createdAt, timeZone, locale)}</Td>
                       </Tr>
                     ))}
                   </tbody>

@@ -17,8 +17,9 @@ export function useIsMounted() {
 export function useFormattedTime(
   date: Date | string | number | null | undefined,
   style: StoreTimeStyle = 'datetime',
-  timeZone?: string | null
+  timeZone?: string | null,
+  locale: string = 'en-US'
 ): string {
   const mounted = useIsMounted()
-  return mounted ? formatInZone(date, timeZone, style) : ''
+  return mounted ? formatInZone(date, timeZone, style, locale) : ''
 }

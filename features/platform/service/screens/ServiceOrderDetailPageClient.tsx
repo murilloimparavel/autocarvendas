@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
@@ -36,7 +37,7 @@ import {
 } from '../actions'
 import { ServiceFormDialog, type ServiceFormField } from '../components/ServiceFormDialog'
 import { createAttemptKeys } from '../lib/attemptKeys'
-import { formatCents, formatDateTime, formatQuantity, parseQuantity, parseWhole } from '../lib/serviceFormat'
+import { formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, formatMileage, formatQuantity, parseQuantity, parseWhole } from '../lib/serviceFormat'
 import { repairOrderTotalsCheck } from '../lib/serviceTasks'
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -55,6 +56,7 @@ import {
   roReference,
   settledNetCents,
   type LaborAction,
+  serviceLabel,
 } from '../lib/serviceStatus'
 import type { FixedOpsLineItem, ServiceLaborOperationDetail, ServiceOrderDetail, ServicePartOption } from '../lib/types'
 
@@ -122,13 +124,18 @@ export function ServiceOrderDetailPageClient({
   initialError,
   timeZone,
   taxRateBps,
+  currencyCode,
 }: {
   id: string
   initialOrder: ServiceOrderDetail | null
   initialError: string | null
   timeZone: string
   taxRateBps: number | null
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string, empty?: string) => formatDateTimeBase(value, zone, empty, locale)
   const [order, setOrder] = useState<ServiceOrderDetail | null>(initialOrder)
   const [loadError, setLoadError] = useState<string | null>(initialError)
   const [loading, setLoading] = useState(false)
@@ -215,10 +222,10 @@ export function ServiceOrderDetailPageClient({
       return
     }
     if (toStatus === 'completed' || toStatus === 'paid') {
-      openForm({ kind: 'confirm-transition', title: toStatus === 'completed' ? 'Complete repair and lock lines' : `Mark ${reference} paid`, values: {}, submitLabel: ORDER_ACTION_LABELS[toStatus], toStatus })
+      openForm({ kind: 'confirm-transition', title: toStatus === 'completed' ? (locale === 'pt-BR' ? 'Concluir serviço e bloquear itens' : 'Complete repair and lock lines') : `Mark ${reference} paid`, values: {}, submitLabel: serviceLabel(locale, ORDER_ACTION_LABELS[toStatus]), toStatus })
       return
     }
-    void run(`transition:${toStatus}`, () => transitionServiceOrder({ id: order.id, toStatus, idempotencyKey: attemptKeys.key(`transition:${toStatus}`) }), `${ORDER_STATUS_LABELS[toStatus]}`)
+    void run(`transition:${toStatus}`, () => transitionServiceOrder({ id: order.id, toStatus, idempotencyKey: attemptKeys.key(`transition:${toStatus}`) }), serviceLabel(locale, ORDER_STATUS_LABELS[toStatus] || toStatus))
   }
 
   const openForm = (next: Omit<FormState, 'key' | 'errors' | 'formError'>) => {
@@ -238,7 +245,7 @@ export function ServiceOrderDetailPageClient({
       lineId: line?.id,
       submitLabel: line ? 'Save line' : 'Add line',
       values: line
-        ? { itemType: line.itemType, partId: '', partNumber: line.partNumber || '', description: line.description, quantity: formatQuantity(line.quantity), unitPrice: formatCentsForInput(line.unitPriceCents) }
+        ? { itemType: line.itemType, partId: '', partNumber: line.partNumber || '', description: line.description, quantity: formatQuantity(line.quantity), unitPrice: formatCentsForInput(line.unitPriceCents, locale) }
         : { itemType: 'labor', partId: '', partNumber: '', description: '', quantity: '1', unitPrice: '' },
     })
     if (line?.itemType === 'part') void ensureParts()
@@ -269,7 +276,7 @@ export function ServiceOrderDetailPageClient({
       return
     }
     const scope = `labor:${operation.id}:${action}`
-    void run(scope, () => manageLaborOperation({ serviceOrderId: order.id, operationId: operation.id, action, idempotencyKey: attemptKeys.key(scope) }), `${operation.operationCode} ${LABOR_STATUS_LABELS[action === 'start' ? 'in-progress' : 'paused'].toLowerCase()}`)
+    void run(scope, () => manageLaborOperation({ serviceOrderId: order.id, operationId: operation.id, action, idempotencyKey: attemptKeys.key(scope) }), `${operation.operationCode} ${serviceLabel(locale, LABOR_STATUS_LABELS[action === 'start' ? 'in-progress' : 'paused']).toLowerCase()}`)
   }
 
   const formFields = (state: FormState): ServiceFormField[] => {
@@ -327,7 +334,7 @@ export function ServiceOrderDetailPageClient({
           if (part) {
             next.partNumber = part.partNumber || ''
             next.description = part.description || next.description
-            next.unitPrice = formatCentsForInput(part.priceCents ?? 0)
+            next.unitPrice = formatCentsForInput(part.priceCents ?? 0, locale)
           }
         }
       }
@@ -356,13 +363,13 @@ export function ServiceOrderDetailPageClient({
       else if (text('description').length > 500) errors.description = 'At most 500 characters'
       const quantity = parseQuantity(values.quantity || '')
       if (quantity === null) errors.quantity = 'Enter a quantity above 0, up to 10,000'
-      const unitPriceCents = text('unitPrice') ? parseDollarsToCents(values.unitPrice || '') : null
+      const unitPriceCents = text('unitPrice') ? parseDollarsToCents(values.unitPrice || '', locale) : null
       if (unitPriceCents === null) errors.unitPrice = 'Enter an amount like $125.00'
       if (text('itemType') === 'part' && text('partNumber').length > 100) errors.partNumber = 'At most 100 characters'
       return { errors, data: { itemType: text('itemType'), description: text('description'), partNumber: text('itemType') === 'part' ? text('partNumber') : '', quantity, unitPriceCents } }
     }
     if (state.kind === 'tax') {
-      const taxCents = parseDollarsToCents(values.tax || '')
+      const taxCents = parseDollarsToCents(values.tax || '', locale)
       if (taxCents === null) errors.tax = 'Enter an amount like $42.50'
       return { errors, data: { taxCents } }
     }
@@ -445,7 +452,7 @@ export function ServiceOrderDetailPageClient({
         break
       case 'confirm-transition':
         response = await transition(form.toStatus || '')
-        success = ORDER_STATUS_LABELS[form.toStatus || ''] || 'Saved'
+        success = serviceLabel(locale, ORDER_STATUS_LABELS[form.toStatus || ''] || (locale === 'pt-BR' ? 'Salvo' : 'Saved'))
         break
       default:
         response = { success: false, error: 'Unsupported action' }
@@ -464,7 +471,7 @@ export function ServiceOrderDetailPageClient({
     if (!form) return null
     if (form.kind === 'line') {
       const quantity = parseQuantity(form.values.quantity || '')
-      const unit = parseDollarsToCents(form.values.unitPrice || '')
+      const unit = parseDollarsToCents(form.values.unitPrice || '', locale)
       return (
         <p className="flex items-baseline justify-between border-t pt-3 text-sm">
           <span className="text-muted-foreground">Line total</span>
@@ -479,8 +486,8 @@ export function ServiceOrderDetailPageClient({
           <p className="flex items-baseline justify-between"><span className="text-muted-foreground">Line subtotal</span><span className="tabular-nums">{formatCents(lineSubtotal)}</span></p>
           {suggested !== null && (
             <Track>
-              <Pill size="sm" className="max-sm:h-11" onClick={() => changeFormValues({ ...form.values, tax: formatCentsForInput(suggested) })}>
-                Apply {(taxRateBps! / 100).toFixed(2).replace(/\.?0+$/, '')}% · {formatCents(suggested)}
+              <Pill size="sm" className="max-sm:h-11" onClick={() => changeFormValues({ ...form.values, tax: formatCentsForInput(suggested, locale) })}>
+                {locale === 'pt-BR' ? 'Aplicar' : 'Apply'} {new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(taxRateBps! / 100)}% · {formatCents(suggested)}
               </Pill>
             </Track>
           )}
@@ -510,10 +517,10 @@ export function ServiceOrderDetailPageClient({
         </span>
       }
       tone={STATUS_TONES[status] || 'idle'}
-      status={ORDER_STATUS_LABELS[status] || status}
+      status={serviceLabel(locale, ORDER_STATUS_LABELS[status] || status)}
       meta={
         <span className="flex flex-wrap items-baseline gap-x-2">
-          <Status tone={STATUS_TONES[status] || 'idle'}>{ORDER_STATUS_LABELS[status] || status}</Status>
+          <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, ORDER_STATUS_LABELS[status] || status)}</Status>
           {name && <span>· {name}</span>}
           {order.rooftop?.name && <span>· {order.rooftop.name}</span>}
           <span>· {appointment?.assignedTech?.name || 'Unassigned'}</span>
@@ -527,7 +534,7 @@ export function ServiceOrderDetailPageClient({
           </Pill>
           {nextStatus && (
             <Pill className="max-sm:h-11" variant="primary" disabled={Boolean(nextBlock) || Boolean(busy)} onClick={() => startTransition(nextStatus)}>
-              {ORDER_ACTION_LABELS[nextStatus]}
+              {serviceLabel(locale, ORDER_ACTION_LABELS[nextStatus])}
             </Pill>
           )}
         </>
@@ -549,7 +556,7 @@ export function ServiceOrderDetailPageClient({
               </Notice>
             )}
             {loadError && <Notice tone="bad">{loadError}</Notice>}
-            {nextStatus && nextBlock && <Notice tone="warn">{ORDER_ACTION_LABELS[nextStatus]}: {nextBlock}</Notice>}
+            {nextStatus && nextBlock && <Notice tone="warn">{serviceLabel(locale, ORDER_ACTION_LABELS[nextStatus])}: {nextBlock}</Notice>}
           </div>
         )}
 
@@ -584,12 +591,12 @@ export function ServiceOrderDetailPageClient({
                   <tbody>
                     {order.lineItems.map(line => (
                       <Tr key={line.id}>
-                        <Td priority={2} className="whitespace-nowrap text-muted-foreground">{LINE_TYPE_LABELS[line.itemType] || line.itemType}</Td>
+                        <Td priority={2} className="whitespace-nowrap text-muted-foreground">{serviceLabel(locale, LINE_TYPE_LABELS[line.itemType] || line.itemType)}</Td>
                         <Td className="min-w-0">
                           <p className="break-words font-medium">{line.description}</p>
                           {line.partNumber && <Code>#{line.partNumber}</Code>}
                           <p className="text-xs text-muted-foreground md:hidden">
-                            {LINE_TYPE_LABELS[line.itemType] || line.itemType} · {formatQuantity(line.quantity)} × {formatCents(line.unitPriceCents)}
+                            {serviceLabel(locale, LINE_TYPE_LABELS[line.itemType] || line.itemType)} · {formatQuantity(line.quantity)} × {formatCents(line.unitPriceCents)}
                           </p>
                         </Td>
                         <Td align="right" priority={2}>{formatQuantity(line.quantity)}</Td>
@@ -644,7 +651,7 @@ export function ServiceOrderDetailPageClient({
                     {order.laborOperations.map(operation => {
                       const actions = laborActions(order, operation.status)
                       const blocked = actions.find(item => item.blocked)?.blocked
-                      const label = LABOR_STATUS_LABELS[operation.status] || operation.status
+                      const label = serviceLabel(locale, LABOR_STATUS_LABELS[operation.status] || operation.status)
                       return (
                         <Tr key={operation.id}>
                           <Td className="whitespace-nowrap"><Code className="text-foreground">{operation.operationCode}</Code></Td>
@@ -668,7 +675,7 @@ export function ServiceOrderDetailPageClient({
                               <div className="flex flex-wrap justify-end gap-1.5">
                                 {actions.map(({ action, blocked: reason }) => (
                                   <Pill key={action} size="sm" className={rowButton} disabled={Boolean(reason) || Boolean(busy)} title={reason || undefined} onClick={() => laborAction(operation, action)}>
-                                    {LABOR_ACTION_LABELS[action]}
+                                    {serviceLabel(locale, LABOR_ACTION_LABELS[action])}
                                   </Pill>
                                 ))}
                               </div>
@@ -686,7 +693,7 @@ export function ServiceOrderDetailPageClient({
               title="Totals"
               id="ro-totals"
               actions={
-                <Pill size="sm" className="max-sm:h-11" disabled={!editable || Boolean(busy)} title={lockedReason || undefined} onClick={() => openForm({ kind: 'tax', title: 'Set tax', submitLabel: 'Save tax', values: { tax: formatCentsForInput(order.taxCents ?? 0) } })}>
+                <Pill size="sm" className="max-sm:h-11" disabled={!editable || Boolean(busy)} title={lockedReason || undefined} onClick={() => openForm({ kind: 'tax', title: 'Set tax', submitLabel: 'Save tax', values: { tax: formatCentsForInput(order.taxCents ?? 0, locale) } })}>
                   Set tax
                 </Pill>
               }
@@ -827,7 +834,7 @@ export function ServiceOrderDetailPageClient({
                   lead?.email ? { label: 'Email', value: lead.email } : null,
                   { label: 'Vehicle', value: vehicle },
                   appointment?.vehicleVin ? { label: 'VIN', value: appointment.vehicleVin, mono: true } : null,
-                  appointment?.mileageIn != null ? { label: 'Mileage in', value: appointment.mileageIn.toLocaleString('en-US'), mono: true } : null,
+                  appointment?.mileageIn != null ? { label: locale === 'pt-BR' ? 'Quilometragem de entrada' : 'Mileage in', value: formatMileage(appointment.mileageIn, locale), mono: true } : null,
                   appointment?.transportationNeed && appointment.transportationNeed !== 'none' ? { label: 'Transportation', value: <span className="capitalize">{appointment.transportationNeed}</span> } : null,
                 ]}
               />
@@ -844,7 +851,7 @@ export function ServiceOrderDetailPageClient({
               {appointment ? (
                 <Facts
                   items={[
-                    { label: 'Status', value: <Status tone={STATUS_TONES[appointment.status || ''] || 'idle'}>{APPOINTMENT_STATUS_LABELS[appointment.status || ''] || appointment.status}</Status> },
+                    { label: 'Status', value: <Status tone={STATUS_TONES[appointment.status || ''] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[appointment.status || ''] || appointment.status || '')}</Status> },
                     { label: 'Date', value: formatDateTime(appointment.appointmentDate, timeZone) },
                     { label: 'Service', value: <span className="capitalize">{appointment.servicePackage?.name || appointment.serviceType || 'Service'}</span> },
                     appointment.description ? { label: 'Request', value: appointment.description } : null,

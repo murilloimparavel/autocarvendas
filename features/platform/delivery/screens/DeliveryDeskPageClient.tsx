@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useMemo, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { CalendarClock, Check, ChevronRight, Pencil, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -87,6 +88,21 @@ function deliveryStatusLabel(delivery: Delivery, deliveryCase: DeliveryCase | un
   return !deliveryCase && delivery.status === 'financed' ? 'Not scheduled' : status.charAt(0).toUpperCase() + status.slice(1)
 }
 
+function deliveryLabel(locale: 'pt-BR' | 'en-US', value: string) {
+  if (locale === 'en-US') return value
+  const labels: Record<string, string> = {
+    'Not scheduled': 'Não agendado', Scheduled: 'Agendado', Arrived: 'Cliente chegou', Ready: 'Pronto para entrega',
+    Delivered: 'Entregue', Cancelled: 'Cancelado', Identity: 'Identificação', Insurance: 'Seguro',
+    Registration: 'Documentação do veículo', 'Title handoff': 'Entrega dos documentos', Funding: 'Financiamento',
+    Payment: 'Pagamento', Complete: 'Concluído', Missing: 'Pendente', Recorded: 'Registrado',
+    'Reference recorded': 'Referência registrada', 'Customer acknowledgment': 'Confirmação do cliente',
+    Received: 'Recebido', Funded: 'Financiado', 'Recorded for an earlier worksheet': 'Registrado em uma versão anterior da proposta',
+    'Waiting on payment': 'Aguardando pagamento', 'Waiting on funding': 'Aguardando liberação do financiamento',
+    complete: 'Concluído', waived: 'Dispensado', missing: 'Pendente',
+  }
+  return labels[value] || value
+}
+
 function customerName(delivery: Delivery) {
   return [delivery.lead?.firstName, delivery.lead?.lastName].filter(Boolean).join(' ') || 'Customer not linked'
 }
@@ -96,9 +112,9 @@ function vehicleName(delivery: Delivery) {
 }
 
 // Dealership time zone, so the server render and the browser agree.
-function formatDate(value: string | null | undefined, timeZone: string) {
+function formatDate(value: string | null | undefined, timeZone: string, locale: 'pt-BR' | 'en-US') {
   return value
-    ? new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    ? new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : 'Not scheduled'
 }
 
@@ -108,25 +124,28 @@ function recordedChecklist(deliveryCase: DeliveryCase | undefined) {
 }
 
 /** Funding comes from the funding case; a delivered case keeps the funding entry it was delivered with. */
-function fundingItem(delivery: Delivery, deliveryCase: DeliveryCase | undefined) {
+function fundingItem(delivery: Delivery, deliveryCase: DeliveryCase | undefined, locale: 'pt-BR' | 'en-US') {
   const finance = delivery.financeEvidence
   const cash = finance?.structureType === 'cash'
-  const label = cash ? 'Payment' : DELIVERY_FUNDING_ITEM.label
+  const label = deliveryLabel(locale, cash ? 'Payment' : DELIVERY_FUNDING_ITEM.label)
   const recorded = deliveryCase?.checklist?.find(item => item.code === DELIVERY_FUNDING_ITEM.code)
-  if (finance?.fundingCurrent) return { label, done: true, text: `${cash ? 'received' : 'funded'}${finance.fundingReference ? ` · ${finance.fundingReference}` : ''}` }
-  if (delivery.status === 'delivered' && recorded) return { label, done: true, text: `complete${recorded.evidenceReference ? ` · ${recorded.evidenceReference}` : ''}` }
-  return { label, done: false, text: finance?.fundingStatus === 'funded' ? 'recorded for an earlier worksheet' : cash ? 'waiting on payment' : 'waiting on funding' }
+  if (finance?.fundingCurrent) return { label, done: true, text: `${deliveryLabel(locale, cash ? 'Received' : 'Funded')}${finance.fundingReference ? ` · ${finance.fundingReference}` : ''}` }
+  if (delivery.status === 'delivered' && recorded) return { label, done: true, text: `${deliveryLabel(locale, 'Complete')}${recorded.evidenceReference ? ` · ${recorded.evidenceReference}` : ''}` }
+  return { label, done: false, text: deliveryLabel(locale, finance?.fundingStatus === 'funded' ? 'Recorded for an earlier worksheet' : cash ? 'Waiting on payment' : 'Waiting on funding') }
 }
 
 export function DeliveryDeskPageClient({
   initialWorkspace,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialWorkspace: DeliveryWorkspace | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
   const [deliveries, setDeliveries] = useState<Delivery[]>(() => readDeliveries(initialWorkspace))
   const [cases, setCases] = useState<DeliveryCase[]>(initialWorkspace?.cases || [])
   const [rooftopByDeal, setRooftopByDeal] = useState<Record<string, string>>(initialWorkspace?.rooftopByDeal || {})
@@ -415,7 +434,7 @@ export function DeliveryDeskPageClient({
   const stateFor = (delivery: Delivery) => {
     const deliveryCase = caseFor(delivery.id)
     const recorded = recordedChecklist(deliveryCase)
-    const funding = fundingItem(delivery, deliveryCase)
+    const funding = fundingItem(delivery, deliveryCase, locale)
     const totalChecks = DELIVERY_CHECKLIST_ITEMS.length + 1
     const completedChecks = recorded.length + (funding.done ? 1 : 0)
     const openWeOwe = deliveryCase?.weOweItems.filter(item => item.status === 'open') || []
@@ -541,8 +560,8 @@ export function DeliveryDeskPageClient({
                               return (
                                 <li key={code} className="min-w-0 text-xs">
                                   <TitleLine as="span" tone={done ? 'ok' : 'idle'} className="text-foreground">
-                                    {label}
-                                    <span className="break-words text-muted-foreground"> · {item?.status || 'missing'}{item?.status === 'waived' && item.evidenceReference ? ` · ${item.evidenceReference}` : item?.evidenceReference ? ' · reference recorded' : ''}</span>
+                                    {deliveryLabel(locale, label)}
+                                    <span className="break-words text-muted-foreground"> · {deliveryLabel(locale, item?.status || 'Missing')}{item?.status === 'waived' && item.evidenceReference ? ` · ${item.evidenceReference}` : item?.evidenceReference ? ` · ${deliveryLabel(locale, 'Reference recorded')}` : ''}</span>
                                   </TitleLine>
                                 </li>
                               )
@@ -555,8 +574,8 @@ export function DeliveryDeskPageClient({
                             </li>
                             <li className="min-w-0 text-xs">
                               <TitleLine as="span" tone={deliveryCase?.customerAcknowledgment ? 'ok' : 'idle'} className="text-foreground">
-                                Customer acknowledgment
-                                <span className="text-muted-foreground"> · {deliveryCase?.customerAcknowledgment ? 'Recorded' : 'Missing'}</span>
+                                {deliveryLabel(locale, 'Customer acknowledgment')}
+                                <span className="text-muted-foreground"> · {deliveryLabel(locale, deliveryCase?.customerAcknowledgment ? 'Recorded' : 'Missing')}</span>
                               </TitleLine>
                             </li>
                           </ul>
@@ -573,7 +592,7 @@ export function DeliveryDeskPageClient({
                             </TitleLine>
                           )}
                           {delivery.status === 'delivered' && (
-                            <p className="text-sm text-muted-foreground">Delivered {formatDate(delivery.saleDate, timeZone)}.</p>
+                            <p className="text-sm text-muted-foreground">{locale === 'pt-BR' ? 'Entregue em' : 'Delivered'} {formatDate(delivery.saleDate, timeZone, locale)}.</p>
                           )}
                         </div>
 
@@ -673,8 +692,8 @@ export function DeliveryDeskPageClient({
                                       {item.description}
                                     </TitleLine>
                                     <p className="pl-4 text-xs text-muted-foreground">
-                                      {item.status} · promised {formatDate(item.promisedAt, timeZone)}{overduePromise(item) ? ' · overdue' : ''} · {item.owner?.name || 'Unassigned'}
-                                      {item.estimatedCostCents != null ? ` · est ${formatUsd(item.estimatedCostCents / 100)}` : ''}
+                                      {item.status} · {locale === 'pt-BR' ? 'prometido para' : 'promised'} {formatDate(item.promisedAt, timeZone, locale)}{overduePromise(item) ? (locale === 'pt-BR' ? ' · em atraso' : ' · overdue') : ''} · {item.owner?.name || (locale === 'pt-BR' ? 'Sem responsável' : 'Unassigned')}
+                                      {item.estimatedCostCents != null ? ` · ${locale === 'pt-BR' ? 'custo estimado' : 'est'} ${formatUsd(item.estimatedCostCents / 100, { currencyCode, locale })}` : ''}
                                     </p>
                                   </div>
                                   {item.status === 'open' && (
@@ -735,7 +754,7 @@ export function DeliveryDeskPageClient({
           }
         >
           {error ? (
-            <p className="py-4 text-[13px] text-muted-foreground">Today's deliveries are unavailable until the desk loads.</p>
+            <p className="py-4 text-[13px] text-muted-foreground">{locale === 'pt-BR' ? 'As entregas de hoje estarão disponíveis quando o painel carregar.' : 'Today&apos;s deliveries are unavailable until the desk loads.'}</p>
           ) : todayQueue.length === 0 ? (
             <p className="py-4 text-[13px] text-muted-foreground">No deliveries due today and none waiting to be scheduled.</p>
           ) : (
@@ -750,10 +769,10 @@ export function DeliveryDeskPageClient({
                       {scheduledAt ? (
                         <time dateTime={scheduledAt} className="block">
                           <Figure size="md" attention={overdue}>
-                            {new Date(scheduledAt).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' })}
+                            {new Date(scheduledAt).toLocaleTimeString(locale, { timeZone, hour: 'numeric', minute: '2-digit' })}
                           </Figure>
                           <span className="mt-1 block text-[12px] text-muted-foreground">
-                            {overdue ? 'Overdue' : 'Today'}{dayKey(scheduledAt) < todayKey ? ` · ${new Date(scheduledAt).toLocaleDateString('en-US', { timeZone, month: 'short', day: 'numeric' })}` : ''}
+                            {overdue ? (locale === 'pt-BR' ? 'Atrasado' : 'Overdue') : (locale === 'pt-BR' ? 'Hoje' : 'Today')}{dayKey(scheduledAt) < todayKey ? ` · ${new Date(scheduledAt).toLocaleDateString(locale, { timeZone, month: 'short', day: 'numeric' })}` : ''}
                           </span>
                         </time>
                       ) : (
@@ -763,7 +782,7 @@ export function DeliveryDeskPageClient({
                     <div className="min-w-0">
                       <p className="truncate text-[14px] font-medium text-foreground">{vehicleName(delivery)}</p>
                       <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[12px] text-muted-foreground">
-                        <Status tone={deliveryTone(delivery, deliveryCase)} className="text-[12px]">{deliveryStatusLabel(delivery, deliveryCase)}</Status>
+                        <Status tone={deliveryTone(delivery, deliveryCase)} className="text-[12px]">{deliveryLabel(locale, deliveryStatusLabel(delivery, deliveryCase))}</Status>
                         <span className="truncate">{customerName(delivery)}</span>
                         {delivery.vehicle?.stockNumber && <Code>#{delivery.vehicle.stockNumber}</Code>}
                       </p>
@@ -863,16 +882,16 @@ export function DeliveryDeskPageClient({
                       <Fragment key={delivery.id}>
                         <Tr id={`delivery-row-${delivery.id}`} className={`cursor-pointer scroll-mt-4 ${expanded ? 'bg-muted/40' : ''}`} onClick={toggle}>
                           <Td className="w-[1%]">
-                            <Status tone={deliveryTone(delivery, deliveryCase)}>{deliveryStatusLabel(delivery, deliveryCase)}</Status>
+                            <Status tone={deliveryTone(delivery, deliveryCase)}>{deliveryLabel(locale, deliveryStatusLabel(delivery, deliveryCase))}</Status>
                           </Td>
                           <Td className="whitespace-nowrap">
                             {scheduledAt ? (
                               <span className={isOverdue(deliveryCase) ? 'font-medium text-foreground' : 'text-foreground'}>
-                                {formatDate(scheduledAt, timeZone)}
+                                {formatDate(scheduledAt, timeZone, locale)}
                                 {isOverdue(deliveryCase) && <Attention className="ml-2">Overdue</Attention>}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">{delivery.status === 'delivered' ? formatDate(delivery.saleDate, timeZone) : 'Not scheduled'}</span>
+                              <span className="text-muted-foreground">{delivery.status === 'delivered' ? formatDate(delivery.saleDate, timeZone, locale) : (locale === 'pt-BR' ? 'Não agendado' : 'Not scheduled')}</span>
                             )}
                           </Td>
                           <Td className="min-w-0 max-w-[16rem]">

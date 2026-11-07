@@ -1,10 +1,10 @@
-import { getPartDetail } from '../actions'
+import { getPartDetail, getPartsCurrencyCode } from '../actions'
 import { PartDetailPageClient } from './PartDetailPageClient'
 import { getDealershipTimeZone } from '../../lib/dealershipTimeZone'
 
 export async function PartDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [response, timeZone] = await Promise.all([getPartDetail(id), getDealershipTimeZone()])
+  const [response, timeZone, currencyCode] = await Promise.all([getPartDetail(id), getDealershipTimeZone(), getPartsCurrencyCode()])
   const part = response.success ? response.data.partsInventory : null
 
   return (
@@ -16,6 +16,7 @@ export async function PartDetailPage({ params }: { params: Promise<{ id: string 
       initialPurchaseOrders={response.success ? response.data.purchaseOrders || [] : []}
       initialError={response.success ? (part ? null : 'Part not found') : response.error}
       timeZone={timeZone}
+      currencyCode={currencyCode}
     />
   )
 }

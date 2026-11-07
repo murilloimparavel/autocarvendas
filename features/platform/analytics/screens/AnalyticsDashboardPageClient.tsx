@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowRight, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import {
   Attention,
@@ -118,6 +119,7 @@ function ShareTable({
 
 /** Month-to-date cell: the label, the windshield figure, and the prior month beside it. */
 export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initialData: AnalyticsData; timeZone: string }) {
+  const { locale } = useLocale()
   const [data, setData] = useState<AnalyticsData>(initialData)
   const [loading, setLoading] = useState(false)
   const [area, setArea] = useState<Area>('sales')
@@ -132,9 +134,9 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
   const { sales: salesMetrics, inventory: inventoryMetrics, service: serviceMetrics, operations, currencyCode, error } = data
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, maximumFractionDigits: 0 }).format(value)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: 0 }).format(value)
   }
-  const compactCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, notation: 'compact', maximumFractionDigits: 0 })
+  const compactCurrency = new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, notation: 'compact', maximumFractionDigits: 0 })
   const platform = `${basePath}/platform`
 
   const breadcrumbs = [
@@ -162,8 +164,8 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
     : null
   const mtd = deliveredByMonth.find(item => item.month === currentKey) || { month: currentKey || '', revenueCents: 0, grossCents: 0, count: 0 }
   const lastMonth = deliveredByMonth.find(item => item.month === previousKey) || null
-  const lastMonthName = previousKey ? monthLabel(previousKey) : 'Last month'
-  const grossChart = deliveredByMonth.map(item => ({ month: item.month, label: monthLabel(item.month), gross: item.grossCents / 100 }))
+  const lastMonthName = previousKey ? monthLabel(previousKey, locale) : locale === 'pt-BR' ? 'Mês anterior' : 'Last month'
+  const grossChart = deliveredByMonth.map(item => ({ month: item.month, label: monthLabel(item.month, locale), gross: item.grossCents / 100 }))
 
   const agedUnits = (inventoryMetrics?.agingBreakdown || []).filter(bucket => bucket.range === '61-90' || bucket.range === '90+').reduce((sum, bucket) => sum + bucket.count, 0)
   const lowStock = opMetrics?.parts?.lowStockCount ?? serviceMetrics?.lowStockParts.length ?? 0
@@ -184,7 +186,7 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
         error
           ? 'Unavailable'
           : operations?.generatedAt
-            ? `${currentKey ? `${monthLabel(currentKey)} to date` : 'Month to date'} · Updated ${new Date(operations.generatedAt).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
+            ? `${currentKey ? `${monthLabel(currentKey, locale)} ${locale === 'pt-BR' ? 'até agora' : 'to date'}` : locale === 'pt-BR' ? 'Mês até agora' : 'Month to date'} · ${locale === 'pt-BR' ? 'Atualizado' : 'Updated'} ${new Date(operations.generatedAt).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
             : undefined
       }
       actions={
@@ -210,7 +212,7 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
   }
 
   const allMonths = salesMetrics?.salesByMonth || []
-  const months = (period === 'all' ? allMonths : allMonths.slice(-Number(period))).map(month => ({ ...month, label: monthLabel(month.month) }))
+  const months = (period === 'all' ? allMonths : allMonths.slice(-Number(period))).map(month => ({ ...month, label: monthLabel(month.month, locale) }))
   const periodGross = grossChart.filter(item => months.some(month => month.month === item.month))
   const periodUnits = months.reduce((sum, month) => sum + month.count, 0)
   const periodRevenue = months.reduce((sum, month) => sum + month.revenue, 0)
@@ -224,7 +226,7 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
       <section aria-labelledby="analytics-mtd" className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2 border-b border-foreground/15 pb-2">
           <h2 id="analytics-mtd" className="text-[15px] font-semibold text-foreground">
-            {currentKey ? `${monthLabel(currentKey)} to date` : 'Month to date'}
+            {currentKey ? `${monthLabel(currentKey, locale)} ${locale === 'pt-BR' ? 'até agora' : 'to date'}` : locale === 'pt-BR' ? 'Mês até agora' : 'Month to date'}
           </h2>
           <span className="text-[12px] text-muted-foreground">Delivered deals by sale date</span>
         </div>

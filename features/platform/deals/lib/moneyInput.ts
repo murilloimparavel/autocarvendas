@@ -2,9 +2,18 @@ import { MAX_CENTS, MAX_TAX_RATE_BPS } from '@/features/keystone/lifecycle/dealP
 
 const amountPattern = /^\d+(\.\d{0,2})?$|^\.\d{1,2}$/
 
+function separators(locale: 'pt-BR' | 'en-US') {
+  const parts = new Intl.NumberFormat(locale).formatToParts(12345.6)
+  return {
+    group: parts.find(part => part.type === 'group')?.value || ',',
+    decimal: parts.find(part => part.type === 'decimal')?.value || '.',
+  }
+}
+
 /** "$33,450.50" -> 3345050. Blank is zero; anything else that is not dollars and cents is null. */
-export function parseDollarsToCents(text: string): number | null {
-  const cleaned = text.trim().replace(/^\$/, '').replace(/,/g, '').trim()
+export function parseDollarsToCents(text: string, locale: 'pt-BR' | 'en-US' = 'en-US'): number | null {
+  const { group, decimal } = separators(locale)
+  const cleaned = text.trim().replace(/[^\d.,]/g, '').replaceAll(group, '').replace(decimal, '.').trim()
   if (!cleaned) return 0
   if (!amountPattern.test(cleaned)) return null
   const [whole, fraction = ''] = cleaned.split('.')
@@ -13,9 +22,9 @@ export function parseDollarsToCents(text: string): number | null {
 }
 
 /** 3345050 -> "33,450.50"; whole dollars drop the cents. */
-export function formatCentsForInput(cents: number | null | undefined): string {
+export function formatCentsForInput(cents: number | null | undefined, locale: 'pt-BR' | 'en-US' = 'en-US'): string {
   const value = Number(cents) || 0
-  return (value / 100).toLocaleString('en-US', { minimumFractionDigits: value % 100 ? 2 : 0, maximumFractionDigits: 2 })
+  return (value / 100).toLocaleString(locale, { minimumFractionDigits: value % 100 ? 2 : 0, maximumFractionDigits: 2 })
 }
 
 /** "4.15" or "4.15%" -> 415 basis points; null when it is not 0-100 with two decimals. */

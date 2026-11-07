@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { resetPassword } from "@/features/dashboard/actions";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 type ResetFormProps = {
   mode: "reset" | "request";
@@ -37,6 +38,7 @@ const initialState: ActionState = {
 
 function SubmitButton({ mode }: { mode: "reset" | "request" }) {
   const { pending } = useFormStatus();
+  const { t } = useLocale()
 
   return (
     <Button
@@ -47,7 +49,7 @@ function SubmitButton({ mode }: { mode: "reset" | "request" }) {
       {pending ? (
         <RiLoader2Fill className="size-4 shrink-0 animate-spin" />
       ) : (
-        mode === "reset" ? "Reset password" : "Send reset link"
+        mode === "reset" ? t('resetPasswordAction') : t('sendResetLink')
       )}
     </Button>
   );
@@ -74,6 +76,7 @@ async function formAction(
 }
 
 export function ResetForm({ mode, token }: ResetFormProps) {
+  const { t } = useLocale()
   const [showPassword, setShowPassword] = useState(false);
   const [state, dispatch] = useActionState(
     (prevState: ActionState | null, formData: FormData) => formAction(prevState, formData, mode, token),
@@ -88,7 +91,7 @@ export function ResetForm({ mode, token }: ResetFormProps) {
             htmlFor="email"
             className="text-sm font-medium text-foreground dark:text-foreground"
           >
-            Email
+            {t('email')}
           </Label>
           <Input
             type="email"
@@ -107,7 +110,7 @@ export function ResetForm({ mode, token }: ResetFormProps) {
               htmlFor="password"
               className="text-sm font-medium text-foreground dark:text-foreground"
             >
-              New Password
+              {t('newPassword')}
             </Label>
             <div className="relative mt-2">
               <Input
@@ -130,6 +133,7 @@ export function ResetForm({ mode, token }: ResetFormProps) {
                 ) : (
                   <Eye className="h-4 w-4" aria-hidden="true" />
                 )}
+                <span className="sr-only">{showPassword ? t('hidePassword') : t('showPassword')}</span>
               </button>
             </div>
           </div>
@@ -140,7 +144,7 @@ export function ResetForm({ mode, token }: ResetFormProps) {
       {state.message && (
         <Badge variant="destructive" className="hover:bg-destructive/10 bg-destructive/5 flex text-base items-start gap-2 border border-destructive/50 p-4 rounded-sm mt-4">
           <div className="flex flex-col gap-1">
-            <h2 className="uppercase tracking-wider font-semibold text-sm">Error</h2>
+            <h2 className="uppercase tracking-wider font-semibold text-sm">{t('error')}</h2>
             <span className="break-all text-sm opacity-75 font-normal">{state.message}</span>
           </div>
         </Badge>
@@ -148,7 +152,7 @@ export function ResetForm({ mode, token }: ResetFormProps) {
       {state.success && (
         <Badge color="emerald" className="flex text-base items-start gap-2 p-4 rounded-sm mt-4">
           <div className="flex flex-col gap-1">
-            <h2 className="uppercase tracking-wider font-semibold text-sm">Success</h2>
+            <h2 className="uppercase tracking-wider font-semibold text-sm">{t('success')}</h2>
             <span className="break-all text-sm opacity-75 font-normal">{state.success}</span>
           </div>
         </Badge>

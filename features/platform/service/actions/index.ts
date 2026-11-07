@@ -91,6 +91,13 @@ export async function getServiceTaxRate() {
   return response.success ? response.data.dealershipProfile?.salesTaxRateBps ?? null : null
 }
 
+export async function getServiceCurrencyCode() {
+  const response = await keystoneClient<{ storefrontProfile: { currencyCode: string | null } | null }>(`
+    query ServiceCurrency { storefrontProfile { currencyCode } }
+  `, {}, { cache: 'no-store' })
+  return response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'
+}
+
 export async function getRooftopStaff(rooftopId: string) {
   return keystoneClient<{ users: Array<{ id: string; name: string }> }>(ROOFTOP_STAFF_QUERY, { rooftopId })
 }

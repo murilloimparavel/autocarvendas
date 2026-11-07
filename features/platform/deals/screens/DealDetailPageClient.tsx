@@ -47,6 +47,7 @@ import { readFinanceEvidence, type FinanceEvidence } from '../lib/financeEvidenc
 import { FinanceEvidenceHistory } from '../components/FinanceEvidenceHistory'
 import { labelForDeal, toneForDeal } from '../lib/dealStatus'
 import { formatUsd, formatUsdCredit } from '../lib/formatMoney'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { OperatorActionDialog } from '@/features/platform/components/OperatorActionDialog'
 
 type LenderOffer = DealLenderOffer
@@ -182,6 +183,7 @@ function LedgerRow({ label, value, emphasis, sub, indent }: { label: ReactNode; 
 }
 
 export function DealDetailPageClient({ id }: { id: string }) {
+  const { locale } = useLocale()
   const [deal, setDeal] = useState<Deal | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -207,6 +209,7 @@ export function DealDetailPageClient({ id }: { id: string }) {
   const cancelIdempotencyKeyRef = useRef<string | null>(null)
   const [dealTradeIn, setDealTradeInRecord] = useState<DealTradeIn | null>(null)
   const [dealRooftopId, setDealRooftopId] = useState<string | null>(null)
+  const [currencyCode, setCurrencyCode] = useState('USD')
   const [tradeInDialog, setTradeInDialog] = useState<'attach' | 'detach' | null>(null)
   const [tradeInOptions, setTradeInOptions] = useState<DealTradeInOption[] | null>(null)
   const [tradeInValues, setTradeInValues] = useState({ tradeInId: '', reason: '' })
@@ -225,6 +228,7 @@ export function DealDetailPageClient({ id }: { id: string }) {
       const value = response.data.dealWorkspace.deal
       setDealTradeInRecord(response.data.tradeIn)
       setDealRooftopId(response.data.rooftopId)
+      setCurrencyCode(response.data.currencyCode)
       value.form8300Required = value.financeEvidence?.payment?.form8300Required === true
       value.financeEvidence = readFinanceEvidence(value.financeEvidence)
       for (const key of ['fees', 'rebates', 'products', 'taxLines']) value[key] = Array.isArray(value[key]) ? value[key] : []
@@ -581,11 +585,11 @@ export function DealDetailPageClient({ id }: { id: string }) {
     }
   }
 
-  const formatCurrency = (value: number | null | undefined) => formatUsd(value)
+  const formatCurrency = (value: number | null | undefined) => formatUsd(value, { currencyCode, locale })
 
   const formatDate = (date: string | null) => {
     if (!date) return '-'
-    return formatInZone(date, undefined, "datetime")
+    return formatInZone(date, undefined, 'datetime', locale)
   }
 
   const breadcrumbs = (label: string) => [
@@ -782,7 +786,7 @@ export function DealDetailPageClient({ id }: { id: string }) {
           <FourSquare
             cells={[
               { label: 'Vehicle price', value: formatCurrency(savedPricing.vehiclePriceCents / 100), sub: deal.vehicle ? `${deal.vehicle.condition === 'new' ? 'MSRP' : 'Asking'} ${formatCurrency(deal.vehicle.price)}` : undefined },
-              { label: 'Trade-in', value: formatUsdCredit(savedPricing.tradeInValueCents / 100), sub: dealTradeIn ? tradeInName(dealTradeIn) : 'No trade' },
+              { label: 'Trade-in', value: formatUsdCredit(savedPricing.tradeInValueCents / 100, { currencyCode, locale }), sub: dealTradeIn ? tradeInName(dealTradeIn) : 'No trade' },
               { label: isCash ? 'Down (part of amount due)' : 'Down payment', value: formatCurrency(savedPricing.downPaymentCents / 100) },
               savedPricing.loanTerm > 0
                 ? { label: 'Payment', value: `${formatCurrency(savedPricing.monthlyPaymentCents / 100)}/mo`, sub: deal.structureType === 'lease' ? `Lease · ${savedPricing.loanTerm} mo` : `${savedPricing.apr}% APR · ${savedPricing.loanTerm} mo` }
@@ -821,9 +825,9 @@ export function DealDetailPageClient({ id }: { id: string }) {
                     <LedgerRow label="Vehicle price" value={formatCurrency(savedPricing.vehiclePriceCents / 100)} />
                     {lineGroups.map(([field, title, key, sign]) => (
                       <div key={field}>
-                        <LedgerRow label={title} value={sign < 0 ? formatUsdCredit(savedPricing[key] / 100) : formatCurrency(savedPricing[key] / 100)} />
+                        <LedgerRow label={title} value={sign < 0 ? formatUsdCredit(savedPricing[key] / 100, { currencyCode, locale }) : formatCurrency(savedPricing[key] / 100)} />
                         {!worksheetDirty && deal[field].map((line, index) => (
-                          <LedgerRow key={`${field}-${index}`} sub indent label={line.name || line.code} value={sign < 0 ? formatUsdCredit(lineCents(line) / 100) : formatCurrency(lineCents(line) / 100)} />
+                          <LedgerRow key={`${field}-${index}`} sub indent label={line.name || line.code} value={sign < 0 ? formatUsdCredit(lineCents(line) / 100, { currencyCode, locale }) : formatCurrency(lineCents(line) / 100)} />
                         ))}
                       </div>
                     ))}
@@ -834,7 +838,7 @@ export function DealDetailPageClient({ id }: { id: string }) {
                         <LedgerRow key={`tax-${index}`} sub indent label={line.name || line.code} value={formatCurrency(lineCents(line) / 100)} />
                       ))}
                     </div>
-                    <LedgerRow label="Trade-in credit" value={formatUsdCredit(savedPricing.tradeInValueCents / 100)} />
+                    <LedgerRow label="Trade-in credit" value={formatUsdCredit(savedPricing.tradeInValueCents / 100, { currencyCode, locale })} />
                     <LedgerRow emphasis="total" label="Total price" value={formatCurrency(savedPricing.totalPriceCents / 100)} />
                     {isCash ? (
                       <LedgerRow sub indent label={downPaymentLabel} value={formatCurrency(savedPricing.downPaymentCents / 100)} />

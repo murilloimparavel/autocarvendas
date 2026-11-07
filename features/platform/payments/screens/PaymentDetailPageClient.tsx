@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { ArrowLeft, ExternalLink, RefreshCw, Scale, Undo2 } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
 import { basePath } from '@/features/dashboard/lib/config'
@@ -9,7 +10,7 @@ import { Code, DeskHeader, DeskSection, DeskTable, Facts, Figure, Notice, Panel,
 import { recordReference } from '@/features/platform/lib/format'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
 import { CommandDialog, type FieldErrors } from '@/features/platform/accounting/components/CommandDialog'
-import { PAYMENT_STATUS_LABEL, dateTime, money, nonce, paymentTone, refundTone } from '@/features/platform/accounting/lib/format'
+import { PAYMENT_STATUS_LABEL, dateTime as dateTimeBase, money as moneyBase, nonce, paymentStatusLabel, paymentTone, refundTone } from '@/features/platform/accounting/lib/format'
 
 import { getPayment, reconcilePaymentTransaction, requestPaymentRefund } from '../actions'
 import { REFUNDABLE_STATUSES, SETTLED_STATUSES, paymentSource } from '../lib/format'
@@ -32,6 +33,9 @@ export function PaymentDetailPageClient({
   initialEvents: PaymentProviderEventRecord[]
   initialError: string | null
 }) {
+  const { locale } = useLocale()
+  const money = (cents: number | null | undefined, currency = 'usd') => moneyBase(cents, currency, locale)
+  const dateTime = (value: string | null | undefined, zone: string) => dateTimeBase(value, zone, locale)
   const [payment, setPayment] = useState(initialPayment)
   const [refunds, setRefunds] = useState(initialRefunds)
   const [events, setEvents] = useState(initialEvents)
@@ -117,11 +121,11 @@ export function PaymentDetailPageClient({
         ? 'Nothing left to refund'
         : null
   const source = paymentSource(payment)
-  const statusLabel = PAYMENT_STATUS_LABEL[payment.status] || payment.status
+  const statusLabel = paymentStatusLabel(locale, PAYMENT_STATUS_LABEL[payment.status] || payment.status)
 
   const open = (kind: 'reconcile' | 'refund') => {
     setDialog(kind)
-    setValues(kind === 'refund' ? { amount: formatCentsForInput(refundable), reason: '' } : { reference: '' })
+    setValues(kind === 'refund' ? { amount: formatCentsForInput(refundable, locale), reason: '' } : { reference: '' })
     setFieldErrors({})
     setSubmitError(null)
   }
@@ -141,7 +145,7 @@ export function PaymentDetailPageClient({
       if (!result.success) return setSubmitError(result.error)
       setMessage('Payment reconciled.')
     } else if (dialog === 'refund') {
-      const cents = parseDollarsToCents(values.amount || '')
+      const cents = parseDollarsToCents(values.amount || '', locale)
       const reason = (values.reason || '').trim()
       if (cents === null) errors.amount = 'Enter dollars and cents'
       else if (cents <= 0) errors.amount = 'Amount must be more than $0'

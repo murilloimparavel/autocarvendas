@@ -10,6 +10,7 @@ export async function DealListPage() {
       initialDeals={response.success ? response.data.dealDeskWorkspace.deals || [] : null}
       initialError={response.success ? null : response.error}
       timeZone={timeZone}
+      currencyCode={response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'}
     />
   )
 }

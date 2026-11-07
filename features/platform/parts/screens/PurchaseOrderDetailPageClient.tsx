@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, RefreshCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -11,7 +12,7 @@ import { Code, DeskHeader, DeskSection, DeskTable, Facts, Figure, Notice, Panel,
 import { getPurchaseOrder, managePurchaseOrder } from '../actions'
 import { PurchaseOrderFormDialog } from '../components/PurchaseOrderFormDialog'
 import { ReceivePurchaseOrderDialog } from '../components/ReceivePurchaseOrderDialog'
-import { PO_ACTION_FROM, PO_STATUS_LABEL, PO_STATUS_TONE, formatCents, formatDateTime, poLines, poTotalCents, type Part, type PurchaseOrder } from '../lib/types'
+import { PO_ACTION_FROM, PO_STATUS_LABEL, PO_STATUS_TONE, formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, partsLabel, poLines, poTotalCents, type Part, type PurchaseOrder } from '../lib/types'
 
 type ConfirmAction = 'order' | 'close' | 'cancel'
 
@@ -31,13 +32,18 @@ export function PurchaseOrderDetailPageClient({
   initialParts,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   id: string
   initialOrder: PurchaseOrder | null
   initialParts: Part[]
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string) => formatDateTimeBase(value, zone, locale)
   const [order, setOrder] = useState(initialOrder)
   const [parts, setParts] = useState(initialParts)
   const [error, setError] = useState(initialError)
@@ -126,10 +132,10 @@ export function PurchaseOrderDetailPageClient({
     <DeskHeader
       title={<><span className="font-mono">{order.reference}</span> <span className="font-normal">{order.supplier}</span></>}
       tone={PO_STATUS_TONE[order.status] || 'idle'}
-      status={PO_STATUS_LABEL[order.status] || order.status}
+      status={partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}
       meta={
         <span className="flex flex-wrap items-baseline gap-x-2">
-          <Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status>
+          <Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status>
           <span>· {lines.length} {lines.length === 1 ? 'line' : 'lines'}</span>
           <span>· {received} of {ordered} received</span>
           {order.rooftop?.name && <span>· {order.rooftop.name}</span>}
@@ -290,6 +296,7 @@ export function PurchaseOrderDetailPageClient({
           order={order}
           parts={parts}
           rooftops={order.rooftop ? [order.rooftop] : []}
+          currencyCode={currencyCode}
           onOpenChange={setEditing}
           onSaved={async () => {
             setEditing(false)

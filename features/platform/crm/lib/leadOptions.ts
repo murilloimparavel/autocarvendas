@@ -1,4 +1,5 @@
 import type { DeskTone } from '@/features/platform/components/desk'
+import type { Locale } from '@/features/i18n/messages'
 
 export const LEAD_STATUSES: ReadonlyArray<{ value: string; label: string; tone: DeskTone }> = [
   { value: 'new', label: 'New', tone: 'info' },
@@ -11,8 +12,10 @@ export const LEAD_STATUSES: ReadonlyArray<{ value: string; label: string; tone: 
 
 export const CLOSED_LEAD_STATUSES = ['closed-won', 'closed-lost']
 
-export function leadStatus(value: string | null | undefined) {
-  return LEAD_STATUSES.find(status => status.value === value) || { value: value || 'new', label: value || 'New', tone: 'idle' as DeskTone }
+export function leadStatus(value: string | null | undefined, locale: Locale = 'en-US') {
+  const status = LEAD_STATUSES.find(item => item.value === value)
+  if (status) return { ...status, label: locale === 'pt-BR' ? ({ new: 'Novo', contacted: 'Em contato', 'test-drive-scheduled': 'Test-drive agendado', negotiating: 'Em negociação', 'closed-won': 'Venda concluída', 'closed-lost': 'Venda perdida' }[status.value] || status.label) : status.label }
+  return { value: value || 'new', label: value || (locale === 'pt-BR' ? 'Novo' : 'New'), tone: 'idle' as DeskTone }
 }
 
 export const LEAD_SOURCES: ReadonlyArray<{ value: string; label: string }> = [
@@ -28,8 +31,10 @@ export const LEAD_SOURCES: ReadonlyArray<{ value: string; label: string }> = [
 /** Sources staff can pick when taking a lead by hand. Website leads arrive through the storefront. */
 export const STAFF_LEAD_SOURCES = LEAD_SOURCES.filter(source => source.value !== 'website')
 
-export function sourceLabel(value: string | null | undefined) {
-  return LEAD_SOURCES.find(source => source.value === value)?.label || value || '-'
+export function sourceLabel(value: string | null | undefined, locale: Locale = 'en-US') {
+  const source = LEAD_SOURCES.find(item => item.value === value)
+  if (locale === 'pt-BR' && source) return ({ 'walk-in': 'Presencial', phone: 'Telefone', website: 'Site', referral: 'Indicação', ad: 'Anúncio', social: 'Rede social', 'third-party': 'Portal ou parceiro' }[source.value] || source.label)
+  return source?.label || value || '-'
 }
 
 export const BUDGET_RANGES: ReadonlyArray<{ value: string; label: string }> = [
@@ -42,8 +47,17 @@ export const BUDGET_RANGES: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'over-100k', label: 'Over $100,000' },
 ]
 
-export function budgetLabel(value: string | null | undefined) {
-  return BUDGET_RANGES.find(range => range.value === value)?.label || '-'
+export function budgetLabel(value: string | null | undefined, locale: Locale = 'en-US', currencyCode = 'USD') {
+  const range = BUDGET_RANGES.find(item => item.value === value)
+  if (!range || locale !== 'pt-BR') return range?.label || '-'
+  const amount = (n: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: 0 }).format(n)
+  const labels: Record<string, string> = {
+    'under-20k': `Até ${amount(20000)}`, '20-30k': `${amount(20000)} a ${amount(30000)}`,
+    '30-40k': `${amount(30000)} a ${amount(40000)}`, '40-50k': `${amount(40000)} a ${amount(50000)}`,
+    '50-75k': `${amount(50000)} a ${amount(75000)}`, '75-100k': `${amount(75000)} a ${amount(100000)}`,
+    'over-100k': `Acima de ${amount(100000)}`,
+  }
+  return labels[value || ''] || range.label
 }
 
 export const TIMEFRAMES: ReadonlyArray<{ value: string; label: string }> = [
@@ -53,8 +67,10 @@ export const TIMEFRAMES: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'just-looking', label: 'Just looking' },
 ]
 
-export function timeframeLabel(value: string | null | undefined) {
-  return TIMEFRAMES.find(timeframe => timeframe.value === value)?.label || '-'
+export function timeframeLabel(value: string | null | undefined, locale: Locale = 'en-US') {
+  const timeframe = TIMEFRAMES.find(item => item.value === value)
+  if (locale === 'pt-BR' && timeframe) return ({ immediately: 'Imediatamente', 'this-week': 'Nesta semana', 'this-month': 'Neste mês', 'just-looking': 'Só pesquisando' }[timeframe.value] || timeframe.label)
+  return timeframe?.label || '-'
 }
 
 export const VISIT_STATUSES: Record<string, { label: string; tone: DeskTone }> = {
@@ -115,9 +131,9 @@ export function zonedDayBounds(timeZone: string, now = Date.now()) {
   return { start, end }
 }
 
-export function formatDateTime(value: string | null | undefined, timeZone: string) {
+export function formatDateTime(value: string | null | undefined, timeZone: string, locale: Locale = 'en-US') {
   if (!value) return '-'
-  return new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
 export function formatDay(value: string | null | undefined, timeZone: string) {

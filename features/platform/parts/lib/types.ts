@@ -136,14 +136,36 @@ export const MOVEMENT_LABEL: Record<string, string> = {
   'po-cancel': 'Order cancelled',
 }
 
-export function formatCents(cents: number | null | undefined) {
+export function formatCents(cents: number | null | undefined, currencyCode = 'USD', locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (cents == null) return '-'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(cents) / 100)
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(Number(cents) / 100)
 }
 
-export function formatDateTime(value: string | null | undefined, timeZone: string) {
+export function formatDateTime(value: string | null | undefined, timeZone: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return '-'
-  return new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+const partsPt: Record<string, string> = {
+  'Out of stock': 'Sem estoque', 'Low stock': 'Estoque baixo', 'In stock': 'Em estoque',
+  Draft: 'Rascunho', Ordered: 'Pedido enviado', 'Partially received': 'Recebido parcialmente',
+  Received: 'Recebido', Cancelled: 'Cancelado', Receipt: 'Entrada', 'Issue to RO': 'Baixa para OS',
+  'Return from RO': 'Devolução da OS', Adjustment: 'Ajuste', 'Cycle count': 'Contagem de estoque',
+  'Commit to RO': 'Reservar para OS', Release: 'Liberar reserva', 'On order': 'Em pedido',
+  'Order cancelled': 'Pedido cancelado',
+  'Counted on hand': 'Contagem física', 'Quantity on order': 'Quantidade no pedido',
+  'Quantity to cancel': 'Quantidade a cancelar',
+  'Place order': 'Enviar pedido', 'Order placed': 'Pedido enviado', 'Close short': 'Encerrar saldo pendente',
+  'Purchase order closed': 'Pedido de compra encerrado', 'Cancel purchase order': 'Cancelar pedido de compra',
+  'Purchase order cancelled': 'Pedido de compra cancelado', 'Receipt posted; purchase order partially received': 'Entrada registrada; pedido recebido parcialmente',
+  'Purchase order received': 'Pedido recebido', 'Draft saved': 'Rascunho salvo',
+  'Part saved': 'Peça salva', 'Part created': 'Peça cadastrada',
+  'Received at cost': 'Recebido a custo', 'Stock at cost': 'Estoque a custo',
+}
+
+/** Translate fixed inventory labels only; descriptions, suppliers and references remain user data. */
+export function partsLabel(locale: 'pt-BR' | 'en-US', label: string) {
+  return locale === 'pt-BR' ? partsPt[label] || label : label
 }
 
 export function repairOrderLabel(order: OpenRepairOrder) {

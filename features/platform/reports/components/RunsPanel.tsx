@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { CalendarClock, Download, Eye, Play } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Code, DeskTable, Facts, Notice, Panel, Pill, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { EmptyRow, TAP, TAP_INPUT, TAP_SM } from '@/features/platform/catalog/components/formKit'
@@ -35,6 +36,7 @@ export function RunsPanel({
   /** Status tab to open on; the page's "needs you" queue opens runs on Failed or Queued. */
   initialStatusFilter?: StatusFilter
 }) {
+  const { locale } = useLocale()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter)
   const [workingId, setWorkingId] = useState<string | null>(null)
   const [bulk, setBulk] = useState<'queue' | 'process' | null>(null)
@@ -165,16 +167,16 @@ export function RunsPanel({
                   <Td className="min-w-0 max-w-[18rem]">
                     <span className="block truncate font-medium text-foreground">{run.savedReport?.name || 'Deleted report'}</span>
                     <span className="block truncate text-[12px] text-muted-foreground md:hidden">
-                      {status === 'queued' ? `Queued ${formatDateTime(run.createdAt, timeZone)}` : `Completed ${formatDateTime(run.completedAt || run.createdAt, timeZone)}`}
+                      {status === 'queued' ? `Queued ${formatDateTime(run.createdAt, timeZone, locale)}` : `Completed ${formatDateTime(run.completedAt || run.createdAt, timeZone, locale)}`}
                     </span>
                     {run.errorCode && <span className="block break-words text-[12px] text-red-700 dark:text-red-300">{run.errorCode}</span>}
                   </Td>
                   <Td priority={3} className="whitespace-nowrap text-muted-foreground">{run.savedReport ? reportTypeLabel(run.savedReport.reportType) : '-'}</Td>
                   <Td priority={3} className="whitespace-nowrap"><Code>{run.exportFormat.toUpperCase()}</Code></Td>
                   <Td priority={2} className="whitespace-nowrap text-muted-foreground">
-                    {status === 'queued' ? `Queued ${formatDateTime(run.createdAt, timeZone)}` : formatDateTime(run.completedAt || run.createdAt, timeZone)}
+                    {status === 'queued' ? `Queued ${formatDateTime(run.createdAt, timeZone, locale)}` : formatDateTime(run.completedAt || run.createdAt, timeZone, locale)}
                   </Td>
-                  <Td priority={3} className="whitespace-nowrap text-muted-foreground">{status === 'completed' && run.expiresAt ? formatDateTime(run.expiresAt, timeZone) : '-'}</Td>
+                  <Td priority={3} className="whitespace-nowrap text-muted-foreground">{status === 'completed' && run.expiresAt ? formatDateTime(run.expiresAt, timeZone, locale) : '-'}</Td>
                   <Td align="right" className="w-[1%] whitespace-nowrap">
                     <Track className="justify-end">
                       {status === 'queued' && (
@@ -214,9 +216,9 @@ export function RunsPanel({
                   items={[
                     { label: 'Report type', value: viewing.savedReport ? reportTypeLabel(viewing.savedReport.reportType) : '-' },
                     { label: 'Format', value: viewing.exportFormat.toUpperCase() },
-                    { label: 'Created', value: formatDateTime(viewing.createdAt, timeZone) },
-                    { label: 'Completed', value: formatDateTime(viewing.completedAt, timeZone) },
-                    { label: 'Expires', value: formatDateTime(viewing.expiresAt, timeZone) },
+                    { label: locale === 'pt-BR' ? 'Criado' : 'Created', value: formatDateTime(viewing.createdAt, timeZone, locale) },
+                    { label: locale === 'pt-BR' ? 'Concluído' : 'Completed', value: formatDateTime(viewing.completedAt, timeZone, locale) },
+                    { label: locale === 'pt-BR' ? 'Expira' : 'Expires', value: formatDateTime(viewing.expiresAt, timeZone, locale) },
                     viewing.resultDigest ? { label: 'Digest', value: <Code>{viewing.resultDigest.slice(0, 16)}</Code> } : null,
                     viewing.errorCode ? { label: 'Error', value: viewing.errorCode } : null,
                   ]}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Plus, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,7 @@ import { Notice, Pill, Track } from '@/features/platform/components/desk'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
 
 import { managePurchaseOrder } from '../actions'
-import { formatCents, poLines, type Part, type PartsRooftop, type PurchaseOrder } from '../lib/types'
+import { poLines, type Part, type PartsRooftop, type PurchaseOrder } from '../lib/types'
 import { FormField, hasErrors, parseWhole, type FieldErrors } from './FormField'
 
 type LineDraft = { key: string; partId: string; quantity: string; unitCost: string }
@@ -22,6 +23,7 @@ export function PurchaseOrderFormDialog({
   order,
   parts,
   rooftops,
+  currencyCode,
   initialPartIds,
   onOpenChange,
   onSaved,
@@ -30,11 +32,14 @@ export function PurchaseOrderFormDialog({
   order: PurchaseOrder | null
   parts: Part[]
   rooftops: PartsRooftop[]
+  currencyCode: string
   /** Prefill lines for a new PO, for example every low-stock part. */
   initialPartIds?: string[]
   onOpenChange: (open: boolean) => void
   onSaved: (purchaseOrderId: string) => void
 }) {
+  const { locale } = useLocale()
+  const moneyPlaceholder = new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(0)
   const [rooftopId, setRooftopId] = useState('')
   const [reference, setReference] = useState('')
   const [supplier, setSupplier] = useState('')
@@ -51,18 +56,18 @@ export function PurchaseOrderFormDialog({
       setRooftopId(order.rooftop?.id || '')
       setReference(order.reference)
       setSupplier(order.supplier)
-      setLines(poLines(order).map(line => ({ key: crypto.randomUUID(), partId: line.partId, quantity: String(line.quantity), unitCost: formatCentsForInput(line.unitCostCents) })))
+      setLines(poLines(order).map(line => ({ key: crypto.randomUUID(), partId: line.partId, quantity: String(line.quantity), unitCost: formatCentsForInput(line.unitCostCents, locale) })))
     } else {
       const prefill = (initialPartIds || []).map(id => partById.get(id)).filter(Boolean) as Part[]
       setRooftopId(prefill[0]?.rooftop?.id || (rooftops.length === 1 ? rooftops[0].id : ''))
-      setReference(`PO-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`)
+      setReference(`${locale === 'pt-BR' ? 'OC' : 'PO'}-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`)
       setSupplier(prefill.find(part => part.supplier)?.supplier || '')
       setLines(prefill.length
         ? prefill.map(part => ({
             key: crypto.randomUUID(),
             partId: part.id,
             quantity: String(Math.max(1, Number(part.minimumQuantity || 0) * 2 - (Number(part.quantity || 0) - Number(part.committedQuantity || 0)) - Number(part.onOrderQuantity || 0))),
-            unitCost: part.costCents ? formatCentsForInput(part.costCents) : '',
+            unitCost: part.costCents ? formatCentsForInput(part.costCents, locale) : '',
           }))
         : [newLine()])
     }
@@ -71,14 +76,14 @@ export function PurchaseOrderFormDialog({
     setIdempotencyKey(`parts-desk:po:${crypto.randomUUID()}`)
     // Reset only when the dialog opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, locale])
 
   const rooftopParts = useMemo(() => parts.filter(part => !rooftopId || part.rooftop?.id === rooftopId), [parts, rooftopId])
   const partById = useMemo(() => new Map(parts.map(part => [part.id, part])), [parts])
 
   const total = lines.reduce((sum, line) => {
     const quantity = parseWhole(line.quantity, 1)
-    const cost = parseDollarsToCents(line.unitCost)
+    const cost = parseDollarsToCents(line.unitCost, locale)
     return quantity && cost !== null ? sum + quantity * cost : sum
   }, 0)
 
@@ -88,7 +93,7 @@ export function PurchaseOrderFormDialog({
       const next = { ...line, ...patch }
       if (patch.partId && !line.unitCost) {
         const part = partById.get(patch.partId)
-        if (part?.costCents) next.unitCost = formatCentsForInput(part.costCents)
+        if (part?.costCents) next.unitCost = formatCentsForInput(part.costCents, locale)
       }
       return next
     }))
@@ -107,7 +112,7 @@ export function PurchaseOrderFormDialog({
     const payload: Array<{ partId: string; quantity: number; unitCostCents: number }> = []
     for (const line of lines) {
       const quantity = parseWhole(line.quantity, 1)
-      const unitCostCents = line.unitCost.trim() ? parseDollarsToCents(line.unitCost) : null
+      const unitCostCents = line.unitCost.trim() ? parseDollarsToCents(line.unitCost, locale) : null
       if (!line.partId) next[`${line.key}:partId`] = 'Choose a part'
       else if (seen.has(line.partId)) next[`${line.key}:partId`] = 'Part is already on another line'
       if (quantity === null) next[`${line.key}:quantity`] = 'At least 1'
@@ -190,7 +195,7 @@ export function PurchaseOrderFormDialog({
                   <Input id={`po-line-${line.key}-qty`} className="h-11 rounded-[4px] text-[13px] sm:h-9" inputMode="numeric" value={line.quantity} aria-invalid={Boolean(errors[`${line.key}:quantity`])} onChange={event => updateLine(line.key, { quantity: event.target.value })} />
                 </FormField>
                 <FormField id={`po-line-${line.key}-cost`} label="Unit cost" error={errors[`${line.key}:unitCost`]}>
-                  <Input id={`po-line-${line.key}-cost`} className="h-11 rounded-[4px] text-[13px] sm:h-9" inputMode="decimal" placeholder="$0.00" value={line.unitCost} aria-invalid={Boolean(errors[`${line.key}:unitCost`])} onChange={event => updateLine(line.key, { unitCost: event.target.value })} />
+                  <Input id={`po-line-${line.key}-cost`} className="h-11 rounded-[4px] text-[13px] sm:h-9" inputMode="decimal" placeholder={moneyPlaceholder} value={line.unitCost} aria-invalid={Boolean(errors[`${line.key}:unitCost`])} onChange={event => updateLine(line.key, { unitCost: event.target.value })} />
                 </FormField>
                 <div className="flex justify-end sm:pt-6">
                   <Track>
@@ -201,7 +206,7 @@ export function PurchaseOrderFormDialog({
                 </div>
               </div>
             ))}
-            <p className="text-right text-[13px] tabular-nums"><span className="text-muted-foreground">Total</span> <span className="font-semibold">{formatCents(total)}</span></p>
+            <p className="text-right text-[13px] tabular-nums"><span className="text-muted-foreground">Total</span> <span className="font-semibold">{new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(total / 100)}</span></p>
           </div>
 
           {formError && <Notice tone="bad">{formError}</Notice>}

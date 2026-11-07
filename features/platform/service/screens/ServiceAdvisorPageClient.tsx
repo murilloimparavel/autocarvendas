@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, RefreshCw, Search } from 'lucide-react'
@@ -31,7 +32,7 @@ import {
 import { dayKey, formatPhone, countLabel } from '@/features/platform/lib/format'
 import { bookServiceAppointment, getFixedOpsWorkspace, openServiceOrder, transitionServiceAppointment } from '../actions'
 import { createAttemptKeys } from '../lib/attemptKeys'
-import { formatAge, formatCents, formatDateTime, formatTime } from '../lib/serviceFormat'
+import { formatAge, formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, formatTime as formatTimeBase } from '../lib/serviceFormat'
 import {
   APPOINTMENT_ACTION_LABELS,
   APPOINTMENT_STATUS_LABELS,
@@ -41,6 +42,7 @@ import {
   appointmentTransitions,
   customerName,
   roReference,
+  serviceLabel,
 } from '../lib/serviceStatus'
 import { EMPTY_BOOKING, bookingFields, repairOrderTotalsCheck, splitLocalDateTime } from '../lib/serviceTasks'
 import type { FixedOpsAppointment, FixedOpsOrder, FixedOpsPart, FixedOpsWorkspace } from '../lib/types'
@@ -95,11 +97,17 @@ export function ServiceAdvisorPageClient({
   initialWorkspace,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialWorkspace: FixedOpsWorkspace | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string, empty?: string) => formatDateTimeBase(value, zone, empty, locale)
+  const formatTime = (value: string | null | undefined, zone: string, empty?: string) => formatTimeBase(value, zone, empty, locale)
   const router = useRouter()
   const [workspace, setWorkspace] = useState<FixedOpsWorkspace | null>(initialWorkspace)
   const [loading, setLoading] = useState(false)
@@ -320,7 +328,7 @@ export function ServiceAdvisorPageClient({
         )}
         {transitions.map(next => (
           <Pill key={next} size="sm" className={ROW_BUTTON} onClick={() => updateAppointmentStatus(appointment.id, next)} disabled={busy}>
-            {APPOINTMENT_ACTION_LABELS[next]}
+            {serviceLabel(locale, APPOINTMENT_ACTION_LABELS[next])}
           </Pill>
         ))}
       </div>
@@ -390,7 +398,7 @@ export function ServiceAdvisorPageClient({
                       <Td priority={3} className="whitespace-nowrap text-muted-foreground">{appointment.assignedTech?.name || 'Unassigned'}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
-                          <Status tone={STATUS_TONES[status] || 'idle'}>{APPOINTMENT_STATUS_LABELS[status] || status}</Status>
+                          <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}</Status>
                           {late && <Attention>Late</Attention>}
                           {appointment.serviceOrder && (
                             <Link href={orderHref(appointment.serviceOrder)} className="hover:underline">
@@ -440,7 +448,7 @@ export function ServiceAdvisorPageClient({
                         {name ? `${name} · ` : ''}{order.appointment?.customerVehicleDescription || 'Vehicle not set'}
                       </Td>
                       <Td priority={3}>
-                        <Status tone={STATUS_TONES[status] || 'idle'}>{ORDER_STATUS_LABELS[status] || status}</Status>
+                        <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, ORDER_STATUS_LABELS[status] || status)}</Status>
                       </Td>
                       <Td priority={2} align="right">{formatCents(order.grandTotalCents)}</Td>
                       <Td align="right" className="whitespace-nowrap">
@@ -531,7 +539,7 @@ export function ServiceAdvisorPageClient({
                       <Td priority={3} className="capitalize text-muted-foreground">{order.authorizationStatus || 'pending'}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
-                          <Status tone={STATUS_TONES[status] || 'idle'}>{ORDER_STATUS_LABELS[status] || status}</Status>
+                          <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, ORDER_STATUS_LABELS[status] || status)}</Status>
                           {!balanced && <Attention>Totals mismatch</Attention>}
                         </div>
                       </Td>
@@ -590,7 +598,7 @@ export function ServiceAdvisorPageClient({
                         {appointment.description && <p className="line-clamp-1 text-xs text-muted-foreground">{appointment.description}</p>}
                       </Td>
                       <Td priority={3} className="whitespace-nowrap text-muted-foreground">{appointment.assignedTech?.name || 'Unassigned'}</Td>
-                      <Td><Status tone={STATUS_TONES[status] || 'idle'}>{APPOINTMENT_STATUS_LABELS[status] || status}</Status></Td>
+                      <Td><Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}</Status></Td>
                       <Td priority={2} className="whitespace-nowrap">
                         {appointment.serviceOrder ? (
                           <Link href={orderHref(appointment.serviceOrder)} className="hover:underline">

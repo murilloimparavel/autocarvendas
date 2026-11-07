@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ClipboardList, Pencil, Plus, RefreshCw, Search } from 'lucide-react'
@@ -36,7 +37,8 @@ import {
   STOCK_TONE,
   available,
   formatAge,
-  formatCents,
+  formatCents as formatCentsBase,
+  partsLabel,
   poLines,
   stockState,
   type Part,
@@ -63,12 +65,16 @@ export function PartsPageClient({
   initialRooftops,
   initialError,
   initialPurchaseOrders = [],
+  currencyCode,
 }: {
   initialParts: Part[]
   initialRooftops: PartsRooftop[]
   initialError: string | null
   initialPurchaseOrders?: PurchaseOrder[]
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
   const router = useRouter()
   const [parts, setParts] = useState(initialParts)
   const [rooftops, setRooftops] = useState(initialRooftops)
@@ -209,12 +215,12 @@ export function PartsPageClient({
                               <Code className="text-foreground">{part.partNumber}</Code>
                             </Link>
                             <p className="truncate text-xs text-muted-foreground">{part.description}</p>
-                            <div className="md:hidden"><Status tone={STOCK_TONE[state]} className="text-xs">{STOCK_LABEL[state]}</Status></div>
+                            <div className="md:hidden"><Status tone={STOCK_TONE[state]} className="text-xs">{partsLabel(locale, STOCK_LABEL[state])}</Status></div>
                           </Td>
                           <Td align="right"><Figure size="sm" attention={state === 'out'}>{available(part)}</Figure></Td>
                           <Td align="right" priority={2} className="text-muted-foreground">{part.minimumQuantity || '-'}</Td>
                           <Td align="right" className={Number(part.onOrderQuantity || 0) ? undefined : 'text-muted-foreground'}>{part.onOrderQuantity ?? 0}</Td>
-                          <Td priority={2}><Status tone={STOCK_TONE[state]}>{STOCK_LABEL[state]}</Status></Td>
+                          <Td priority={2}><Status tone={STOCK_TONE[state]}>{partsLabel(locale, STOCK_LABEL[state])}</Status></Td>
                         </Tr>
                       )
                     })}
@@ -258,7 +264,7 @@ export function PartsPageClient({
                             </Link>
                             <p className="truncate text-xs text-muted-foreground">{order.supplier}</p>
                           </Td>
-                          <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status></Td>
+                          <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status></Td>
                           <Td align="right" className="whitespace-nowrap">{received} of {ordered}</Td>
                           <Td align="right" className="whitespace-nowrap">
                             <Figure size="sm">{formatAge(order.orderedAt || order.createdAt, now)}</Figure>
@@ -398,6 +404,7 @@ export function PartsPageClient({
           open={Boolean(editing)}
           part={editing?.part || null}
           rooftops={dialogRooftops}
+          currencyCode={currencyCode}
           onOpenChange={open => { if (!open) setEditing(null) }}
           onSaved={async () => {
             setNotice(editing?.part ? 'Part saved' : 'Part created')

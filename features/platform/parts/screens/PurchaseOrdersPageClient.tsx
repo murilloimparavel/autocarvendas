@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, RefreshCw, Search } from 'lucide-react'
@@ -11,7 +12,7 @@ import { Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Panel, Pill, 
 
 import { getPurchaseOrders } from '../actions'
 import { PurchaseOrderFormDialog } from '../components/PurchaseOrderFormDialog'
-import { PO_RECEIVABLE, PO_STATUS_LABEL, PO_STATUS_TONE, formatAge, formatCents, formatDateTime, poLines, poTotalCents, stockState, type Part, type PartsRooftop, type PurchaseOrder } from '../lib/types'
+import { PO_RECEIVABLE, PO_STATUS_LABEL, PO_STATUS_TONE, formatAge, formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, partsLabel, poLines, poTotalCents, stockState, type Part, type PartsRooftop, type PurchaseOrder } from '../lib/types'
 
 type StatusFilter = 'open' | 'draft' | 'ordered' | 'partially-received' | 'received' | 'cancelled' | 'all'
 const OPEN_STATUSES = ['draft', 'ordered', 'partially-received']
@@ -22,13 +23,18 @@ export function PurchaseOrdersPageClient({
   initialRooftops,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialOrders: PurchaseOrder[]
   initialParts: Part[]
   initialRooftops: PartsRooftop[]
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string) => formatDateTimeBase(value, zone, locale)
   const router = useRouter()
   const [orders, setOrders] = useState(initialOrders)
   const [parts, setParts] = useState(initialParts)
@@ -152,7 +158,7 @@ export function PurchaseOrdersPageClient({
                           <p className="truncate text-xs text-muted-foreground md:hidden">{order.supplier}</p>
                         </Td>
                         <Td priority={2} className="max-w-[14rem] truncate">{order.supplier}</Td>
-                        <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status></Td>
+                        <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status></Td>
                         <Td align="right" className="whitespace-nowrap">{received} of {ordered}</Td>
                         <Td align="right" priority={3} className="whitespace-nowrap">{formatCents(outstanding)}</Td>
                         <Td align="right" className="whitespace-nowrap">
@@ -262,6 +268,7 @@ export function PurchaseOrdersPageClient({
           order={null}
           parts={parts}
           rooftops={rooftops}
+          currencyCode={currencyCode}
           initialPartIds={creating?.partIds}
           onOpenChange={open => { if (!open) setCreating(null) }}
           onSaved={id => {

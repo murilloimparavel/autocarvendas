@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Code, Notice, Panel, Pill, Track } from '@/features/platform/components/desk'
 import { EmptyRow, Field, TAP, TAP_INPUT } from '@/features/platform/catalog/components/formKit'
@@ -24,6 +25,7 @@ function JsonBlock({ label, value }: { label: string; value: unknown }) {
 }
 
 export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; timeZone: string }) {
+  const { locale } = useLocale()
   const [filters, setFilters] = useState<Filters>(EMPTY)
   const [events, setEvents] = useState<AuditEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -149,7 +151,7 @@ export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; 
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-sm font-medium">{event.aggregateType} <span className="text-muted-foreground">·</span> {event.action}</p>
                       <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                        {[formatDateTime(event.occurredAt, timeZone), event.actor?.name || event.actor?.email || 'System', rooftops.length > 1 ? event.rooftop?.name : null].filter(Boolean).join(' · ')}
+                        {[formatDateTime(event.occurredAt, timeZone, locale), event.actor?.name || event.actor?.email || (locale === 'pt-BR' ? 'Sistema' : 'System'), rooftops.length > 1 ? event.rooftop?.name : null].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                     <Code className="hidden shrink-0 sm:inline">{event.aggregateId.slice(-10)}</Code>

@@ -108,8 +108,8 @@ export function tradeInVehicleLabel(tradeIn: Pick<TradeIn, 'year' | 'make' | 'mo
   return [tradeIn.year, tradeIn.make, tradeIn.model, tradeIn.trim].filter(Boolean).join(' ') || (locale === 'pt-BR' ? 'Veículo não identificado' : 'Unknown vehicle')
 }
 
-export function tradeInCustomer(tradeIn: Pick<TradeIn, 'lead'>) {
-  return tradeIn.lead ? [tradeIn.lead.firstName, tradeIn.lead.lastName].filter(Boolean).join(' ') || 'Customer' : null
+export function tradeInCustomer(tradeIn: Pick<TradeIn, 'lead'>, locale: Locale = 'en-US') {
+  return tradeIn.lead ? [tradeIn.lead.firstName, tradeIn.lead.lastName].filter(Boolean).join(' ') || (locale === 'pt-BR' ? 'Cliente' : 'Customer') : null
 }
 
 export function formatWholeUsd(value: number | null | undefined, locale: Locale = 'en-US') {

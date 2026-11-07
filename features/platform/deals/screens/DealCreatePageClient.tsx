@@ -36,6 +36,7 @@ import {
   type DealTradeInOption,
 } from '../actions'
 import { formatUsd, formatUsdCredit } from '../lib/formatMoney'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { MoneyInput } from '../components/MoneyInput'
 import { applyDealDefaults, calculateDealPrice, lineAmountCents, type DealDefaults } from '@/features/keystone/lifecycle/dealPricing'
 
@@ -131,6 +132,7 @@ export function DealCreatePageClient({
   initialLeads,
   initialTradeIns,
   initialDealDefaults,
+  currencyCode,
   initialError,
   prefillLeadId = '',
   prefillTradeInId = '',
@@ -139,10 +141,12 @@ export function DealCreatePageClient({
   initialLeads: Lead[]
   initialTradeIns: DealTradeInOption[]
   initialDealDefaults: DealDefaults
+  currencyCode: string
   initialError: string | null
   prefillLeadId?: string
   prefillTradeInId?: string
 }) {
+  const { locale } = useLocale()
   const router = useRouter()
   const idempotencyKeyRef = useRef(`deal-pencil:${crypto.randomUUID()}`)
   const [loading, setLoading] = useState(false)
@@ -153,6 +157,7 @@ export function DealCreatePageClient({
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [tradeIns, setTradeIns] = useState<DealTradeInOption[]>(initialTradeIns)
   const [dealDefaults, setDealDefaults] = useState<DealDefaults>(initialDealDefaults || NO_DEFAULTS)
+  const [activeCurrencyCode, setActiveCurrencyCode] = useState(currencyCode)
   const [salesReps, setSalesReps] = useState<User[]>([])
   const [salesRepsLoading, setSalesRepsLoading] = useState(false)
 
@@ -200,6 +205,7 @@ export function DealCreatePageClient({
       setLeads(response.data.leads)
       setTradeIns(response.data.tradeIns)
       setDealDefaults(response.data.dealDefaults)
+      setActiveCurrencyCode(response.data.currencyCode)
     } else {
       setError(response.error || 'Unable to load deal options.')
     }
@@ -310,8 +316,8 @@ export function DealCreatePageClient({
     setWalkInOpen(false)
   }
 
-  const formatCurrency = (value: number) => formatUsd(value)
-  const formatPrice = (value: number) => formatUsd(value, { whole: true })
+  const formatCurrency = (value: number) => formatUsd(value, { currencyCode: activeCurrencyCode, locale })
+  const formatPrice = (value: number) => formatUsd(value, { whole: true, currencyCode: activeCurrencyCode, locale })
 
   const selectedVehicle = vehicles.find(v => v.id === formData.vehicleId)
   const selectedLead = leads.find(l => l.id === formData.leadId)
@@ -557,9 +563,9 @@ export function DealCreatePageClient({
                     {calculated?.fees.map(line => <SummaryRow key={line.code} label={line.name} value={formatCurrency(lineAmountCents(line) / 100)} />)}
                     <SummaryRow label="Subtotal" value={calculated ? formatCurrency(calculated.subtotal) : '-'} />
                     {calculated?.taxLines.map(line => <SummaryRow key={line.code} label={line.name} value={formatCurrency(lineAmountCents(line) / 100)} />)}
-                    {formData.tradeInValue > 0 && <SummaryRow label="Trade-in credit" value={formatUsdCredit(formData.tradeInValue)} credit />}
+                    {formData.tradeInValue > 0 && <SummaryRow label="Trade-in credit" value={formatUsdCredit(formData.tradeInValue, { currencyCode: activeCurrencyCode, locale })} credit />}
                     <SummaryRow emphasis label="Working balance" value={calculated ? formatCurrency(calculated.totalPrice) : '-'} />
-                    <SummaryRow label="Down payment" value={formatUsdCredit(formData.downPayment)} credit={formData.downPayment > 0} />
+                    <SummaryRow label="Down payment" value={formatUsdCredit(formData.downPayment, { currencyCode: activeCurrencyCode, locale })} credit={formData.downPayment > 0} />
                     <SummaryRow label="Remaining balance" value={calculated ? formatCurrency(calculated.remainingBalance) : '-'} />
                   </dl>
                 </Panel>

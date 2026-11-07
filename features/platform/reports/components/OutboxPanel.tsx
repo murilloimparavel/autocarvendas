@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { RefreshCw, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Code, Notice, Panel, Pill, Readout, ReadoutStrip, Segmented, TitleLine, Track, type DeskTone } from '@/features/platform/components/desk'
 import { EmptyRow, TAP, TAP_INPUT } from '@/features/platform/catalog/components/formKit'
 import { cn } from '@/lib/utils'
@@ -14,6 +15,7 @@ const STATUS_TONE: Record<string, DeskTone> = { pending: 'warn', processing: 'in
 const STATUS_LABEL: Record<string, string> = { pending: 'Pending', processing: 'Processing', failed: 'Failed', delivered: 'Delivered' }
 
 export function OutboxPanel({ timeZone }: { timeZone: string }) {
+  const { locale } = useLocale()
   const [status, setStatus] = useState<StatusFilter>('pending')
   const [topic, setTopic] = useState('')
   const [events, setEvents] = useState<OutboxEvent[]>([])
@@ -94,10 +96,10 @@ export function OutboxPanel({ timeZone }: { timeZone: string }) {
               <li key={event.id} className="min-w-0 px-4 py-3">
                 <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                   <TitleLine as="p" tone={STATUS_TONE[event.status] || 'idle'} status={STATUS_LABEL[event.status] || event.status} className="break-all text-sm font-medium">{event.topic}</TitleLine>
-                  <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(event.availableAt, timeZone)}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(event.availableAt, timeZone, locale)}</span>
                 </div>
                 <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                  {[STATUS_LABEL[event.status] || event.status, `${event.aggregateType} ${event.aggregateId.slice(-10)}`, `${event.attemptCount} ${event.attemptCount === 1 ? 'attempt' : 'attempts'}`, event.processedAt ? `Processed ${formatDateTime(event.processedAt, timeZone)}` : null].filter(Boolean).join(' · ')}
+                  {[STATUS_LABEL[event.status] || event.status, `${event.aggregateType} ${event.aggregateId.slice(-10)}`, `${event.attemptCount} ${event.attemptCount === 1 ? 'attempt' : 'attempts'}`, event.processedAt ? `Processed ${formatDateTime(event.processedAt, timeZone, locale)}` : null].filter(Boolean).join(' · ')}
                 </p>
                 {event.lastError && <p className="mt-1 break-words text-xs text-red-600 dark:text-red-400">{event.lastError}</p>}
                 <p className="mt-0.5 break-all"><Code>{event.deliveryKey}</Code></p>

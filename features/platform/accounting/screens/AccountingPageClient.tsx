@@ -7,6 +7,7 @@ import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Panel, Pill, Readout, ReadoutStrip, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { recordReference, countLabel } from '@/features/platform/lib/format'
@@ -28,8 +29,9 @@ import {
   SOURCE_TYPES,
   SOURCE_TYPE_LABEL,
   batchTone,
-  dateTime,
-  money,
+  dateTime as dateTimeBase,
+  money as moneyBase,
+  accountingLabel,
   nonce,
   type AccountingSourceType,
 } from '../lib/format'
@@ -48,14 +50,15 @@ function ageDays(value: string) {
 }
 
 /** What the office has to do with an unposted batch. */
-function nextStepLabel(batch: AccountingBatchListItem) {
-  if (batch.status === 'failed') return 'Fix and queue again'
-  if (batch.status === 'staged') return 'Queue for posting'
-  return 'Record posting result'
+function nextStepLabel(batch: AccountingBatchListItem, locale: 'pt-BR' | 'en-US') {
+  if (batch.status === 'failed') return accountingLabel(locale, 'Fix and queue again')
+  if (batch.status === 'staged') return accountingLabel(locale, 'Queue for posting')
+  return accountingLabel(locale, 'Record posting result')
 }
 
 export function AccountingPageClient({
   timeZone,
+  currencyCode,
   initialBatches,
   initialCounts,
   initialBatchError,
@@ -64,6 +67,7 @@ export function AccountingPageClient({
   initialMappingError,
 }: {
   timeZone: string
+  currencyCode: string
   initialBatches: AccountingBatchListItem[]
   initialCounts: BatchCounts | null
   initialBatchError: string | null
@@ -72,6 +76,9 @@ export function AccountingPageClient({
   initialMappingError: string | null
 }) {
   const router = useRouter()
+  const { locale } = useLocale()
+  const money = (cents: number | null | undefined) => moneyBase(cents, currencyCode, locale)
+  const dateTime = (value: string | null | undefined, zone: string) => dateTimeBase(value, zone, locale)
   const [view, setView] = useState<View>('batches')
   const [message, setMessage] = useState<string | null>(null)
 
@@ -195,7 +202,7 @@ export function AccountingPageClient({
   }
 
   const stageFields: CommandField[] = [
-    { name: 'sourceType', label: 'Source type', type: 'select', options: SOURCE_TYPES.map(value => ({ value, label: SOURCE_TYPE_LABEL[value] })) },
+    { name: 'sourceType', label: locale === 'pt-BR' ? 'Tipo de origem' : 'Source type', type: 'select', options: SOURCE_TYPES.map(value => ({ value, label: accountingLabel(locale, SOURCE_TYPE_LABEL[value]) })) },
     {
       name: 'sourceId',
       label: 'Source record',
@@ -293,7 +300,7 @@ export function AccountingPageClient({
   const mappingFields: CommandField[] = mappingForm
     ? [
         { name: 'rooftopId', label: 'Rooftop', type: 'select', disabled: mappingForm.mode === 'edit', options: rooftops.map(r => ({ value: r.id, label: r.name })), placeholder: rooftops.length ? 'Select a rooftop' : 'No rooftops' },
-        { name: 'sourceType', label: 'Source type', type: 'select', disabled: mappingForm.mode === 'edit', options: SOURCE_TYPES.map(value => ({ value, label: SOURCE_TYPE_LABEL[value] })) },
+        { name: 'sourceType', label: locale === 'pt-BR' ? 'Tipo de origem' : 'Source type', type: 'select', disabled: mappingForm.mode === 'edit', options: SOURCE_TYPES.map(value => ({ value, label: accountingLabel(locale, SOURCE_TYPE_LABEL[value]) })) },
         {
           name: 'sourceCode',
           label: 'Source code',
@@ -447,7 +454,7 @@ export function AccountingPageClient({
                         <Tr key={batch.id} className="cursor-pointer" onClick={() => router.push(`${basePath}/platform/accounting/${batch.id}`)}>
                           <Td className="min-w-0">
                             <Link href={`${basePath}/platform/accounting/${batch.id}`} className="block font-medium text-foreground hover:underline" onClick={event => event.stopPropagation()}>
-                              {SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType}
+                              {accountingLabel(locale, SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType)}
                             </Link>
                             <p className="mt-0.5 flex min-w-0 flex-wrap gap-x-2 text-xs text-muted-foreground">
                               <Code>{recordReference('SRC', batch.sourceId)}</Code>
@@ -457,13 +464,13 @@ export function AccountingPageClient({
                           </Td>
                           <Td>
                             <span className="inline-flex flex-wrap items-center gap-1.5">
-                              <Status tone={batchTone(batch.status)}>{BATCH_STATUS_LABEL[batch.status] || batch.status}</Status>
-                              {batch.status === 'failed' && <Attention>Failed</Attention>}
-                              {unbalanced && <Attention>Out of balance</Attention>}
+                              <Status tone={batchTone(batch.status)}>{accountingLabel(locale, BATCH_STATUS_LABEL[batch.status] || batch.status)}</Status>
+                              {batch.status === 'failed' && <Attention>{accountingLabel(locale, 'Failed')}</Attention>}
+                              {unbalanced && <Attention>{accountingLabel(locale, 'out of balance')}</Attention>}
                             </span>
                             {batch.status === 'failed' && batch.lastErrorCode && <p className="mt-0.5"><Code>{batch.lastErrorCode}</Code></p>}
                           </Td>
-                          <Td priority={2} className="text-muted-foreground">{batch.status in QUEUE_RANK ? nextStepLabel(batch) : 'Review lines'}</Td>
+                          <Td priority={2} className="text-muted-foreground">{batch.status in QUEUE_RANK ? nextStepLabel(batch, locale) : locale === 'pt-BR' ? 'Revisar lançamentos' : 'Review lines'}</Td>
                           <Td priority={3} align="right">{batch.attemptCount}</Td>
                           <Td priority={2} align="right" className="whitespace-nowrap">
                             <Figure size="sm">{days}</Figure>
@@ -509,7 +516,7 @@ export function AccountingPageClient({
                 onChange={setStatus}
                 options={[
                   { value: 'all', label: 'All', count: counts.all },
-                  ...BATCH_STATUSES.map(value => ({ value, label: BATCH_STATUS_LABEL[value], count: counts[value], tone: batchTone(value) })),
+                  ...BATCH_STATUSES.map(value => ({ value, label: accountingLabel(locale, BATCH_STATUS_LABEL[value]), count: counts[value], tone: batchTone(value) })),
                 ]}
               />
               <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
@@ -524,7 +531,7 @@ export function AccountingPageClient({
                   <SelectContent>
                     <SelectItem value="all">All sources</SelectItem>
                     {SOURCE_TYPES.map(value => (
-                      <SelectItem key={value} value={value}>{SOURCE_TYPE_LABEL[value]}</SelectItem>
+                      <SelectItem key={value} value={value}>{accountingLabel(locale, SOURCE_TYPE_LABEL[value])}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -572,7 +579,7 @@ export function AccountingPageClient({
                         <Tr key={batch.id} className="cursor-pointer" onClick={() => router.push(`${basePath}/platform/accounting/${batch.id}`)}>
                           <Td className="min-w-0">
                             <Link href={`${basePath}/platform/accounting/${batch.id}`} className="block font-medium text-foreground hover:underline" onClick={event => event.stopPropagation()}>
-                              {SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType}
+                              {accountingLabel(locale, SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType)}
                             </Link>
                             <p className="mt-0.5 flex min-w-0 flex-wrap gap-x-2 text-xs text-muted-foreground">
                               <Code>{recordReference('SRC', batch.sourceId)}</Code>
@@ -581,7 +588,7 @@ export function AccountingPageClient({
                             </p>
                           </Td>
                           <Td>
-                            <Status tone={batchTone(batch.status)}>{BATCH_STATUS_LABEL[batch.status] || batch.status}</Status>
+                            <Status tone={batchTone(batch.status)}>{accountingLabel(locale, BATCH_STATUS_LABEL[batch.status] || batch.status)}</Status>
                             {batch.lastErrorCode && batch.status === 'failed' && <p className="mt-0.5"><Code>{batch.lastErrorCode}</Code></p>}
                           </Td>
                           <Td priority={3}>{batch.externalReference ? <Code>{batch.externalReference}</Code> : <span className="text-muted-foreground">-</span>}</Td>
@@ -606,7 +613,7 @@ export function AccountingPageClient({
                 onChange={setMappingType}
                 options={[
                   { value: 'all' as const, label: 'All', count: mappings.filter(m => mappingRooftop === 'all' || m.rooftop?.id === mappingRooftop).length },
-                  ...SOURCE_TYPES.map(value => ({ value, label: SOURCE_TYPE_LABEL[value], count: mappings.filter(m => m.sourceType === value && (mappingRooftop === 'all' || m.rooftop?.id === mappingRooftop)).length })),
+                  ...SOURCE_TYPES.map(value => ({ value, label: accountingLabel(locale, SOURCE_TYPE_LABEL[value]), count: mappings.filter(m => m.sourceType === value && (mappingRooftop === 'all' || m.rooftop?.id === mappingRooftop)).length })),
                 ]}
               />
               {rooftops.length > 1 && (
@@ -661,7 +668,7 @@ export function AccountingPageClient({
                     {filteredMappings.map(mapping => (
                       <Tr key={mapping.id}>
                         <Td className="min-w-0">
-                          <p className="font-medium text-foreground">{SOURCE_TYPE_LABEL[mapping.sourceType] || mapping.sourceType}</p>
+                          <p className="font-medium text-foreground">{accountingLabel(locale, SOURCE_TYPE_LABEL[mapping.sourceType] || mapping.sourceType)}</p>
                           <Code>{mapping.sourceCode}</Code>
                         </Td>
                         <Td className="break-words">

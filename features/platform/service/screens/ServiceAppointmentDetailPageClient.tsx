@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Pencil, RefreshCw } from 'lucide-react'
@@ -18,7 +19,7 @@ import {
 } from '../actions'
 import { ServiceFormDialog, type ServiceFormField } from '../components/ServiceFormDialog'
 import { createAttemptKeys } from '../lib/attemptKeys'
-import { formatCents, formatDateTime, parseWhole } from '../lib/serviceFormat'
+import { formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, formatMileage, mileageToStoredMiles, parseWhole } from '../lib/serviceFormat'
 import {
   APPOINTMENT_ACTION_LABELS,
   APPOINTMENT_STATUS_LABELS,
@@ -29,6 +30,7 @@ import {
   appointmentTransitions,
   customerName,
   roReference,
+  serviceLabel,
 } from '../lib/serviceStatus'
 import type { ServiceAppointmentDetail } from '../lib/types'
 
@@ -41,12 +43,17 @@ export function ServiceAppointmentDetailPageClient({
   initialAppointment,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   id: string
   initialAppointment: ServiceAppointmentDetail | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string, empty?: string) => formatDateTimeBase(value, zone, empty, locale)
   const router = useRouter()
   const [appointment, setAppointment] = useState<ServiceAppointmentDetail | null>(initialAppointment)
   const [loadError, setLoadError] = useState<string | null>(initialError)
@@ -114,7 +121,7 @@ export function ServiceAppointmentDetailPageClient({
       setNotice({ tone: 'bad', text: response.error })
       return response.error
     }
-    setNotice({ tone: 'ok', text: APPOINTMENT_STATUS_LABELS[toStatus] || 'Saved' })
+    setNotice({ tone: 'ok', text: serviceLabel(locale, APPOINTMENT_STATUS_LABELS[toStatus] || 'Saved') })
     await reload()
     return null
   }
@@ -156,7 +163,7 @@ export function ServiceAppointmentDetailPageClient({
         description: appointment.description || '',
         estimatedDuration: appointment.estimatedDuration != null ? String(appointment.estimatedDuration) : '',
         assignedTechId: appointment.assignedTech?.id || UNASSIGNED,
-        mileageIn: appointment.mileageIn != null ? String(appointment.mileageIn) : '',
+        mileageIn: appointment.mileageIn != null ? String(locale === 'pt-BR' ? Math.round(appointment.mileageIn * 1.609344) : appointment.mileageIn) : '',
         transportationNeed: appointment.transportationNeed || 'none',
         customerVehicleDescription: appointment.customerVehicleDescription || '',
         vehicleVin: appointment.vehicleVin || '',
@@ -172,12 +179,12 @@ export function ServiceAppointmentDetailPageClient({
   const fields: ServiceFormField[] = form?.kind === 'edit'
     ? [
         { name: 'appointmentAt', label: 'Date and time', type: 'datetime-local', hint: timeZone },
-        { name: 'serviceType', label: 'Service', type: 'select', options: SERVICE_TYPE_OPTIONS },
+        { name: 'serviceType', label: locale === 'pt-BR' ? 'Serviço' : 'Service', type: 'select', options: SERVICE_TYPE_OPTIONS.map(option => ({ ...option, label: serviceLabel(locale, option.label) })) },
         { name: 'description', label: 'Concern', type: 'textarea' },
         { name: 'assignedTechId', label: 'Technician', type: 'select', options: [{ value: UNASSIGNED, label: 'Unassigned' }, ...staff] },
         { name: 'estimatedDuration', label: 'Duration (minutes)', inputMode: 'numeric' },
-        { name: 'mileageIn', label: 'Mileage in', inputMode: 'numeric' },
-        { name: 'transportationNeed', label: 'Transportation', type: 'select', options: TRANSPORTATION_OPTIONS },
+        { name: 'mileageIn', label: locale === 'pt-BR' ? 'Quilometragem de entrada (km)' : 'Mileage in (mi)', inputMode: 'numeric' },
+        { name: 'transportationNeed', label: locale === 'pt-BR' ? 'Transporte' : 'Transportation', type: 'select', options: TRANSPORTATION_OPTIONS.map(option => ({ ...option, label: serviceLabel(locale, option.label) })) },
         { name: 'customerVehicleDescription', label: 'Vehicle', placeholder: '2021 Honda Accord' },
         { name: 'vehicleVin', label: 'VIN' },
         { name: 'advisorNotes', label: 'Advisor notes', type: 'textarea' },
@@ -203,7 +210,7 @@ export function ServiceAppointmentDetailPageClient({
     const duration = values.estimatedDuration?.trim() ? parseWhole(values.estimatedDuration, 24 * 60) : undefined
     if (duration === null) errors.estimatedDuration = 'Whole minutes, up to 1,440'
     const mileage = values.mileageIn?.trim() ? parseWhole(values.mileageIn, 2_000_000) : undefined
-    if (mileage === null) errors.mileageIn = 'Whole miles'
+    if (mileage === null) errors.mileageIn = locale === 'pt-BR' ? 'Informe um número inteiro de quilômetros' : 'Enter whole miles'
     const vin = (values.vehicleVin || '').trim().toUpperCase()
     if (vin && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) errors.vehicleVin = 'VIN is 17 letters and digits'
     if (Object.keys(errors).length) {
@@ -216,7 +223,7 @@ export function ServiceAppointmentDetailPageClient({
       serviceType: values.serviceType,
       description: (values.description || '').trim(),
       estimatedDuration: duration ?? null,
-      mileageIn: mileage ?? null,
+      mileageIn: mileage != null ? mileageToStoredMiles(mileage, locale) : null,
       transportationNeed: values.transportationNeed || 'none',
       customerVehicleDescription: (values.customerVehicleDescription || '').trim(),
       vehicleVin: vin,
@@ -241,10 +248,10 @@ export function ServiceAppointmentDetailPageClient({
     <DeskHeader
       title={name ? `${name} · ${vehicle}` : vehicle}
       tone={STATUS_TONES[status] || 'idle'}
-      status={APPOINTMENT_STATUS_LABELS[status] || status}
+      status={serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}
       meta={
         <span className="flex flex-wrap items-baseline gap-x-2">
-          <Status tone={STATUS_TONES[status] || 'idle'}>{APPOINTMENT_STATUS_LABELS[status] || status}</Status>
+          <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}</Status>
           <span>· {formatDateTime(appointment.appointmentDate, timeZone)}</span>
           {appointment.rooftop?.name && <span>· {appointment.rooftop.name}</span>}
           <span>· {appointment.assignedTech?.name || 'Unassigned'}</span>
@@ -296,7 +303,7 @@ export function ServiceAppointmentDetailPageClient({
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-md border bg-card px-4 py-3">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
             <Figure size="md" attention={late}>{formatDateTime(appointment.appointmentDate, timeZone)}</Figure>
-            <Status tone={STATUS_TONES[status] || 'idle'}>{APPOINTMENT_STATUS_LABELS[status] || status}</Status>
+            <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}</Status>
             {late && <Attention>Late</Attention>}
           </div>
           {transitions.length === 0 ? (
@@ -311,7 +318,7 @@ export function ServiceAppointmentDetailPageClient({
                   disabled={Boolean(busy)}
                   onClick={() => (next === 'cancelled' ? setForm({ kind: 'cancel', values: {}, errors: {}, formError: null }) : void moveTo(next))}
                 >
-                  {busy === `transition:${next}` ? 'Saving…' : APPOINTMENT_ACTION_LABELS[next]}
+                  {busy === `transition:${next}` ? (locale === 'pt-BR' ? 'Salvando…' : 'Saving…') : serviceLabel(locale, APPOINTMENT_ACTION_LABELS[next])}
                 </Pill>
               ))}
             </Track>
@@ -342,7 +349,7 @@ export function ServiceAppointmentDetailPageClient({
                   lead?.email ? { label: 'Email', value: lead.email } : null,
                   { label: 'Vehicle', value: vehicle },
                   appointment.vehicleVin ? { label: 'VIN', value: appointment.vehicleVin, mono: true } : null,
-                  appointment.mileageIn != null ? { label: 'Mileage in', value: appointment.mileageIn.toLocaleString('en-US'), mono: true } : null,
+                  appointment.mileageIn != null ? { label: locale === 'pt-BR' ? 'Quilometragem de entrada' : 'Mileage in', value: formatMileage(appointment.mileageIn, locale), mono: true } : null,
                 ]}
               />
             </DeskSection>
@@ -352,7 +359,7 @@ export function ServiceAppointmentDetailPageClient({
                 <Link href={`${basePath}/platform/service/orders/${order.id}`} className="flex min-h-11 min-w-0 items-center justify-between gap-4 rounded-md border bg-card px-4 py-2.5 transition-colors hover:bg-muted/40">
                   <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
                     <Code className="text-foreground">{roReference(order.id)}</Code>
-                    <Status tone={STATUS_TONES[order.status || ''] || 'idle'}>{ORDER_STATUS_LABELS[order.status || ''] || order.status}</Status>
+                    <Status tone={STATUS_TONES[order.status || ''] || 'idle'}>{serviceLabel(locale, ORDER_STATUS_LABELS[order.status || ''] || order.status || '')}</Status>
                     <span className="text-[13px] capitalize text-muted-foreground">{order.authorizationStatus || 'pending'}</span>
                   </span>
                   <Figure size="sm" className="shrink-0">{formatCents(order.grandTotalCents)}</Figure>

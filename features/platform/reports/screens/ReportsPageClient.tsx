@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, DeskHeader, DeskSection, Pill, Segmented, Status, type DeskTone } from '@/features/platform/components/desk'
 import { TAP } from '@/features/platform/catalog/components/formKit'
@@ -30,6 +31,7 @@ type QueueItem = {
 }
 
 export function ReportsPageClient({ initialData, initialTab, timeZone }: { initialData: ReportsData; initialTab: ReportsTab; timeZone: string }) {
+  const { locale } = useLocale()
   const [data, setData] = useState(initialData)
   const [tab, setTab] = useState<ReportsTab>(initialTab)
   const [runReportFilter, setRunReportFilter] = useState('all')
@@ -74,7 +76,7 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
         status: 'Failed',
         tone: 'bad' as DeskTone,
         title: run.savedReport?.name || 'Deleted report',
-        detail: [run.errorCode, `Last run ${formatDateTime(run.completedAt || run.createdAt, timeZone)}`].filter(Boolean).join(' · '),
+        detail: [run.errorCode, `${locale === 'pt-BR' ? 'Última execução' : 'Last run'} ${formatDateTime(run.completedAt || run.createdAt, timeZone, locale)}`].filter(Boolean).join(' · '),
         action: 'View runs',
         reportId: run.savedReport?.id || 'all',
         runStatus: 'failed' as RunStatusFilter,
@@ -84,7 +86,7 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
       status: 'Queued',
       tone: 'info' as DeskTone,
       title: run.savedReport?.name || 'Deleted report',
-      detail: `Queued ${formatDateTime(run.createdAt, timeZone)}`,
+      detail: `${locale === 'pt-BR' ? 'Na fila' : 'Queued'} ${formatDateTime(run.createdAt, timeZone, locale)}`,
       action: 'Process',
       reportId: run.savedReport?.id || 'all',
       runStatus: 'queued' as RunStatusFilter,
@@ -96,7 +98,7 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
         status: 'Due',
         tone: 'warn' as DeskTone,
         title: report.name,
-        detail: `${reportTypeLabel(report.reportType)} · due ${formatDateTime(report.nextRunAt, timeZone)}`,
+        detail: `${reportTypeLabel(report.reportType)} · ${locale === 'pt-BR' ? 'previsto para' : 'due'} ${formatDateTime(report.nextRunAt, timeZone, locale)}`,
         attention: 'Overdue',
         action: 'Queue',
         reportId: 'all',

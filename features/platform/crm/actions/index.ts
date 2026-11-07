@@ -232,7 +232,7 @@ export async function getLeadList(filters: LeadListFilters) {
 
 export type LeadDetail = {
   id: string
-  rooftop: { id: string; name: string | null }
+  rooftop: { id: string; name: string | null; currencyCode: string }
   customer: {
     id: string
     firstName: string | null
@@ -309,7 +309,7 @@ export async function getLead(id: string) {
     query LeadDetail($id: ID!) {
       lead(where: { id: $id }) {
         id
-        rooftop { id name }
+        rooftop { id name currencyCode }
         customer { id firstName lastName status updatedAt emailConsent smsConsent phoneConsent emailSuppressed smsSuppressed phoneSuppressed preferredChannel household { id displayName } }
         firstName lastName email phone source budgetRange tradeInVehicle timeframe status
         campaignKey cadenceKey cadenceStatus cadenceStep cadenceDueAt

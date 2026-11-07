@@ -325,7 +325,7 @@ export function TradeInDetailPageClient({
 
   const state = tradeInState(tradeIn, acquisition, locale)
   const title = tradeInVehicleLabel(tradeIn, locale)
-  const customer = tradeInCustomer(tradeIn)
+  const customer = tradeInCustomer(tradeIn, locale)
   const deal = tradeIn.deal
   const dealIsPencil = deal?.status === 'pencil'
   const estimate = preliminaryWholesaleEstimate(tradeIn.referenceValue || 0, tradeIn.condition, tradeIn.mileage)

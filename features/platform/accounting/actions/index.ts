@@ -18,6 +18,13 @@ import type {
 
 const ACCOUNTING_PATH = '/dashboard/platform/accounting'
 
+export async function getAccountingCurrencyCode() {
+  const response = await keystoneClient<{ storefrontProfile: { currencyCode: string | null } | null }>(`
+    query AccountingCurrency { storefrontProfile { currencyCode } }
+  `, {}, { cache: 'no-store' })
+  return response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'
+}
+
 async function command<T = unknown>(query: string, variables: Record<string, unknown>, batchId?: string) {
   const response = await operatorCommandRequest<T>(query, variables)
   if (response.success) {

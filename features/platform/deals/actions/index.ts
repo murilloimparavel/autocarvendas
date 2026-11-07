@@ -79,8 +79,9 @@ function revalidateDeal(dealId?: string) {
 }
 
 export async function getDealDeskWorkspace(status: string) {
-  return keystoneClient<{ dealDeskWorkspace: { deals: DealDeskDeal[] } }>(`
+  return keystoneClient<{ dealDeskWorkspace: { deals: DealDeskDeal[] }; storefrontProfile: { currencyCode: string | null } | null }>(`
     query DealDeskWorkspace($status: String) {
+      storefrontProfile { currencyCode }
       dealDeskWorkspace(status: $status, limit: 100) {
         deals { id vehiclePriceCents totalPriceCents status saleDate createdAt salesperson { id name } lead { id firstName lastName } vehicle { id year make model stockNumber } }
       }
@@ -96,9 +97,10 @@ function dealDefaults(profile: Partial<DealDefaults> | null | undefined): DealDe
 }
 
 export async function getDealWorkspace(id: string) {
-  const response = await keystoneClient<{ dealWorkspace: { deal: any; worksheetVersions: DealWorksheetVersion[] }; dealershipProfile: Partial<DealDefaults> | null; dealTradeIn: { rooftop: { id: string } | null; tradeInVehicle: DealTradeIn | null } | null }>(`
+  const response = await keystoneClient<{ dealWorkspace: { deal: any; worksheetVersions: DealWorksheetVersion[] }; dealershipProfile: Partial<DealDefaults> | null; storefrontProfile: { currencyCode: string | null } | null; dealTradeIn: { rooftop: { id: string } | null; tradeInVehicle: DealTradeIn | null } | null }>(`
     query DealWorkspace($id: ID!) {
       dealershipProfile { ${DEAL_DEFAULTS_FIELDS} }
+      storefrontProfile { currencyCode }
       dealTradeIn: deal(where: { id: $id }) { rooftop { id } tradeInVehicle { id year make model trim vin offerAmountCents } }
       dealWorkspace(id: $id) {
         deal { id financeEvidence vehiclePriceCents tradeInValueCents downPaymentCents financingAmountCents monthlyPaymentCents loanTerm apr taxAmountCents totalPriceCents fees rebates products taxLines residualValueCents moneyFactorBasisPoints status structureType worksheetVersion presentedAt acceptedAt saleDate createdAt updatedAt salesperson { id name } lead { id firstName lastName } vehicle { id year make model trim exteriorColor condition stockNumber vin priceCents } approvals { id decision approvalDate notes approver { name } } }
@@ -112,6 +114,7 @@ export async function getDealWorkspace(id: string) {
     data: {
       ...response.data,
       dealDefaults: dealDefaults(response.data.dealershipProfile),
+      currencyCode: response.data.storefrontProfile?.currencyCode || 'USD',
       rooftopId: response.data.dealTradeIn?.rooftop?.id ?? null,
       tradeIn: response.data.dealTradeIn?.tradeInVehicle ?? null,
     },
@@ -144,8 +147,8 @@ export async function getDealSetupOptions() {
     keystoneClient<{ leads: DealSetupLead[] }>(`
       query DealSetupLeads { leads(where: { status: { not: { equals: "closed-lost" } } }) { id firstName lastName email phone rooftop { id } interestedVehicle { id } assignedSalesperson { id } } }
     `, {}, { cache: 'no-store' }),
-    keystoneClient<{ dealershipProfile: Partial<DealDefaults> | null }>(`
-      query DealSetupDefaults { dealershipProfile { ${DEAL_DEFAULTS_FIELDS} } }
+    keystoneClient<{ dealershipProfile: Partial<DealDefaults> | null; storefrontProfile: { currencyCode: string | null } | null }>(`
+      query DealSetupDefaults { dealershipProfile { ${DEAL_DEFAULTS_FIELDS} } storefrontProfile { currencyCode } }
     `, {}, { cache: 'no-store' }),
     keystoneClient<{ tradeIns: DealTradeInOption[] }>(`
       query DealSetupTradeIns { tradeIns(where: { deal: null }, orderBy: { createdAt: desc }, take: 200) { ${TRADE_IN_OPTION_FIELDS} } }
@@ -161,6 +164,7 @@ export async function getDealSetupOptions() {
       tradeIns: tradeIns.success ? tradeIns.data.tradeIns || [] : [],
       // The server applies the same defaults when it creates the pencil; this is the preview.
       dealDefaults: dealDefaults(profile.success ? profile.data.dealershipProfile : null),
+      currencyCode: profile.success ? profile.data.storefrontProfile?.currencyCode || 'USD' : 'USD',
     },
   }
 }
