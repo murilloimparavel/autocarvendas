@@ -434,7 +434,6 @@ const schemaPhrases: Record<string, string> = {
   'finance funding case': 'Processo de liberação de crédito', 'finance cancellation': 'Cancelamento de financiamento',
   'accounting batch': 'Lote contábil', 'payment transaction': 'Transação de pagamento',
   'payment refund': 'Reembolso de pagamento', 'domain audit event': 'Evento de auditoria do sistema',
-  'trade-ins': 'Avaliações de troca', 'trade-in': 'Avaliação de troca',
   'needs appraisal': 'Aguardando avaliação', 'offered': 'Com proposta', 'on deal': 'Vinculado a uma venda',
   'on pencil deal': 'Vinculado a uma prévia de venda', 'in acquisition': 'Em processo de aquisição',
   'acquired': 'Adquirido', 'closed': 'Encerrado', 'all': 'Todos', 'not graded': 'Não avaliado',
