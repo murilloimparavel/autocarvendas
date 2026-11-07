@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export type InventoryFormField = {
   name: string
@@ -57,6 +58,7 @@ export function InventoryFormDialog({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onOpenChange: (open: boolean) => void
 }) {
+  const { locale, t } = useLocale()
   const change = (name: string, value: string) => onValuesChange({ ...values, [name]: value })
   return (
     <Dialog open={open} onOpenChange={value => { if (!busy) onOpenChange(value) }}>
@@ -80,10 +82,10 @@ export function InventoryFormDialog({
                   ) : field.type === 'select' ? (
                     <Select value={value || (field.required === false ? NONE_VALUE : '')} onValueChange={next => change(field.name, next === NONE_VALUE ? '' : next)} disabled={field.disabled || busy}>
                       <SelectTrigger id={id} aria-label={field.label} aria-invalid={Boolean(error)} aria-describedby={describedBy} className="max-sm:h-11">
-                        <SelectValue placeholder={field.placeholder || 'Choose'} />
+                        <SelectValue placeholder={field.placeholder || t('choose')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {field.required === false && <SelectItem value={NONE_VALUE}>None</SelectItem>}
+                        {field.required === false && <SelectItem value={NONE_VALUE}>{t('none')}</SelectItem>}
                         {(field.options || []).map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -100,7 +102,7 @@ export function InventoryFormDialog({
                       min={field.min}
                       max={field.max}
                       maxLength={field.maxLength}
-                      placeholder={field.placeholder ?? (field.type === 'money' ? '$0' : undefined)}
+                      placeholder={field.placeholder ?? (field.type === 'money' ? locale === 'pt-BR' ? '0,00' : '$0' : undefined)}
                       disabled={field.disabled || busy}
                       aria-invalid={Boolean(error)}
                       aria-describedby={describedBy}
@@ -119,8 +121,8 @@ export function InventoryFormDialog({
           {formError && <Notice tone="bad">{formError}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" className="max-sm:h-11" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-              <Pill type="submit" variant="primary" className="max-sm:h-11" disabled={busy}>{busy ? 'Saving…' : submitLabel}</Pill>
+              <Pill variant="plain" className="max-sm:h-11" disabled={busy} onClick={() => onOpenChange(false)}>{t('cancel')}</Pill>
+              <Pill type="submit" variant="primary" className="max-sm:h-11" disabled={busy}>{busy ? t('saving') : submitLabel}</Pill>
             </Track>
           </DialogFooter>
         </form>

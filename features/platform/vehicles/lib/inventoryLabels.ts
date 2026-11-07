@@ -177,21 +177,21 @@ export function eventTypeLabel(value: string) {
 /** VIN check used by every inventory form: 17 characters, no I, O or Q. */
 export const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/
 
-export function formatMoneyCents(cents: number | null | undefined, currencyCode = 'USD') {
+export function formatMoneyCents(cents: number | null | undefined, currencyCode = 'USD', locale = 'en-US') {
   if (cents == null) return '-'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, maximumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100)
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100)
 }
 
-export function formatDateTime(value: string | null | undefined, timeZone: string) {
+export function formatDateTime(value: string | null | undefined, timeZone: string, locale = 'en-US') {
   if (!value) return '-'
-  return new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-export function formatDate(value: string | null | undefined, timeZone: string) {
+export function formatDate(value: string | null | undefined, timeZone: string, locale = 'en-US') {
   if (!value) return '-'
-  return new Date(value).toLocaleDateString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(value).toLocaleDateString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function personName(person: { name: string | null } | null | undefined) {
-  return person?.name || 'System'
+export function personName(person: { name: string | null } | null | undefined, locale = 'en-US') {
+  return person?.name || (locale === 'pt-BR' ? 'Sistema' : 'System')
 }
