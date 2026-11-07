@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import { recordDomainEventInTransaction } from '../lifecycle/domainEvents'
 import { sendCustomerEmailVerification, storefrontBaseUrl } from '../lib/customerVerificationMail'
+import { localeFromCookieHeader } from '@/features/i18n/server'
 import { normalizeCustomerEmail } from './customerIdentity'
 import { requireCustomerAccount } from './customerOwnership'
 
@@ -62,7 +63,7 @@ export async function requestCustomerEmailVerification(_root: unknown, _args: un
   if (!base) throw new Error('Email verification is unavailable')
   const url = `${base.replace(/\/$/, '')}/account/verify?token=${encodeURIComponent(customerVerificationToken(accountId, email))}`
   try {
-    await sendCustomerEmailVerification(email, url)
+    await sendCustomerEmailVerification(email, url, localeFromCookieHeader(context?.req?.headers?.cookie))
   } catch {
     throw new Error('The verification email could not be sent. Try again later.')
   }
