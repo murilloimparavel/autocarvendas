@@ -32,4 +32,6 @@ USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=5 \
   CMD node -e "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.status < 500 ? 0 : 1)).catch(() => process.exit(1))"
-CMD ["sh", "-c", "npm run migrate && npm start"]
+# Run schema migrations with the owner credential, then leave DATABASE_URL set to
+# the least-privilege runtime role for the web process.
+CMD ["sh", "-c", "DATABASE_URL=${MIGRATION_DATABASE_URL:-$DATABASE_URL} npm run migrate && npm start"]
