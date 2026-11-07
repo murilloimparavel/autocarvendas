@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 import { Plus, RefreshCw, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -44,6 +46,7 @@ export function TradeInDeskPageClient({
   initialError: string | null
   timeZone: string
 }) {
+  const { t, locale } = useLocale()
   const router = useRouter()
   const [data, setData] = useState<DeskData>(initialData ?? { tradeIns: [], acquisitions: {}, canSeeAcquisitions: false })
   const [loading, setLoading] = useState(false)
@@ -64,7 +67,7 @@ export function TradeInDeskPageClient({
     setError(null)
     const response = await getTradeIns()
     if (response.success) setData(response.data)
-    else setError(response.error || 'Unable to load trade-ins.')
+    else setError(response.error || t('tradeInLoadFailed'))
     setLoading(false)
   }
 
@@ -99,7 +102,7 @@ export function TradeInDeskPageClient({
       const response = await getTradeInCreateOptions()
       setCreateBusy(false)
       if (response.success) setCreateOptions(response.data)
-      else setCreateError(response.error || 'Unable to load rooftops.')
+      else setCreateError(response.error || t('unavailable'))
     }
     setCreateOpen(true)
   }
@@ -107,7 +110,7 @@ export function TradeInDeskPageClient({
   const submitCreate = async (values: TradeInFormValues) => {
     setCreateBusy(true)
     setCreateError(null)
-    const details = tradeInDetailsPayload(values)
+    const details = tradeInDetailsPayload(values, locale)
     const response = await createWalkInTradeIn({
       rooftopId: values.rooftopId,
       leadId: values.leadId || undefined,
@@ -136,26 +139,26 @@ export function TradeInDeskPageClient({
   }
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Trade-Ins' },
+    { type: 'link' as const, label: t('dashboard'), href: basePath },
+    { type: 'page' as const, label: t('platform') },
+    { type: 'page' as const, label: t('tradeIns') },
   ]
 
   const header = (
     <DeskHeader
-      title="Trade-ins"
+      title={t('tradeIns')}
       tone={error ? 'bad' : counts.appraise > 0 ? 'warn' : 'ok'}
-      status={error ? 'Unavailable' : `${counts.appraise} need appraisal`}
-      meta={error ? 'Unavailable' : `${counts.appraise} need appraisal · ${counts.offered} offered · ${counts['on-deal']} on deals`}
+      status={error ? t('unavailable') : t('needAppraisalCount').replace('{count}', String(counts.appraise))}
+      meta={error ? t('unavailable') : t('tradeInMeta').replace('{appraise}', String(counts.appraise)).replace('{offered}', String(counts.offered)).replace('{onDeal}', String(counts['on-deal']))}
       actions={
         <>
-          <Pill variant="plain" className="max-md:h-10" onClick={load} disabled={loading} aria-label="Refresh trade-ins">
+          <Pill variant="plain" className="max-md:h-10" onClick={load} disabled={loading} aria-label={t('refresh')}>
             <RefreshCw className={loading ? 'animate-spin' : undefined} />
-            Refresh
+            {t('refresh')}
           </Pill>
           <Pill variant="primary" className="max-md:h-10" onClick={openCreate} disabled={createBusy}>
             <Plus />
-            New trade-in
+            {t('newTradeIn')}
           </Pill>
         </>
       }
@@ -163,12 +166,12 @@ export function TradeInDeskPageClient({
   )
 
   const filterOptions: Array<{ value: TradeInQueue; label: string; count: number; tone?: 'warn' | 'info' | 'ok' }> = [
-    { value: 'appraise', label: 'Needs appraisal', count: counts.appraise, tone: 'warn' },
-    { value: 'offered', label: 'Offered', count: counts.offered, tone: 'info' },
-    { value: 'on-deal', label: 'On deal', count: counts['on-deal'], tone: 'ok' },
-    ...(data.canSeeAcquisitions ? [{ value: 'acquired' as const, label: 'Acquired', count: counts.acquired }] : []),
-    ...(counts.closed > 0 ? [{ value: 'closed' as const, label: 'Closed', count: counts.closed }] : []),
-    { value: 'all', label: 'All', count: counts.all },
+    { value: 'appraise', label: t('needsAppraisal'), count: counts.appraise, tone: 'warn' },
+    { value: 'offered', label: t('offered'), count: counts.offered, tone: 'info' },
+    { value: 'on-deal', label: t('onDeal'), count: counts['on-deal'], tone: 'ok' },
+    ...(data.canSeeAcquisitions ? [{ value: 'acquired' as const, label: t('acquired'), count: counts.acquired }] : []),
+    ...(counts.closed > 0 ? [{ value: 'closed' as const, label: t('closed'), count: counts.closed }] : []),
+    { value: 'all', label: t('all'), count: counts.all },
   ]
 
   // Appraisals waiting on a value, longest waiting first.
@@ -179,48 +182,48 @@ export function TradeInDeskPageClient({
   const waitedDays = (createdAt: string | null) =>
     createdAt ? Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 86_400_000)) : null
   const detailHref = (tradeIn: TradeIn) => `${basePath}/platform/trade-ins/${tradeIn.id}`
-  const shortDate = (value: string | null) => value ? new Date(value).toLocaleDateString('en-US', { timeZone, month: 'short', day: 'numeric' }) : '-'
+  const shortDate = (value: string | null) => value ? new Date(value).toLocaleDateString(locale, { timeZone, month: 'short', day: 'numeric' }) : '-'
 
   const vehicleCell = (tradeIn: TradeIn) => (
     <>
       <Link href={detailHref(tradeIn)} onClick={event => event.stopPropagation()} className="font-medium text-foreground hover:underline">
         {tradeInVehicleLabel(tradeIn)}
       </Link>
-      <p className="text-xs text-muted-foreground">VIN <Code>{tradeIn.vin || 'not entered'}</Code></p>
+      <p className="text-xs text-muted-foreground">VIN <Code>{tradeIn.vin || t('vinNotEntered')}</Code></p>
     </>
   )
 
   const customerLine = (tradeIn: TradeIn) => {
     const customer = tradeInCustomer(tradeIn)
-    return `${customer || 'No customer'}${tradeIn.lead ? ` · ${formatPhone(tradeIn.lead.phone) || tradeIn.lead.email || 'No contact'}` : ''}`
+    return `${customer || t('noCustomer')}${tradeIn.lead ? ` · ${formatPhone(tradeIn.lead.phone) || tradeIn.lead.email || t('noContact')}` : ''}`
   }
 
   const conditionCell = (tradeIn: TradeIn) => tradeIn.condition
-    ? <Status tone={conditionTone[tradeIn.condition] ?? 'idle'}>{conditionLabel(tradeIn.condition)}</Status>
-    : <span className="text-muted-foreground">Not graded</span>
+    ? <Status tone={conditionTone[tradeIn.condition] ?? 'idle'}>{translateSchemaLabel(locale, conditionLabel(tradeIn.condition))}</Status>
+    : <span className="text-muted-foreground">{t('notGraded')}</span>
 
   return (
-    <PageContainer title="Trade-Ins" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={t('tradeIns')} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
-        <DeskSection id="trade-ins-awaiting" title="Awaiting a value" count={error ? undefined : awaiting.length}>
+    <DeskSection id="trade-ins-awaiting" title={t('needsAppraisal')} count={error ? undefined : awaiting.length}>
           {error ? (
             <Notice tone="bad">
-              <p className="font-medium">Trade-ins unavailable</p>
+              <p className="font-medium">{t('tradeIns')} · {t('unavailable')}</p>
               <p className="mt-0.5 text-muted-foreground">{error}</p>
-              <Track className="mt-2"><Pill size="sm" onClick={load}>Retry</Pill></Track>
+              <Track className="mt-2"><Pill size="sm" onClick={load}>{t('retry')}</Pill></Track>
             </Notice>
           ) : awaiting.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">No appraisals waiting</p>
+            <p className="text-[13px] text-muted-foreground">{t('noAppraisalsWaiting')}</p>
           ) : (
-            <DeskTable aria-label="Trade-ins awaiting a value">
+            <DeskTable aria-label={t('noAppraisalsWaiting')}>
               <thead>
                 <tr>
-                  <Th align="right" className="w-20">Waiting</Th>
-                  <Th>Vehicle</Th>
-                  <Th priority={2}>Customer</Th>
-                  <Th priority={3} align="right">Mileage</Th>
-                  <Th priority={3}>Condition</Th>
-                  <Th className="w-0"><span className="sr-only">Actions</span></Th>
+                  <Th align="right" className="w-20">{t('waiting')}</Th>
+                  <Th>{t('vehicle')}</Th>
+                  <Th priority={2}>{t('customer')}</Th>
+                  <Th priority={3} align="right">{t('mileageShort')}</Th>
+                  <Th priority={3}>{t('condition')}</Th>
+                  <Th className="w-0"><span className="sr-only">{t('actions')}</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -229,7 +232,7 @@ export function TradeInDeskPageClient({
                   return (
                     <Tr key={tradeIn.id} className="cursor-pointer" onClick={() => router.push(detailHref(tradeIn))}>
                       <Td align="right" className="whitespace-nowrap">
-                        <Figure size="sm">{days == null ? '-' : `${days}d`}</Figure>
+                        <Figure size="sm">{days == null ? '-' : `${days}${t('dayShort')}`}</Figure>
                         <span className="block text-xs text-muted-foreground">{shortDate(tradeIn.createdAt)}</span>
                       </Td>
                       <Td className="min-w-0">
@@ -237,11 +240,11 @@ export function TradeInDeskPageClient({
                         <p className="break-words text-xs text-muted-foreground md:hidden">{customerLine(tradeIn)}</p>
                       </Td>
                       <Td priority={2} className="min-w-0 text-muted-foreground">{customerLine(tradeIn)}</Td>
-                      <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">{tradeIn.mileage != null ? formatMileage(tradeIn.mileage) : '-'}</Td>
+                        <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">{tradeIn.mileage != null ? formatMileage(tradeIn.mileage, locale) : '-'}</Td>
                       <Td priority={3}>{conditionCell(tradeIn)}</Td>
                       <Td className="text-right">
                         <Pill asChild size="sm" variant="primary" className="h-10 md:h-7" onClick={event => event.stopPropagation()}>
-                          <Link href={detailHref(tradeIn)} aria-label={`Appraise ${tradeInVehicleLabel(tradeIn)}`}>Appraise</Link>
+                          <Link href={detailHref(tradeIn)} aria-label={`${t('appraise')} ${tradeInVehicleLabel(tradeIn)}`}>{t('appraise')}</Link>
                         </Pill>
                       </Td>
                     </Tr>
@@ -253,43 +256,43 @@ export function TradeInDeskPageClient({
         </DeskSection>
 
         <section aria-labelledby="trade-ins-all" className="min-w-0 space-y-3">
-          <h2 id="trade-ins-all" className="text-[15px] font-semibold text-foreground">All trade-ins</h2>
-          <Segmented<TradeInQueue> label="Filter trade-ins" value={filter} onChange={setFilter} options={filterOptions} className="max-md:[&_button]:h-10" />
+          <h2 id="trade-ins-all" className="text-[15px] font-semibold text-foreground">{t('allTradeIns')}</h2>
+          <Segmented<TradeInQueue> label={t('filterTradeIns')} value={filter} onChange={setFilter} options={filterOptions} className="max-md:[&_button]:h-10" />
           <div className="flex min-w-0 items-center gap-2">
             <div className="relative min-w-0 flex-1 sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="h-10 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="Vehicle, customer, VIN or reference" aria-label="Search trade-ins" />
+              <Input className="h-10 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder={t('searchTradeIns')} aria-label={t('filterTradeIns')} />
             </div>
             <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger className="h-10 w-[9.5rem] shrink-0 rounded-[4px] px-2.5 text-[13px] sm:h-9" aria-label="Sort trade-ins"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 w-[9.5rem] shrink-0 rounded-[4px] px-2.5 text-[13px] sm:h-9" aria-label={t('sortTradeIns')}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Newest first</SelectItem>
-                <SelectItem value="vehicle">Vehicle</SelectItem>
-                <SelectItem value="offer-desc">Highest offer</SelectItem>
-                <SelectItem value="mileage">Lowest mileage</SelectItem>
+                <SelectItem value="recent">{t('newestFirst')}</SelectItem>
+                <SelectItem value="vehicle">{t('vehicle')}</SelectItem>
+                <SelectItem value="offer-desc">{t('highestOffer')}</SelectItem>
+                <SelectItem value="mileage">{t('lowestMileage')}</SelectItem>
               </SelectContent>
             </Select>
-            {loading && <span className="text-xs text-muted-foreground" role="status">Refreshing…</span>}
+            {loading && <span className="text-xs text-muted-foreground" role="status">{t('loading')}</span>}
           </div>
 
           {error ? null : visible.length === 0 ? (
             <Panel className="flex flex-col items-center gap-3 px-4 py-12 text-center">
-              <p className="text-sm text-muted-foreground">{tradeIns.length > 0 && isFiltered ? 'No matching trade-ins' : 'No trade-ins'}</p>
+              <p className="text-sm text-muted-foreground">{t(tradeIns.length > 0 && isFiltered ? 'noMatchingTradeIns' : 'noTradeIns')}</p>
               <Track>
-                {tradeIns.length > 0 && isFiltered ? <Pill size="sm" className="max-md:h-10" onClick={resetFilters}>Reset filters</Pill> : <Pill size="sm" variant="primary" className="max-md:h-10" onClick={openCreate} disabled={createBusy}><Plus />New trade-in</Pill>}
+                {tradeIns.length > 0 && isFiltered ? <Pill size="sm" className="max-md:h-10" onClick={resetFilters}>{t('resetFilters')}</Pill> : <Pill size="sm" variant="primary" className="max-md:h-10" onClick={openCreate} disabled={createBusy}><Plus />{t('newTradeIn')}</Pill>}
               </Track>
             </Panel>
           ) : (
-            <DeskTable aria-label="Trade-ins">
+            <DeskTable aria-label={t('tradeIns')}>
               <thead>
                 <tr>
-                  <Th>Vehicle</Th>
-                  <Th priority={2}>Status</Th>
-                  <Th priority={2}>Customer</Th>
-                  <Th priority={3} align="right">Mileage</Th>
-                  <Th priority={3}>Condition</Th>
-                  <Th align="right">Offer</Th>
-                  <Th priority={3} align="right">Reference</Th>
+                  <Th>{t('vehicle')}</Th>
+                  <Th priority={2}>{t('status')}</Th>
+                  <Th priority={2}>{t('customer')}</Th>
+                  <Th priority={3} align="right">{t('mileageShort')}</Th>
+                  <Th priority={3}>{t('condition')}</Th>
+                  <Th align="right">{t('offer')}</Th>
+                  <Th priority={3} align="right">{t('reference')}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -299,20 +302,20 @@ export function TradeInDeskPageClient({
                     <Tr key={tradeIn.id} className="cursor-pointer" onClick={() => router.push(detailHref(tradeIn))}>
                       <Td className="min-w-0">
                         {vehicleCell(tradeIn)}
-                        <p className="md:hidden"><Status tone={state.tone} className="text-xs">{state.label}</Status></p>
+                        <p className="md:hidden"><Status tone={state.tone} className="text-xs">{translateSchemaLabel(locale, state.label)}</Status></p>
                       </Td>
-                      <Td priority={2}><Status tone={state.tone}>{state.label}</Status></Td>
+                      <Td priority={2}><Status tone={state.tone}>{translateSchemaLabel(locale, state.label)}</Status></Td>
                       <Td priority={2} className="min-w-0 text-muted-foreground">
                         {customerLine(tradeIn)}
                         <p className="text-xs">{shortDate(tradeIn.createdAt)}</p>
                       </Td>
-                      <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">{tradeIn.mileage != null ? formatMileage(tradeIn.mileage) : '-'}</Td>
+                      <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">{tradeIn.mileage != null ? formatMileage(tradeIn.mileage, locale) : '-'}</Td>
                       <Td priority={3}>{conditionCell(tradeIn)}</Td>
                       <Td align="right" className="whitespace-nowrap">
-                        {tradeIn.offerAmount != null ? <Figure size="sm">{formatWholeUsd(tradeIn.offerAmount)}</Figure> : <span className="text-muted-foreground">-</span>}
+                        {tradeIn.offerAmount != null ? <Figure size="sm">{formatWholeUsd(tradeIn.offerAmount, locale)}</Figure> : <span className="text-muted-foreground">-</span>}
                       </Td>
                       <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">
-                        {tradeIn.referenceValue != null ? formatWholeUsd(tradeIn.referenceValue) : '-'}
+                        {tradeIn.referenceValue != null ? formatWholeUsd(tradeIn.referenceValue, locale) : '-'}
                       </Td>
                     </Tr>
                   )

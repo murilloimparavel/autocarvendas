@@ -1,13 +1,13 @@
 'use client'
 
 import { useRef, useState, type DragEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, ImagePlus, Star, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
 import { addInventoryVehiclePhoto, arrangeInventoryVehiclePhotos, removeInventoryVehiclePhoto, type InventoryVehiclePhoto } from '../actions'
 import { PHOTO_ACCEPT, preparePhoto } from '../lib/preparePhoto'
-import { countLabel } from '@/features/platform/lib/format'
 
 export type PhotoTile = { id: string; url: string | null; name: string }
 
@@ -47,6 +47,7 @@ export function VehiclePhotoEditor({
   onMove: (id: string, to: number) => void
   onRemove: (id: string) => void
 }) {
+  const { t } = useLocale()
   const inputRef = useRef<HTMLInputElement>(null)
   const [url, setUrl] = useState('')
   const [dragging, setDragging] = useState(false)
@@ -70,7 +71,7 @@ export function VehiclePhotoEditor({
     <div className="grid gap-2 sm:col-span-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <label htmlFor={inputId} className={fieldLabelClass}>{label}</label>
-        <span className="text-[12px] tabular-nums text-muted-foreground">{tiles.length ? `${tiles.length} ${tiles.length === 1 ? 'photo' : 'photos'}` : 'No photos'}</span>
+        <span className="text-[12px] tabular-nums text-muted-foreground">{tiles.length ? tiles.length === 1 ? t('onePhoto') : t('photoCount').replace('{count}', String(tiles.length)) : t('noPhotos')}</span>
       </div>
       <div
         onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true) }}
@@ -85,24 +86,24 @@ export function VehiclePhotoEditor({
                 <div className="relative aspect-[4/3] w-24 shrink-0 bg-muted sm:w-auto">
                   {tile.url
                     ? <Image src={tile.url} alt={tile.name} fill unoptimized sizes="200px" className="object-contain" />
-                    : <span className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">No preview</span>}
+                    : <span className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">{t('noPreview')}</span>}
                   {index === 0 && (
-                    <span className="absolute left-1.5 top-1.5 rounded-[2px] bg-foreground px-1.5 py-px text-xs font-medium text-background">Primary</span>
+                    <span className="absolute left-1.5 top-1.5 rounded-[2px] bg-foreground px-1.5 py-px text-xs font-medium text-background">{t('primaryPhoto')}</span>
                   )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col items-center gap-1 p-1.5">
                   <p className="w-full truncate px-1 text-center text-xs text-muted-foreground" title={tile.name}>{tile.name}</p>
                   <Track>
-                    <Pill size="sm" variant="plain" className={iconPill} aria-label={`Move ${tile.name} earlier`} disabled={busy || index === 0} onClick={() => onMove(tile.id, index - 1)}>
+                    <Pill size="sm" variant="plain" className={iconPill} aria-label={t('movePhotoEarlier').replace('{name}', tile.name)} disabled={busy || index === 0} onClick={() => onMove(tile.id, index - 1)}>
                       <ChevronLeft />
                     </Pill>
-                    <Pill size="sm" variant="plain" className={iconPill} aria-label={`Move ${tile.name} later`} disabled={busy || index === tiles.length - 1} onClick={() => onMove(tile.id, index + 1)}>
+                    <Pill size="sm" variant="plain" className={iconPill} aria-label={t('movePhotoLater').replace('{name}', tile.name)} disabled={busy || index === tiles.length - 1} onClick={() => onMove(tile.id, index + 1)}>
                       <ChevronRight />
                     </Pill>
-                    <Pill size="sm" variant="plain" className={iconPill} aria-label={`Make ${tile.name} primary`} disabled={busy || index === 0} onClick={() => onMove(tile.id, 0)}>
+                    <Pill size="sm" variant="plain" className={iconPill} aria-label={t('makePhotoPrimary').replace('{name}', tile.name)} disabled={busy || index === 0} onClick={() => onMove(tile.id, 0)}>
                       <Star />
                     </Pill>
-                    <Pill size="sm" variant="plain" className={iconPill} aria-label={`Remove ${tile.name}`} disabled={busy} onClick={() => onRemove(tile.id)}>
+                    <Pill size="sm" variant="plain" className={iconPill} aria-label={t('removePhoto').replace('{name}', tile.name)} disabled={busy} onClick={() => onRemove(tile.id)}>
                       <Trash2 />
                     </Pill>
                   </Track>
@@ -129,13 +130,13 @@ export function VehiclePhotoEditor({
         <div className="flex min-w-0 flex-col gap-2">
           <Track className="self-start">
             <Pill className="max-sm:h-11" disabled={busy} onClick={() => inputRef.current?.click()}>
-              <ImagePlus /> {tiles.length ? 'Add more photos' : 'Add photos'}
+              <ImagePlus /> {tiles.length ? t('addMorePhotos') : t('addPhotos')}
             </Pill>
           </Track>
           <div className="flex min-w-0 items-center gap-2">
             <Input
-              aria-label="Image URL"
-              placeholder="Image URL"
+              aria-label={t('imageUrl')}
+              placeholder={t('imageUrl')}
               value={url}
               disabled={busy}
               className="min-w-0 flex-1 max-sm:h-11"
@@ -143,7 +144,7 @@ export function VehiclePhotoEditor({
               onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addUrl() } }}
             />
             <Track className="shrink-0 overflow-visible">
-              <Pill className="max-sm:h-11" disabled={busy || !url.trim()} onClick={addUrl}>Add URL</Pill>
+              <Pill className="max-sm:h-11" disabled={busy || !url.trim()} onClick={addUrl}>{t('addUrl')}</Pill>
             </Track>
           </div>
         </div>
@@ -178,6 +179,7 @@ export function LiveVehiclePhotos({
   label?: string
   onChanged: () => Promise<void> | void
 }) {
+  const { locale, t } = useLocale()
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -201,9 +203,10 @@ export function LiveVehiclePhotos({
     setError(null)
     setStatus(null)
     try {
-      setError(await work())
+      const result = await work()
+      setError(result && locale === 'pt-BR' ? t('unableSavePhotos') : result)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to save photos.')
+      setError(locale === 'pt-BR' ? t('unableSavePhotos') : caught instanceof Error ? caught.message : t('unableSavePhotos'))
     } finally {
       setStatus(null)
       await onChanged()
@@ -214,10 +217,10 @@ export function LiveVehiclePhotos({
   const addPhotos = (photos: Array<{ file: File | null; url: string }>) => run(async () => {
     const failures: string[] = []
     for (const [index, photo] of photos.entries()) {
-      if (photos.length > 1) setStatus(`Uploading ${index + 1} of ${photos.length}`)
+      if (photos.length > 1) setStatus(t('uploadingPhotoProgress').replace('{current}', String(index + 1)).replace('{total}', String(photos.length)))
       try {
         const response = await uploadVehiclePhoto(stockId, photo, `inventory-photo:${stockId}:${crypto.randomUUID()}`)
-        if (!response.success) failures.push(response.error)
+        if (!response.success) failures.push(locale === 'pt-BR' ? t('photoUploadFailed') : response.error)
         else {
           const createdId = (response.data as { addInventoryVehiclePhoto?: { id?: string; reused?: boolean } } | null)?.addInventoryVehiclePhoto
           if (createdId?.id && !createdId.reused && !names.current.has(createdId.id)) {
@@ -225,13 +228,13 @@ export function LiveVehiclePhotos({
           }
         }
       } catch (caught) {
-        failures.push(caught instanceof Error ? caught.message : 'Upload failed.')
+        failures.push(locale === 'pt-BR' ? t('photoUploadFailed') : caught instanceof Error ? caught.message : t('photoUploadFailed'))
       }
     }
     if (!failures.length) return null
     return failures.length === photos.length && photos.length === 1
       ? failures[0]
-      : `${failures.length} of ${countLabel(photos.length, 'photo')} did not upload. ${failures[0]}`
+      : t('photoUploadSummary').replace('{failed}', String(failures.length)).replace('{total}', String(photos.length)).replace('{error}', failures[0])
   })
 
   return (
