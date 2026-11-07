@@ -10,6 +10,7 @@ import { calculateDealPrice } from '../lifecycle/dealPricing'
 import { dealReceivedCents, formatUsdCents } from '../lifecycle/cashPayment'
 import { dealPaymentMethod } from '../lifecycle/paymentMethods'
 import { operatorCommand } from './operatorCommandErrors'
+import { assertContractAction } from '../lifecycle/contractPackageLifecycle'
 import { financingPrerequisiteCapability } from '../../integrations/financing'
 
 const required=(v:any,n:string,max=500)=>{const s=String(v||'').trim();if(!s||s.length>max)throw new Error(`${n} is required`);return s}
@@ -161,6 +162,7 @@ async function manageFinanceContractPackageCommand(_r: unknown, { data }: any, c
     let status = existing?.status || 'preparing'
     const envelopeReference = String(data.envelopeReference || existing?.envelopeReference || '').trim()
     let sentAt = existing?.sentAt || null, signedAt = existing?.signedAt || null
+    assertContractAction(existing?.status, action, action === 'record-provider-status' ? String(data.providerStatus || '').trim() : undefined)
     if (action === 'prepare') { status = 'preparing'; sentAt = null; signedAt = null }
     if (action === 'mark-ready') {
       if (!requiredDocuments.length || requiredDocuments.some(code => !documentChecklist.some((x: { code: string; status: string }) => x.code === code && x.status === 'complete'))) throw new Error('Every required document must be complete')

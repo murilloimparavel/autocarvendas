@@ -1,4 +1,5 @@
 import { executeAdapterFunction } from '../utils/paymentProviderAdapter'
+import { CHECKOUT_FAILABLE, CHECKOUT_STARTABLE } from '../lifecycle/paymentState'
 import { paymentReturnUrls } from '../lib/paymentReturn'
 import { customerOwnership, ownedServiceOrderIds, requireCustomerAccount } from './customerOwnership'
 
@@ -69,11 +70,11 @@ export async function payServiceInvoice(_root: unknown, { serviceOrderId }: { se
       functionName: 'createPaymentFunction',
       args: { amount: current.amountCents, currency: current.currency, description: `Service invoice ${current.serviceOrder?.invoiceNumber || ''}`.trim(), metadata: { openfront_transaction_id: transactionId }, idempotencyKey: current.idempotencyKey, successUrl, cancelUrl, customerEmail: account?.email || undefined },
     })
-    await sudo.prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'pending', checkoutUrl: response?.checkoutUrl, providerSessionId: response?.providerSessionId, providerTransactionId: response?.providerTransactionId || '', version: { increment: 1 } } })
+    await sudo.prisma.paymentTransaction.updateMany({ where: { id: transactionId, status: { in: [...CHECKOUT_STARTABLE] } }, data: { status: 'pending', checkoutUrl: response?.checkoutUrl, providerSessionId: response?.providerSessionId, providerTransactionId: response?.providerTransactionId || '', version: { increment: 1 } } })
     if (!response?.checkoutUrl) throw new Error('Provider returned no checkout link')
     return { checkoutUrl: response.checkoutUrl }
   } catch (error: any) {
-    await sudo.prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'failed', failureCode: String(error?.code || error?.message || 'PROVIDER_ERROR').slice(0, 100), version: { increment: 1 } } })
+    await sudo.prisma.paymentTransaction.updateMany({ where: { id: transactionId, status: { in: [...CHECKOUT_FAILABLE] } }, data: { status: 'failed', failureCode: String(error?.code || error?.message || 'PROVIDER_ERROR').slice(0, 100), version: { increment: 1 } } })
     console.error('Service invoice checkout failed:', error?.message || error)
     throw new Error('Card checkout could not be started. Please try again.')
   }

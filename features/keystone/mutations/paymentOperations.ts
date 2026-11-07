@@ -1,4 +1,5 @@
 import { permissions } from '../access'
+import { CHECKOUT_FAILABLE, CHECKOUT_STARTABLE, REFUND_TRANSITIONS, canMove } from '../lifecycle/paymentState'
 import { calculateDealPrice } from '../lifecycle/dealPricing'
 import { executeAdapterFunction } from '../utils/paymentProviderAdapter'
 import { recordDomainEventInTransaction } from '../lifecycle/domainEvents'
@@ -110,9 +111,9 @@ export async function createPaymentCheckout(_root: unknown, { data }: any, conte
     // The customer pays, so they return to the storefront, never to the dashboard that staff used.
     const { successUrl, cancelUrl } = paymentReturnUrls(origin, transactionId, paymentReturnSecret())
     const response = await executeAdapterFunction({ provider, functionName: 'createPaymentFunction', args: { amount: amountCents, currency, description: source.description, metadata: { openfront_transaction_id: transactionId }, idempotencyKey, successUrl, cancelUrl } })
-    await context.sudo().prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'pending', checkoutUrl: response?.checkoutUrl, providerSessionId: response?.providerSessionId, providerTransactionId: response?.providerTransactionId, version: { increment: 1 } } })
+    await context.sudo().prisma.paymentTransaction.updateMany({ where: { id: transactionId, status: { in: [...CHECKOUT_STARTABLE] } }, data: { status: 'pending', checkoutUrl: response?.checkoutUrl, providerSessionId: response?.providerSessionId, providerTransactionId: response?.providerTransactionId, version: { increment: 1 } } })
   } catch (error: any) {
-    await context.sudo().prisma.paymentTransaction.update({ where: { id: transactionId }, data: { status: 'failed', failureCode: String(error?.code || error?.message || 'PROVIDER_ERROR').slice(0, 100), version: { increment: 1 } } })
+    await context.sudo().prisma.paymentTransaction.updateMany({ where: { id: transactionId, status: { in: [...CHECKOUT_FAILABLE] } }, data: { status: 'failed', failureCode: String(error?.code || error?.message || 'PROVIDER_ERROR').slice(0, 100), version: { increment: 1 } } })
     throw error
   }
   return context.db.PaymentTransaction.findOne({ where: { id: transactionId } })
@@ -221,7 +222,7 @@ export async function processVerifiedPaymentWebhook(event: VerifiedPaymentEvent,
       const refund = await tx.prisma.paymentRefund.findFirst({ where: { providerRefundId: event.providerRefundId } })
       if (!refund || refund.transactionId !== transaction.id || !['captured', 'partially-refunded', 'refunded'].includes(transaction.status)) throw new Error('Payment refund webhook does not match a captured transaction')
       if (event.providerStatus === 'succeeded') await tx.prisma.paymentRefund.update({ where: { id: refund.id }, data: { status: 'succeeded', failureCode: '' } })
-      else if (['failed', 'canceled'].includes(event.providerStatus || '')) await tx.prisma.paymentRefund.update({ where: { id: refund.id }, data: { status: event.providerStatus, failureCode: 'PROVIDER_REFUND_FAILED' } })
+      else if (['failed', 'canceled'].includes(event.providerStatus || '') && canMove(REFUND_TRANSITIONS, refund.status, event.providerStatus!)) await tx.prisma.paymentRefund.update({ where: { id: refund.id }, data: { status: event.providerStatus, failureCode: 'PROVIDER_REFUND_FAILED' } })
       if (event.providerStatus === 'succeeded') {
         const succeeded = await tx.prisma.paymentRefund.aggregate({ where: { transactionId: transaction.id, status: 'succeeded' }, _sum: { amountCents: true } })
         refundedCents = Math.min(capturedCents, Number(succeeded._sum.amountCents || 0))

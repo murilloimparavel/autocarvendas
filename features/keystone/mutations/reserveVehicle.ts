@@ -1,4 +1,5 @@
 import { executeAdapterFunction } from '../utils/paymentProviderAdapter'
+import { CHECKOUT_FAILABLE, CHECKOUT_STARTABLE } from '../lifecycle/paymentState'
 import { paymentReturnUrls } from '../lib/paymentReturn'
 import { resolveCustomerInTransaction } from './customerIdentity'
 import { activeReservationWhere } from './reservationHold'
@@ -136,8 +137,7 @@ export async function reserveVehicle(_root: unknown, { data }: { data: any }, co
         customerEmail: email,
       },
     })
-    await context.sudo().prisma.paymentTransaction.update({
-      where: { id: transactionId },
+    await context.sudo().prisma.paymentTransaction.updateMany({ where: { id: transactionId, status: { in: [...CHECKOUT_STARTABLE] } },
       data: {
         status: 'pending',
         checkoutUrl: response?.checkoutUrl,
@@ -149,8 +149,8 @@ export async function reserveVehicle(_root: unknown, { data }: { data: any }, co
     if (!response?.checkoutUrl) throw new Error('Provider returned no checkout link')
     return { ...result, checkoutUrl: response.checkoutUrl }
   } catch (error: any) {
-    await context.sudo().prisma.paymentTransaction.update({
-      where: { id: transactionId },
+    await context.sudo().prisma.paymentTransaction.updateMany({
+      where: { id: transactionId, status: { in: [...CHECKOUT_FAILABLE] } },
       data: { status: 'failed', failureCode: String(error?.code || error?.message || 'PROVIDER_ERROR').slice(0, 100), version: { increment: 1 } },
     })
     console.error('Reservation checkout failed:', error?.message || error)
