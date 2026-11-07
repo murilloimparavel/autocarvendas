@@ -7,6 +7,8 @@ import { removeAuthToken } from '@/features/dashboard/lib/cookies';
 import { revalidatePath } from 'next/cache';
 import { PUBLIC_REQUEST_ERROR, safeErrorSummary, sanitizeDashboardRedirect } from '../lib/security';
 import { passwordResetEmailAvailable, RESET_EMAIL_UNAVAILABLE } from '../lib/authFlow';
+import { getRequestLocale } from '@/features/i18n/server'
+import { translate } from '@/features/i18n/messages'
 
 // Legacy storefront callers may pass a password in previous state; never return it.
 type AuthState = { message: string | null; formData: { email: string; password?: string } };
@@ -19,6 +21,7 @@ function withReason(base: string, error: string | undefined) {
 }
 
 export async function signIn(prevState: AuthState, formData: FormData) {
+  const locale = await getRequestLocale()
   const email = String(formData.get('email') || '');
   const password = String(formData.get('password') || '');
   const from = sanitizeDashboardRedirect(formData.get('from'));
@@ -34,7 +37,7 @@ export async function signIn(prevState: AuthState, formData: FormData) {
     `, { email, password });
 
     if (!response.success || response.data?.authenticate?.message || !response.data?.authenticate?.sessionToken) {
-      return { message: SIGN_IN_ERROR, formData: { email } };
+      return { message: translate(locale, 'authSignInError'), formData: { email } };
     }
 
     const cookieStore = await cookies();
@@ -47,7 +50,7 @@ export async function signIn(prevState: AuthState, formData: FormData) {
     });
   } catch (error) {
     console.error('Sign-in failed:', safeErrorSummary(error));
-    return { message: SIGN_IN_ERROR, formData: { email } };
+    return { message: translate(locale, 'authSignInError'), formData: { email } };
   }
 
   // Next.js redirects throw; keep this outside the catch.
@@ -55,6 +58,7 @@ export async function signIn(prevState: AuthState, formData: FormData) {
 }
 
 export async function signUp(prevState: AuthState, formData: FormData) {
+  const locale = await getRequestLocale()
   const email = String(formData.get('email') || '');
   const password = String(formData.get('password') || '');
   const name = email.split('@')[0];
@@ -65,11 +69,11 @@ export async function signUp(prevState: AuthState, formData: FormData) {
       }
     `, { email, name, password });
     if (!response.success) {
-      return { message: 'Unable to create an account. Please try again.', formData: { email } };
+      return { message: translate(locale, 'authSignUpError'), formData: { email } };
     }
   } catch (error) {
     console.error('Sign-up failed:', safeErrorSummary(error));
-    return { message: 'Unable to create an account. Please try again.', formData: { email } };
+    return { message: translate(locale, 'authSignUpError'), formData: { email } };
   }
   return signIn({ message: null, formData: { email } }, formData);
 }
@@ -89,6 +93,7 @@ export async function createInitialUser(
   prevState: { message: string | null; formData: { name: string; email: string } },
   formData: FormData
 ) {
+  const locale = await getRequestLocale()
   const name = String(formData.get('name') || '');
   const email = String(formData.get('email') || '');
   const password = String(formData.get('password') || '');
@@ -115,8 +120,9 @@ export async function resetPassword(
   formData: FormData,
   mode: 'reset' | 'request'
 ) {
+  const locale = await getRequestLocale()
   const email = String(formData.get('email') || '');
-  const failure = { message: 'Unable to reset your password. Please try again.', formData: { email } };
+  const failure = { message: translate(locale, 'authResetError'), formData: { email } };
   try {
     if (mode === 'reset') {
       const response = await keystoneClient(`
@@ -128,9 +134,9 @@ export async function resetPassword(
         return { message: withReason('Unable to reset your password.', response.error), formData: { email } };
       }
       if (response.data?.redeemUserPasswordResetToken?.code) {
-        return { message: 'This reset link is invalid or has expired. Request a new one.', formData: { email } };
+        return { message: translate(locale, 'authResetInvalid'), formData: { email } };
       }
-      return { success: 'Password has been reset. You can now sign in.', formData: { email } };
+      return { success: translate(locale, 'authResetSuccess'), formData: { email } };
     }
     if (!passwordResetEmailAvailable()) {
       return { message: RESET_EMAIL_UNAVAILABLE, formData: { email } };
@@ -141,7 +147,7 @@ export async function resetPassword(
     if (!response.success || response.data?.sendUserPasswordResetLink !== true) {
       return { message: 'Unable to send the reset email. Please try again, or ask an administrator to set a new password for you.', formData: { email } };
     }
-    return { success: 'If an account exists for that email, a reset link has been sent to it.', formData: { email } };
+    return { success: translate(locale, 'authResetSent'), formData: { email } };
   } catch (error) {
     console.error('Password reset failed:', safeErrorSummary(error));
     return failure;
