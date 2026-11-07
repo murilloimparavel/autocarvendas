@@ -15,6 +15,7 @@ import { VehicleCard } from '../components/VehicleCard'
 import { useStorefrontBusiness } from '../components/StorefrontBusinessProvider'
 import { InventoryCardSkeleton } from '../components/inventory/InventoryCardSkeleton'
 import { formatPrice } from '../lib/format'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { isEscapeKey, trapDialogFocus } from '../lib/dialogAccessibility'
 
 const CONDITIONS = [
@@ -43,6 +44,7 @@ function isSheetViewport() {
 export type InitialInventory = { search: string; items: Vehicle[]; totalCount: number }
 
 export function InventoryPage({ initial }: { initial?: InitialInventory | null }) {
+  const { locale } = useLocale()
   const [vehicles, setVehicles] = useState<Vehicle[]>(initial?.items ?? [])
   const [totalCount, setTotalCount] = useState(initial?.totalCount ?? 0)
   const [loading, setLoading] = useState(!initial)
@@ -291,7 +293,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
 
   const money = (value: string) => {
     const amount = Number(value)
-    return value.trim() && Number.isFinite(amount) ? formatPrice(amount, currencyCode) : value
+    return value.trim() && Number.isFinite(amount) ? formatPrice(amount, currencyCode, locale) : value
   }
   const miles = (value: string) => {
     const amount = Number(value)

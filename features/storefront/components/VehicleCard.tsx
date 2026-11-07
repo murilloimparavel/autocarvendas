@@ -17,6 +17,7 @@ import { PhotoAttribution } from './PhotoAttribution'
 import { isRepresentativePhoto } from '../lib/photoAttribution'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
 import { VehiclePhotoPlaceholder } from './VehiclePhotoPlaceholder'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface VehicleCardProps {
   vehicle: Vehicle
@@ -34,6 +35,7 @@ export function VehicleCard({
   const [comparing, setComparing] = useState(false)
   const [compareFull, setCompareFull] = useState(false)
   const { currencyCode } = useStorefrontBusiness()
+  const { locale, t } = useLocale()
 
   useEffect(() => {
     setComparing(isInComparison(vehicle.id))
@@ -98,12 +100,12 @@ export function VehicleCard({
             </p>
           </div>
           <dl className="sf-spec">
-            <div><dt>Mileage</dt><dd className="sf-figure">{formatMileage(vehicle.mileage)}</dd></div>
+            <div><dt>{t('mileageShort')}</dt><dd className="sf-figure">{formatMileage(vehicle.mileage, locale)}</dd></div>
             <div><dt>Color</dt><dd>{vehicle.color || 'Not listed'}</dd></div>
             <div><dt>Stock</dt><dd className="sf-figure">{vehicle.stockNumber}</dd></div>
           </dl>
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <p className="sf-price text-[length:var(--sf-text-2xl)]">{formatPrice(vehicle.price, currencyCode)}</p>
+            <p className="sf-price text-[length:var(--sf-text-2xl)]">{formatPrice(vehicle.price, currencyCode, locale)}</p>
             <div className="flex flex-wrap gap-2">
               <Link href={href} className="sf-btn sf-btn-primary sf-btn-sm">View vehicle</Link>
               {compareButton}
@@ -145,13 +147,13 @@ export function VehicleCard({
             </h3>
             <p className="sf-muted min-h-[1.5em] truncate text-[length:var(--sf-text-sm)]">{vehicle.trim}</p>
           </div>
-          <p className="sf-price shrink-0 pt-0.5 text-[length:var(--sf-text-xl)]">{formatPrice(vehicle.price, currencyCode)}</p>
+          <p className="sf-price shrink-0 pt-0.5 text-[length:var(--sf-text-xl)]">{formatPrice(vehicle.price, currencyCode, locale)}</p>
         </div>
 
         <dl className="mt-3 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] border-y text-[length:var(--sf-text-xs)]" style={{ borderColor: 'var(--sf-rule)' }}>
           <div className="min-w-0 py-2 pr-2">
             <dt className="sf-faint">Miles</dt>
-            <dd className="sf-figure truncate text-[length:var(--sf-text-sm)]">{formatMileage(vehicle.mileage)}</dd>
+            <dd className="sf-figure truncate text-[length:var(--sf-text-sm)]">{formatMileage(vehicle.mileage, locale)}</dd>
           </div>
           <div className="min-w-0 border-l py-2 pl-3 pr-2" style={{ borderColor: 'var(--sf-rule)' }}>
             <dt className="sf-faint">Color</dt>
