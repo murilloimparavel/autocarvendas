@@ -11,6 +11,7 @@ import Iron from "@hapi/iron";
 import * as cookie from "cookie";
 import { authenticateApiKey, refreshHumanSession } from "./utils/requestAuthentication";
 import { s3ForcePathStyle } from "./lib/s3-storage";
+import { pooledDatabaseUrl } from './database-url';
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -230,7 +231,7 @@ export default withAuth(
   config({
     db: {
       provider: "postgresql",
-      url: databaseURL,
+      url: pooledDatabaseUrl(databaseURL),
     },
     lists: withItemViewAwareUi(withDeleteAwareUi(withCreateAwareUi(models))),
     storage: {
