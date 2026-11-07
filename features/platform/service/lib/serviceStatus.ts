@@ -26,7 +26,7 @@ export function appointmentTransitions(status: string | null | undefined) {
   return APPOINTMENT_STATUSES.filter(next => (SERVICE_APPOINTMENT_TRANSITIONS[status || ''] || []).includes(next))
 }
 
-export const ORDER_STATUSES = ['estimate', 'approved', 'in-progress', 'completed', 'invoiced', 'paid'] as const
+export const ORDER_STATUSES = ['estimate', 'approved', 'in-progress', 'completed', 'invoiced', 'paid', 'cancelled'] as const
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   estimate: 'Estimate',
@@ -35,6 +35,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   completed: 'Completed',
   invoiced: 'Invoiced',
   paid: 'Paid',
+  cancelled: 'Cancelled',
 }
 
 export const ORDER_ACTION_LABELS: Record<string, string> = {

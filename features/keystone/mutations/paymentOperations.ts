@@ -238,6 +238,15 @@ export async function processVerifiedPaymentWebhook(event: VerifiedPaymentEvent,
       const totals = await tx.prisma.paymentTransaction.aggregate({ where: { serviceOrderId: transaction.serviceOrderId, status: { in: ['captured', 'partially-refunded', 'refunded'] } }, _sum: { capturedCents: true, refundedCents: true } })
       if (order?.status === 'invoiced' && Number(totals._sum.capturedCents || 0) - Number(totals._sum.refundedCents || 0) >= Number(order.grandTotalCents || 0)) await tx.prisma.serviceOrder.update({ where: { id: transaction.serviceOrderId }, data: { status: 'paid', settledAt: new Date() } })
     }
+    if (['refunded', 'partially-refunded'].includes(status) && transaction.serviceOrderId) {
+      // House rule: a full refund of the service invoice cancels the order (no automatic restock or release).
+      const order = await tx.prisma.serviceOrder.findUnique({ where: { id: transaction.serviceOrderId }, select: { status: true } })
+      if (order && ['invoiced', 'paid'].includes(order.status)) {
+        const totals = await tx.prisma.paymentTransaction.aggregate({ where: { serviceOrderId: transaction.serviceOrderId, status: { in: ['captured', 'partially-refunded', 'refunded'] } }, _sum: { capturedCents: true, refundedCents: true } })
+        const captured = Number(totals._sum.capturedCents || 0)
+        if (captured > 0 && Number(totals._sum.refundedCents || 0) >= captured) await tx.prisma.serviceOrder.updateMany({ where: { id: transaction.serviceOrderId, status: order.status }, data: { status: 'cancelled' } })
+      }
+    }
     if (status === 'captured' && transaction.sourceType === 'reservation' && transaction.leadId) {
       await applyPaidReservationInTransaction(tx, { id: transaction.id, rooftopId: transaction.rooftopId, leadId: transaction.leadId, capturedCents })
     }

@@ -169,6 +169,7 @@ export const ServiceOrder = list({
         { label: 'Completed', value: 'completed' },
         { label: 'Invoiced', value: 'invoiced' },
         { label: 'Paid Externally', value: 'paid' },
+        { label: 'Cancelled', value: 'cancelled' },
       ],
       defaultValue: 'estimate',
       label: 'Status',

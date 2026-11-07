@@ -7,6 +7,7 @@ export const SERVICE_ORDER_STATUSES = [
   'completed',
   'invoiced',
   'paid',
+  'cancelled',
 ] as const
 
 export type ServiceOrderStatus = typeof SERVICE_ORDER_STATUSES[number]
@@ -18,6 +19,8 @@ const SERVICE_ORDER_TRANSITIONS: Record<ServiceOrderStatus, readonly ServiceOrde
   completed: ['invoiced'],
   invoiced: ['paid'],
   paid: [],
+  // Reached only by the payment webhook when the whole invoice is refunded (house rule); never by a staff transition.
+  cancelled: [],
 }
 
 export const SERVICE_ORDER_EVIDENCE_FIELDS = [
@@ -51,7 +54,7 @@ export function isServiceOrderStatus(value: unknown): value is ServiceOrderStatu
 }
 
 export function isServiceOrderEvidenceLocked(status: unknown) {
-  return status === 'completed' || status === 'invoiced' || status === 'paid'
+  return status === 'completed' || status === 'invoiced' || status === 'paid' || status === 'cancelled'
 }
 
 export function assertServiceOrderTransition(current: unknown, next: unknown) {
