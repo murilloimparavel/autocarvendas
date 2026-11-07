@@ -136,9 +136,9 @@ export function formatDateTime(value: string | null | undefined, timeZone: strin
   return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-export function formatDay(value: string | null | undefined, timeZone: string) {
+export function formatDay(value: string | null | undefined, timeZone: string, locale: Locale = 'en-US') {
   if (!value) return '-'
-  return new Date(value).toLocaleDateString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(value).toLocaleDateString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function personName(first: string | null | undefined, last: string | null | undefined, fallback = 'Unnamed') {

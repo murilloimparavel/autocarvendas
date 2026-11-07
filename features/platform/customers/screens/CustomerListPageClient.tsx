@@ -7,11 +7,13 @@ import { ChevronLeft, ChevronRight, RefreshCw, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import { DeskHeader, DeskTable, Notice, Panel, Pill, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { formatPhone } from '@/features/platform/lib/format'
 import { formatDay, personName } from '@/features/platform/crm/lib/leadOptions'
 import { getCustomers, type CustomerListFilters, type CustomerRow } from '../actions'
+import { customerLabel } from '../lib/locale'
 
 type ListData = { customers: CustomerRow[]; counts: { active: number; merged: number; all: number }; page: number; pageSize: number }
 
@@ -28,6 +30,8 @@ export function CustomerListPageClient({
   initialError: string | null
   timeZone: string
 }) {
+  const { locale } = useLocale()
+  const text = useCallback((value: string) => customerLabel(locale, value), [locale])
   const router = useRouter()
   const [filters, setFilters] = useState<CustomerListFilters>(initialFilters)
   const [searchInput, setSearchInput] = useState('')
@@ -44,9 +48,9 @@ export function CustomerListPageClient({
     const response = await getCustomers(next)
     if (id !== requestId.current) return
     if (response.success) setData(response.data)
-    else setError(response.error || 'Unable to load customers')
+    else setError(text(response.error || 'Unable to load customers'))
     setLoading(false)
-  }, [])
+  }, [text])
 
   useEffect(() => {
     if (firstLoad.current) { firstLoad.current = false; return }
@@ -69,19 +73,19 @@ export function CustomerListPageClient({
   const isFiltered = Boolean(filters.search) || filters.segment !== 'all'
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Customers' },
+    { type: 'link' as const, label: text('Dashboard'), href: basePath },
+    { type: 'page' as const, label: text('Platform') },
+    { type: 'page' as const, label: text('Customers') },
   ]
 
   const header = (
     <DeskHeader
-      title="Customers"
+      title={text('Customers')}
       tone={error ? 'bad' : 'ok'}
-      status={error ? 'Unavailable' : 'Available'}
-      meta={counts ? `${counts.active} active · ${counts.merged} merged` : undefined}
+      status={error ? text('Unavailable') : text('Available')}
+      meta={counts ? `${counts.active} ${locale === 'pt-BR' ? 'clientes ativos' : 'active'} · ${counts.merged} ${locale === 'pt-BR' ? 'cadastros unificados' : 'merged'}` : undefined}
       actions={
-        <Pill variant="plain" className="max-md:h-10" onClick={() => load(filters)} disabled={loading} aria-label="Refresh"><RefreshCw className={loading ? 'animate-spin' : undefined} /></Pill>
+        <Pill variant="plain" className="max-md:h-10" onClick={() => load(filters)} disabled={loading} aria-label={text('Refresh')}><RefreshCw className={loading ? 'animate-spin' : undefined} /></Pill>
       }
     />
   )
@@ -89,49 +93,49 @@ export function CustomerListPageClient({
   const openCustomer = (id: string) => router.push(`${basePath}/platform/customers/${id}`)
 
   return (
-    <PageContainer title="Customers" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={text('Customers')} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-4 px-4 pb-24 md:px-6">
         <div className="relative min-w-0 max-w-2xl">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search name, email, phone"
+            placeholder={text('Search name, email, phone')}
             value={searchInput}
             onChange={event => setSearchInput(event.target.value)}
             className="h-11 rounded-[4px] pl-9 text-sm"
-            aria-label="Search customers"
+            aria-label={text('Search customers')}
           />
         </div>
 
         <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <Segmented
-            label="Customer status"
+            label={text('Customer status')}
             value={filters.status}
             onChange={status => update({ status })}
             className="max-md:[&_button]:h-10"
             options={[
-              { value: 'active', label: 'Active', count: counts?.active, tone: 'ok' },
-              { value: 'merged', label: 'Merged', count: counts?.merged, tone: 'idle' },
-              { value: 'all', label: 'All', count: counts?.all },
+              { value: 'active', label: text('Active'), count: counts?.active, tone: 'ok' },
+              { value: 'merged', label: text('Merged'), count: counts?.merged, tone: 'idle' },
+              { value: 'all', label: text('All'), count: counts?.all },
             ]}
           />
           <div className="grid min-w-0 grid-cols-2 gap-2 md:flex">
             <Select value={filters.segment} onValueChange={value => update({ segment: value as CustomerListFilters['segment'] })}>
-              <SelectTrigger className="h-10 min-w-0 rounded-[4px] px-2.5 text-[13px] md:h-9 md:w-[190px]" aria-label="Filter customers"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 min-w-0 rounded-[4px] px-2.5 text-[13px] md:h-9 md:w-[190px]" aria-label={text('Filter customers')}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All customers</SelectItem>
-                <SelectItem value="open-leads">With open leads</SelectItem>
-                <SelectItem value="household">In a household</SelectItem>
-                <SelectItem value="reachable">Preferred channel set</SelectItem>
-                <SelectItem value="suppressed">Any suppression</SelectItem>
+                <SelectItem value="all">{text('All customers')}</SelectItem>
+                <SelectItem value="open-leads">{text('With open leads')}</SelectItem>
+                <SelectItem value="household">{text('In a household')}</SelectItem>
+                <SelectItem value="reachable">{text('Preferred channel set')}</SelectItem>
+                <SelectItem value="suppressed">{text('Any suppression')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filters.sort} onValueChange={value => update({ sort: value as CustomerListFilters['sort'] })}>
-              <SelectTrigger className="h-10 min-w-0 rounded-[4px] px-2.5 text-[13px] md:h-9 md:w-[170px]" aria-label="Sort customers"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 min-w-0 rounded-[4px] px-2.5 text-[13px] md:h-9 md:w-[170px]" aria-label={text('Sort customers')}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="updated">Recently updated</SelectItem>
-                <SelectItem value="newest">Newest first</SelectItem>
-                <SelectItem value="name">Last name</SelectItem>
+                <SelectItem value="updated">{text('Recently updated')}</SelectItem>
+                <SelectItem value="newest">{text('Newest first')}</SelectItem>
+                <SelectItem value="name">{text('Last name')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -148,39 +152,39 @@ export function CustomerListPageClient({
           </Panel>
         ) : error ? (
           <Notice tone="bad">
-            <p className="font-medium">Unable to load customers</p>
+            <p className="font-medium">{text('Unable to load customers')}</p>
             <p className="mt-0.5 text-muted-foreground">{error}</p>
-            <Track className="mt-2"><Pill size="sm" onClick={() => load(filters)}>Retry</Pill></Track>
+            <Track className="mt-2"><Pill size="sm" onClick={() => load(filters)}>{text('Retry')}</Pill></Track>
           </Notice>
         ) : !data || data.customers.length === 0 ? (
           <Panel className="flex flex-col items-center gap-3 px-4 py-12 text-center">
-            <p className="text-sm text-muted-foreground">{isFiltered ? 'No matching customers' : 'No customers'}</p>
+            <p className="text-sm text-muted-foreground">{isFiltered ? text('No matching customers') : text('No customers')}</p>
             {isFiltered && (
-              <Track><Pill size="sm" className="max-md:h-10" onClick={() => { setSearchInput(''); setFilters({ ...initialFilters, status: filters.status }) }}>Reset filters</Pill></Track>
+              <Track><Pill size="sm" className="max-md:h-10" onClick={() => { setSearchInput(''); setFilters({ ...initialFilters, status: filters.status }) }}>{text('Reset filters')}</Pill></Track>
             )}
           </Panel>
         ) : (
           <div className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'} aria-busy={loading}>
-            <DeskTable aria-label="Customers">
+            <DeskTable aria-label={text('Customers')}>
               <thead>
                 <tr>
-                  <Th>Customer</Th>
-                  <Th priority={2}>Status</Th>
-                  <Th priority={2}>Contact</Th>
-                  <Th align="right">Open leads</Th>
-                  <Th priority={3}>Household</Th>
-                  <Th priority={3}>Updated</Th>
+                  <Th>{text('Customer')}</Th>
+                  <Th priority={2}>{text('Status')}</Th>
+                  <Th priority={2}>{text('Contact')}</Th>
+                  <Th align="right">{text('Open leads')}</Th>
+                  <Th priority={3}>{text('Household')}</Th>
+                  <Th priority={3}>{text('Updated')}</Th>
                 </tr>
               </thead>
               <tbody>
                 {data.customers.map(customer => {
                   const merged = customer.status === 'merged'
                   const suppressed = customer.emailSuppressed || customer.smsSuppressed || customer.phoneSuppressed
-                  const contact = [customer.primaryEmail, formatPhone(customer.primaryPhone)].filter(Boolean).join(' · ') || 'No contact'
+                  const contact = [customer.primaryEmail, formatPhone(customer.primaryPhone, locale)].filter(Boolean).join(' · ') || text('No contact')
                   const notes = [
-                    merged ? `Merged into ${personName(customer.mergedInto?.firstName, customer.mergedInto?.lastName, 'customer')}` : null,
-                    CHANNEL_LABEL[customer.preferredChannel || ''] || null,
-                    suppressed ? 'Suppressed' : null,
+                    merged ? `${text('Merged into')} ${personName(customer.mergedInto?.firstName, customer.mergedInto?.lastName, text('customer'))}` : null,
+                    CHANNEL_LABEL[customer.preferredChannel || ''] ? text(CHANNEL_LABEL[customer.preferredChannel || '']) : null,
+                    suppressed ? text('Suppressed') : null,
                   ].filter(Boolean).join(' · ')
                   return (
                     <Tr key={customer.id} className="cursor-pointer" onClick={() => openCustomer(customer.id)}>
@@ -189,27 +193,27 @@ export function CustomerListPageClient({
                           {personName(customer.firstName, customer.lastName)}
                         </Link>
                         <p className="text-xs text-muted-foreground [overflow-wrap:anywhere] md:hidden">{contact}</p>
-                        {merged && <p className="text-xs md:hidden"><Status tone="idle" className="text-xs">Merged</Status></p>}
+                        {merged && <p className="text-xs md:hidden"><Status tone="idle" className="text-xs">{text('Merged')}</Status></p>}
                         {notes && <p className="break-words text-xs text-muted-foreground">{notes}</p>}
                       </Td>
-                      <Td priority={2}><Status tone={merged ? 'idle' : 'ok'}>{merged ? 'Merged' : 'Active'}</Status></Td>
+                      <Td priority={2}><Status tone={merged ? 'idle' : 'ok'}>{merged ? text('Merged') : text('Active')}</Status></Td>
                       <Td priority={2} className="min-w-0 max-w-[16rem] truncate text-muted-foreground">{contact}</Td>
                       <Td align="right" className="whitespace-nowrap">
                         <span className={customer.openLeadsCount > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}>{customer.openLeadsCount}</span>
                         <span className="text-xs text-muted-foreground"> / {customer.leadsCount}</span>
                       </Td>
                       <Td priority={3} className="text-muted-foreground">{customer.household?.displayName || '-'}</Td>
-                      <Td priority={3} className="whitespace-nowrap text-muted-foreground">{formatDay(customer.updatedAt, timeZone)}</Td>
+                      <Td priority={3} className="whitespace-nowrap text-muted-foreground">{formatDay(customer.updatedAt, timeZone, locale)}</Td>
                     </Tr>
                   )
                 })}
               </tbody>
             </DeskTable>
             <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-xs tabular-nums text-muted-foreground">{pageStart}-{pageEnd} of {total}</p>
+              <p className="text-xs tabular-nums text-muted-foreground">{pageStart}-{pageEnd} {locale === 'pt-BR' ? 'de' : 'of'} {total}</p>
               <Track>
-                <Pill size="sm" className="h-10 sm:h-7" disabled={filters.page === 0 || loading} onClick={() => update({ page: filters.page - 1 })} aria-label="Previous page"><ChevronLeft /></Pill>
-                <Pill size="sm" className="h-10 sm:h-7" disabled={pageEnd >= total || loading} onClick={() => update({ page: filters.page + 1 })} aria-label="Next page"><ChevronRight /></Pill>
+                <Pill size="sm" className="h-10 sm:h-7" disabled={filters.page === 0 || loading} onClick={() => update({ page: filters.page - 1 })} aria-label={text('Previous page')}><ChevronLeft /></Pill>
+                <Pill size="sm" className="h-10 sm:h-7" disabled={pageEnd >= total || loading} onClick={() => update({ page: filters.page + 1 })} aria-label={text('Next page')}><ChevronRight /></Pill>
               </Track>
             </div>
           </div>

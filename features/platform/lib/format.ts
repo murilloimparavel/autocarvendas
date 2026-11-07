@@ -5,11 +5,22 @@ export function countLabel(count: number, singular: string, plural = `${singular
   return `${count} ${count === 1 ? singular : plural}`
 }
 
-/** "2025550147" -> "(202) 555-0147"; NANP numbers with or without a leading 1. Anything else is returned trimmed. */
-export function formatPhone(value: string | null | undefined) {
+/** Formats NANP and Brazilian phone numbers for display; unknown international formats remain unchanged. */
+export function formatPhone(value: string | null | undefined, locale: 'pt-BR' | 'en-US' = 'en-US') {
   const raw = String(value ?? '').trim()
   if (!raw) return ''
   const digits = raw.replace(/\D/g, '')
+  if (locale === 'pt-BR') {
+    const hasBrazilCountryCode = raw.startsWith('+55') || ((digits.length === 12 || digits.length === 13) && digits.startsWith('55'))
+    const brazilNational = hasBrazilCountryCode ? digits.slice(2) : digits
+    if ((brazilNational.length === 10 || brazilNational.length === 11) && (!raw.startsWith('+') || raw.startsWith('+55'))) {
+      const area = brazilNational.slice(0, 2)
+      const subscriber = brazilNational.slice(2)
+      const formatted = subscriber.length === 11 ? `${subscriber.slice(0, 5)}-${subscriber.slice(5)}` : `${subscriber.slice(0, 4)}-${subscriber.slice(4)}`
+      return `${hasBrazilCountryCode ? '+55 ' : ''}(${area}) ${formatted}`
+    }
+    if (raw.startsWith('+') && !raw.startsWith('+55')) return raw
+  }
   const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
   if (national.length !== 10 || (raw.startsWith('+') && !raw.startsWith('+1'))) return raw
   return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6)}`

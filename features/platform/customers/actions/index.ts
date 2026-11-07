@@ -9,6 +9,13 @@ const CUSTOMERS_PATH = '/dashboard/platform/customers'
 const CRM_PATH = '/dashboard/platform/crm'
 const PAGE_SIZE = 50
 
+export async function getCustomerCurrencyCode() {
+  const response = await keystoneClient<{ storefrontProfile: { currencyCode: string | null } | null }>(`
+    query CustomerCurrency { storefrontProfile { currencyCode } }
+  `, {}, { cache: 'no-store' })
+  return response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'
+}
+
 function revalidateCustomer(...ids: Array<string | null | undefined>) {
   revalidatePath(CUSTOMERS_PATH)
   revalidatePath(CRM_PATH)
