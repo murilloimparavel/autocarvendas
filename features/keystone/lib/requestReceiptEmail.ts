@@ -2,6 +2,7 @@
 // committed; a mail failure never fails the request. Exactly-once: a DomainAuditEvent row with
 // a unique eventKey is claimed first (replay or concurrent retry fails the create and exits),
 // and the send status is recorded in its metadata JSON.
+import type { Locale } from '@/features/i18n/messages'
 export type RequestReceipt = {
   kind: 'test_drive' | 'service'
   requestId: string
@@ -13,10 +14,10 @@ export type RequestReceipt = {
   vehicleId: string
 }
 
-export function formatRequestedTime(iso: string, timeZone: string) {
+export function formatRequestedTime(iso: string, timeZone: string, locale: Locale = 'en-US') {
   const zone = timeZone || 'UTC'
-  const text = new Intl.DateTimeFormat('en-US', { timeZone: zone, dateStyle: 'full', timeStyle: 'short' }).format(new Date(iso))
-  const label = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'short' }).formatToParts(new Date(iso)).find(part => part.type === 'timeZoneName')?.value || zone
+  const text = new Intl.DateTimeFormat(locale, { timeZone: zone, dateStyle: 'full', timeStyle: 'short' }).format(new Date(iso))
+  const label = new Intl.DateTimeFormat(locale, { timeZone: zone, timeZoneName: 'short' }).formatToParts(new Date(iso)).find(part => part.type === 'timeZoneName')?.value || zone
   return `${text} ${label}`
 }
 
@@ -31,7 +32,7 @@ function publicBaseUrl(context: any) {
   return `${proto}://${host}`
 }
 
-export async function deliverRequestReceipt(context: any, receipt: RequestReceipt) {
+export async function deliverRequestReceipt(context: any, receipt: RequestReceipt, locale: Locale = 'en-US') {
   const sudo = context.sudo()
   const eventKey = `request-receipt-email:${receipt.kind}:${receipt.requestId}`
   try {
@@ -70,10 +71,11 @@ export async function deliverRequestReceipt(context: any, receipt: RequestReceip
       dealershipName: rooftop?.name || 'Our dealership',
       kind: receipt.kind,
       what: receipt.what,
-      whenLabel: formatRequestedTime(receipt.scheduledTime, rooftop?.timezone || 'UTC'),
+      whenLabel: formatRequestedTime(receipt.scheduledTime, rooftop?.timezone || 'UTC', locale),
       requestNumber: receipt.requestId,
       customerName: receipt.customerName,
       url: base ? `${base}${path}` : '',
+      locale,
     })
     if (result.sent) await mark('sent', { sentAt: new Date().toISOString(), messageId: result.messageId || '' })
     else await mark('failed', { error: result.error || 'send_failed' })

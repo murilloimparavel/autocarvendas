@@ -7,6 +7,7 @@ import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
 import { permissions } from "./access";
 import { passwordResetPath } from "./lib/passwordResetPath";
+import { localeFromCookieHeader } from '@/features/i18n/server'
 import Iron from "@hapi/iron";
 import * as cookie from "cookie";
 import { authenticateApiKey, refreshHumanSession } from "./utils/requestAuthentication";
@@ -220,7 +221,13 @@ const { withAuth } = createAuth({
       const account = await args.context.sudo().query.User.findOne({
         where: { id: String(args.itemId) }, query: sessionDataFields,
       });
-      await sendPasswordResetEmail(args.token, args.identity, undefined, passwordResetPath(account));
+      await sendPasswordResetEmail(
+        args.token,
+        args.identity,
+        undefined,
+        passwordResetPath(account),
+        localeFromCookieHeader(args.context?.req?.headers?.cookie),
+      );
     },
   },
   sessionData: sessionDataFields,
