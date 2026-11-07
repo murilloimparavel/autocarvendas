@@ -32,6 +32,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface ListInfo {
   singular: string;
@@ -63,6 +64,7 @@ export function Pagination({
   onDelete,
   isDeleteLoading = false,
 }: PaginationProps) {
+  const { t } = useLocale()
   const [currentPageInput, setCurrentPageInput] = useState(
     currentPage.toString()
   );
@@ -146,7 +148,7 @@ export function Pagination({
             ""
           )}
           <span className="text-muted-foreground/70 uppercase tracking-wide text-xs sm:text-sm">
-            of
+            {t('of')}
           </span>
           <span>{total}</span>
           <span className="text-muted-foreground/70 uppercase tracking-wide text-xs sm:text-sm hidden sm:inline truncate">
@@ -197,7 +199,7 @@ export function Pagination({
             className="font-semibold rounded-l-[20px] rounded-r-md"
           >
             <X className="size-2.5 sm:size-3.5 shrink-0" />
-            <span className="uppercase tracking-wide">Cancel</span>
+            <span className="uppercase tracking-wide">{t('cancel')}</span>
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -208,22 +210,20 @@ export function Pagination({
                 disabled={isDeleteLoading}
               >
                 <span className="truncate uppercase tracking-wide">
-                  Delete {selectedItems.size}{" "}
-                  {selectedItems.size === 1 ? list.singular : list.plural}
+                  {t('deleteSelected').replace('{count}', String(selectedItems.size)).replace('{items}', selectedItems.size === 1 ? list.singular : list.plural)}
                 </span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Confirmation</AlertDialogTitle>
+                <AlertDialogTitle>{t('deleteConfirmation')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete {selectedItems.size}{" "}
-                  {selectedItems.size === 1 ? list.singular : list.plural}?
+                  {t('deleteQuestion').replace('{count}', String(selectedItems.size)).replace('{items}', selectedItems.size === 1 ? list.singular : list.plural)}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setIsOpen(false)}>
-                  Cancel
+                  {t('cancel')}
                 </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => {
@@ -232,7 +232,7 @@ export function Pagination({
                   }}
                   disabled={isDeleteLoading}
                 >
-                  Delete
+                  {t('delete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -292,14 +292,14 @@ export function Pagination({
               <button className="flex gap-2 items-center whitespace-nowrap rounded-md bg-background py-1.5 sm:py-2 px-3 sm:px-4 font-semibold dark:text-zinc-50 ring-1 ring-inset ring-zinc-300 dark:ring-input h-8 sm:h-9 text-xs sm:text-sm">
                 {pageSize}
                 <span className="text-muted-foreground/70 uppercase tracking-wide hidden sm:inline">
-                  per page
+                  {t('perPage')}
                 </span>
                 <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-0.5 sm:ml-1 opacity-50" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
               <DropdownMenuLabel className="text-xs sm:text-sm">
-                Page Size
+                {t('pageSize')}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <ScrollArea className="max-h-72">
@@ -311,7 +311,7 @@ export function Pagination({
                   >
                     <span className="font-medium">{size}</span>
                     <span className="text-muted-foreground/70 uppercase tracking-wide text-xs">
-                      per page
+                      {t('perPage')}
                     </span>
                   </DropdownMenuItem>
                 ))}

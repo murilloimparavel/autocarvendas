@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import type { ListMeta } from '../types'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface SortSelectionProps {
   listMeta: ListMeta
@@ -22,6 +23,7 @@ interface SortSelectionProps {
 }
 
 export function SortSelection({ listMeta, children }: SortSelectionProps) {
+  const { t } = useLocale()
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -81,7 +83,7 @@ export function SortSelection({ listMeta, children }: SortSelectionProps) {
           {children || <DefaultTrigger />}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
-          <DropdownMenuLabel className="py-1.5">Sort by</DropdownMenuLabel>
+          <DropdownMenuLabel className="py-1.5">{t('sort')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <div className="max-h-72 overflow-y-auto">
             {Object.entries(listMeta.fields)
@@ -120,13 +122,13 @@ export function SortSelection({ listMeta, children }: SortSelectionProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
           <div className="flex items-center justify-between py-1.5">
-            <DropdownMenuLabel className="py-0">Sort by</DropdownMenuLabel>
+            <DropdownMenuLabel className="py-0">{t('sort')}</DropdownMenuLabel>
             <Badge
               variant="destructive"
               onClick={resetSort}
               className="rounded-sm mr-2 text-[10px] uppercase border tracking-wide font-medium py-0 px-1.5 cursor-pointer"
             >
-              Clear
+              {t('clear')}
             </Badge>
           </div>
           <DropdownMenuSeparator />

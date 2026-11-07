@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { AiConfigProvider } from '../hooks/use-ai-config'
 import { QueryProvider } from '../providers/QueryProvider'
 import OnboardingDialog from '@/features/platform/onboarding/components/OnboardingDialog'
+import { LanguageSwitcher } from '@/features/i18n/LanguageSwitcher'
 
 // Shared Message type
 interface Message {
@@ -89,6 +90,9 @@ function DashboardLayoutContent({ children, adminMeta, authenticatedItem }: Dash
 
   return (
     <>
+      <div className="fixed right-4 top-3 z-50 rounded-md border bg-background/95 px-2 py-1 shadow-sm">
+        <LanguageSwitcher />
+      </div>
       <Sidebar
         adminMeta={adminMeta}
         user={authenticatedItem}

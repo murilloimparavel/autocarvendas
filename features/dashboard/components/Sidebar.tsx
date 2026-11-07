@@ -44,6 +44,8 @@ import { dismissOnboarding } from '@/features/platform/onboarding/actions/onboar
 import { platformNavGroups, platformStandaloneItems, getPlatformNavItemsWithBasePath } from '@/features/platform/lib/navigation'
 import { useDashboard } from '../context/DashboardProvider'
 import { visiblePlatformItems, visibleSidebarLists } from '../lib/sidebarAccess'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateNavigation, translateSchemaLabel } from '@/features/i18n/messages'
 
 interface User {
   id: string;
@@ -63,6 +65,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
+  const { locale, t } = useLocale()
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
   const { basePath } = useDashboard()
@@ -92,7 +95,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
 
   // Convert lists to sidebar links format
   const modelLinks = visibleSidebarLists(listsArray as any[], user).map((list: any) => ({
-    title: list.label,
+    title: translateSchemaLabel(locale, list.label),
     href: `/dashboard/${list.path}`
   }))
 
@@ -103,9 +106,9 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
     user
   )
   const platformItems = platformNavGroups.map((group) => ({
-    title: group.title,
+    title: translateNavigation(locale, group.title),
     items: platformItemsWithBasePath.filter(item => item.group === group.id).map(item => ({
-      title: item.title,
+      title: translateNavigation(locale, item.title),
       href: item.href,
       icon: item.icon
     })),
@@ -116,6 +119,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
   // Standalone platform items with proper basePath
   const standaloneItemsWithBasePath = visiblePlatformItems(platformStandaloneItems, listsArray as any[], user).map(item => ({
     ...item,
+    title: translateNavigation(locale, item.title),
     href: `${basePath}${item.href}`,
   }))
 
@@ -142,7 +146,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
               <SidebarMenuButton asChild isActive={isLinkActive('/dashboard')}>
                 <Link href="/dashboard" onClick={() => setOpenMobile(false)}>
                   <Home className="h-4 w-4" />
-                  <span>Dashboard</span>
+                  <span>{t('dashboard')}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -151,7 +155,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
 
         {/* Platform Routes */}
         <SidebarGroup>
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('platform')}</SidebarGroupLabel>
           <SidebarMenu className="group-has-[[data-collapsible=icon]]/sidebar-wrapper:hidden gap-0">
             {/* Standalone Items in Expanded Mode */}
             {standaloneItemsWithBasePath.map((item) => (
@@ -270,7 +274,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
 
         {/* Models */}
         <SidebarGroup>
-          <SidebarGroupLabel>Models</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('models')}</SidebarGroupLabel>
           <SidebarMenu className="group-has-[[data-collapsible=icon]]/sidebar-wrapper:hidden">
             <Collapsible
               asChild
@@ -281,7 +285,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
                     <Package className="h-4 w-4" />
-                    <span>Models</span>
+                    <span>{t('models')}</span>
                     <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>

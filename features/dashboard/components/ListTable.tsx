@@ -15,6 +15,7 @@ import { Pagination } from './Pagination';
 import { getFieldViews } from '../views/registry';
 import { deleteManyItemsAction } from '../actions/item-actions';
 import { queryKeys } from '../lib/queryKeys';
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface ListItem {
   id: string;
@@ -41,6 +42,7 @@ export function ListTable({
   currentPage,
   pageSize,
 }: ListTableProps): ReactNode {
+  const { t } = useLocale()
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams() || new URLSearchParams();
@@ -79,7 +81,7 @@ export function ListTable({
     if (idsToDelete.length === 0) return;
 
     if (!list.gqlNames?.deleteManyMutationName) {
-      toast.error('Delete functionality not available for this list');
+      toast.error(t('deleteUnavailable'));
       return;
     }
 
@@ -109,7 +111,7 @@ export function ListTable({
         });
       }
     } catch (err) {
-      const errorMessage = 'Unable to delete the selected items. Please try again.';
+      const errorMessage = t('bulkDeleteFailed');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -125,7 +127,7 @@ export function ListTable({
   };
 
   if (!data || !data.items) {
-    return <div>No data available</div>;
+    return <div>{t('noDataAvailable')}</div>;
   }
 
   // Create a query object that behaves like the old query object
@@ -226,7 +228,7 @@ export function ListTable({
       {error && (
         <Badge variant="destructive" className="hover:bg-destructive/10 bg-destructive/5 flex text-base items-start gap-2 border border-destructive/50 p-4 rounded-sm mb-4">
           <div className="flex flex-col gap-1">
-            <h2 className="uppercase tracking-wider font-semibold text-sm">Error</h2>
+            <h2 className="uppercase tracking-wider font-semibold text-sm">{t('error')}</h2>
             <span className="break-all text-sm opacity-75 font-normal">{error}</span>
           </div>
         </Badge>

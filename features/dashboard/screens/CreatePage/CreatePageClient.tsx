@@ -18,6 +18,8 @@ import { useDashboard } from '../../context/DashboardProvider'
 import { Fields } from '../../components/Fields'
 import { useCreateItem } from '../../utils/useCreateItem'
 import { enhanceFields } from '../../utils/enhanceFields'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface CreatePageClientProps {
   listKey: string
@@ -32,19 +34,21 @@ function CancelButton({
   onCancel: () => void;
   isDesktop?: boolean;
 }) {
+  const { t } = useLocale()
   return (
     <Button variant="outline" size="sm" className="text-xs" onClick={onCancel}>
       <X className="size-3 shrink-0" />
       {isDesktop ? (
-        'Cancel'
+        t('cancel')
       ) : (
-        <span className="hidden sm:inline">Cancel</span>
+        <span className="hidden sm:inline">{t('cancel')}</span>
       )}
     </Button>
   )
 }
 
 export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
+  const { t, locale } = useLocale()
   const { basePath } = useDashboard()
   const router = useRouter()
   
@@ -88,12 +92,13 @@ export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
   }
 
   if (!createItem) {
+    const listLabel = translateSchemaLabel(locale, list.label)
     return (
       <div className="container mx-auto py-6">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Failed to initialize creation form for {list.label}.
+            {t('createFormInitFailed').replace('{list}', listLabel)}
           </AlertDescription>
         </Alert>
       </div>
@@ -102,9 +107,9 @@ export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
 
   // Breadcrumb items
   const breadcrumbItems = [
-    { type: 'link' as const, label: 'Dashboard', href: '/' },
-    { type: 'link' as const, label: list.label, href: `/${list.path}` },
-    { type: 'page' as const, label: 'Create' }
+    { type: 'link' as const, label: t('dashboard'), href: '/' },
+    { type: 'link' as const, label: translateSchemaLabel(locale, list.label), href: `/${list.path}` },
+    { type: 'page' as const, label: t('create') }
   ]
 
   // Split fields by position for sidebar/main layout (same pattern as ItemPage)
@@ -133,8 +138,8 @@ export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
             disabled={createItem.state === 'loading'}
             title={`Create ${list.singular}`}
           >
-            <span className="truncate">Create {list.singular}</span>
-            <Check className="ml-1 shrink-0 stroke-[1.5px]" width="8" height="8" />
+            {t('create')} {translateSchemaLabel(locale, list.singular)}
+            <Check className="ml-1 stroke-[1.5px]" width="8" height="8" />
           </Button>
         }
       />
@@ -147,12 +152,12 @@ export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
               <div>
                 <h1
                   className="text-lg font-semibold md:text-2xl"
-                  title={`Create ${list.singular}`}
+                    title={`${t('create')} ${translateSchemaLabel(locale, list.singular)}`}
                 >
-                  Create {list.singular}
+                  {t('create')} {translateSchemaLabel(locale, list.singular)}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Add a new {list.singular.toLowerCase()} to {list.label.toLowerCase()}
+                  {t('addNewSingular').replace('{singular}', translateSchemaLabel(locale, list.singular).toLowerCase()).replace('{list}', translateSchemaLabel(locale, list.label).toLowerCase())}
                 </p>
               </div>
 
@@ -174,7 +179,7 @@ export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
                 <AlertDescription className="whitespace-pre-line break-words">
                   {createItem.error.networkError?.message || 
                    createItem.error.graphQLErrors?.[0]?.message ||
-                   'An error occurred while creating the item'
+                   t('createItemFailed')
                   }
                 </AlertDescription>
               </Alert>

@@ -20,6 +20,8 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { useDashboard } from '../context/DashboardProvider'
 import { enhanceFields } from '../utils/enhanceFields'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface FilterBarProps {
   list: any
@@ -31,6 +33,7 @@ export function FilterBar({ list, selectedFields = new Set() }: FilterBarProps) 
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { basePath } = useDashboard()
+  const { t, locale } = useLocale()
 
   const [searchString, setSearchString] = useState(
     searchParams?.get("search") || ""
@@ -97,7 +100,7 @@ export function FilterBar({ list, selectedFields = new Set() }: FilterBarProps) 
               className="pl-9 w-full h-10 rounded-lg placeholder:text-muted-foreground/80"
               value={searchString}
               onChange={(e) => setSearchString(e.target.value)}
-              placeholder={`Search by ${
+              placeholder={`${t('searchBy')} ${
                 searchLabels.length
                   ? searchLabels.join(", ").toLowerCase()
                   : "ID"
@@ -115,7 +118,7 @@ export function FilterBar({ list, selectedFields = new Set() }: FilterBarProps) 
               className="lg:px-4 lg:py-2 lg:w-auto rounded-lg"
             >
               <SlidersHorizontal className="stroke-muted-foreground" />
-              <span className="hidden lg:inline">Filter</span>
+              <span className="hidden lg:inline">{t('filter')}</span>
             </Button>
           </FilterAdd>
 
@@ -126,7 +129,7 @@ export function FilterBar({ list, selectedFields = new Set() }: FilterBarProps) 
               className="lg:px-4 lg:py-2 lg:w-auto rounded-lg"
             >
               <ArrowUpDown className="stroke-muted-foreground" />
-              <span className="hidden lg:inline">Sort</span>
+              <span className="hidden lg:inline">{t('sort')}</span>
             </Button>
           </SortSelection>
 
@@ -137,7 +140,7 @@ export function FilterBar({ list, selectedFields = new Set() }: FilterBarProps) 
               className="lg:px-4 lg:py-2 lg:w-auto rounded-lg"
             >
               <Columns3 className="stroke-muted-foreground" />
-              <span className="hidden lg:inline">Display</span>
+              <span className="hidden lg:inline">{t('display')}</span>
             </Button>
           </FieldSelection>
 
@@ -150,7 +153,7 @@ export function FilterBar({ list, selectedFields = new Set() }: FilterBarProps) 
               )}
             >
               <CirclePlus />
-              <span className="hidden lg:inline">Create {list.singular}</span>
+              <span className="hidden lg:inline">{t('create')} {translateSchemaLabel(locale, list.singular.toLowerCase())}</span>
             </Link>
           )}
         </div>

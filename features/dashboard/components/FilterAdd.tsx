@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { enhanceFields } from '../utils/enhanceFields'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface FilterState {
   kind: "selecting-field" | "filter-value"
@@ -32,6 +33,7 @@ interface FilterAddProps {
 }
 
 export function FilterAdd({ list, children }: FilterAddProps) {
+  const { t } = useLocale()
   const [isOpen, setIsOpen] = useState(false)
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -99,7 +101,7 @@ export function FilterAdd({ list, children }: FilterAddProps) {
                   size="icon"
                   className="[&_svg]:size-3 w-6 h-6"
                 >
-                  <div className="sr-only">Back</div>
+                  <div className="sr-only">{t('back')}</div>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
               )}
@@ -129,7 +131,7 @@ export function FilterAdd({ list, children }: FilterAddProps) {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue className="text-sm" placeholder="Select a field" />
+                    <SelectValue className="text-sm" placeholder={t('selectField')} />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(filterableFields).map(([fieldPath, field]) => (
@@ -198,10 +200,10 @@ export function FilterAdd({ list, children }: FilterAddProps) {
                 <Separator />
                 <div className="flex justify-between p-2">
                   <Button onClick={() => setIsOpen(false)} variant="outline" size="sm">
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button type="submit" size="sm">
-                    Apply
+                    {t('apply')}
                   </Button>
                 </div>
               </>
