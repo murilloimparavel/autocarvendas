@@ -20,20 +20,21 @@ import { formatPrice, formatMileage, vehicleTitle } from '../lib/format'
 import { primaryVehicleImage, vehicleImageUrl, skipImageOptimizer } from '../lib/images'
 import { vehicleConditionLabel, vehicleStatus } from '../lib/vehicleStatus'
 import { partitionSavedVehicleResults } from '../lib/data/compare-inventory'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const COMPARISON_FIELDS: {
   label: string
   key: string
-  format: (v: Vehicle, currencyCode?: string) => string
+  format: (v: Vehicle, currencyCode?: string, locale?: import('@/features/i18n/messages').Locale) => string
   highlight: boolean
   mono?: boolean
 }[] = [
-  { label: 'Price', key: 'price', format: (v, currencyCode) => formatPrice(v.price, currencyCode), highlight: true, mono: true },
+  { label: 'Price', key: 'price', format: (v, currencyCode, locale) => formatPrice(v.price, currencyCode, locale), highlight: true, mono: true },
   { label: 'Year', key: 'year', format: (v) => String(v.year), highlight: false, mono: true },
   { label: 'Make', key: 'make', format: (v) => v.make, highlight: false },
   { label: 'Model', key: 'model', format: (v) => v.model, highlight: false },
   { label: 'Trim', key: 'trim', format: (v) => v.trim || '—', highlight: false },
-  { label: 'Mileage', key: 'mileage', format: (v) => formatMileage(v.mileage), highlight: true, mono: true },
+  { label: 'Mileage', key: 'mileage', format: (v, _currencyCode, locale) => formatMileage(v.mileage, locale), highlight: true, mono: true },
   { label: 'Condition', key: 'condition', format: (v) => (v.condition ? vehicleConditionLabel(v.condition) : '—'), highlight: false },
   { label: 'Color', key: 'color', format: (v) => v.color || '—', highlight: false },
   { label: 'MPG city', key: 'mpgCity', format: (v) => String(v.features?.mpgCity ?? '—'), highlight: true, mono: true },
@@ -68,6 +69,7 @@ function bestValueClass(
 }
 
 export function ComparePage() {
+  const { locale } = useLocale()
   const { currencyCode } = useStorefrontBusiness()
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [savedIds, setSavedIds] = useState<string[]>([])
@@ -315,7 +317,7 @@ export function ComparePage() {
                         key={vehicle.id}
                         className={`px-3 py-3 sm:px-4 ${field.mono ? 'sf-figure' : ''} ${field.key === 'vin' ? 'break-all text-[length:var(--sf-text-xs)]' : ''} ${best}`}
                       >
-                        {field.format(vehicle, currencyCode)}
+                        {field.format(vehicle, currencyCode, locale)}
                         {best && <span className="sr-only"> (best)</span>}
                       </td>
                     )

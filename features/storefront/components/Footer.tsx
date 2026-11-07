@@ -6,28 +6,30 @@ import { Container } from './Container'
 import OpenfrontCTA from './OpenfrontCTA'
 import { BrandMark } from './BrandMark'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const SHOP = [
-  { href: '/inventory', label: 'Inventory' },
-  { href: '/compare', label: 'Compare' },
-  { href: '/financing', label: 'Financing' },
-  { href: '/trade-in', label: 'Trade-in' },
-]
+  { href: '/inventory', key: 'inventory' },
+  { href: '/compare', key: 'compare' },
+  { href: '/financing', key: 'financing' },
+  { href: '/trade-in', key: 'tradeIn' },
+] as const
 
 const VISIT = [
-  { href: '/test-drive', label: 'Test drive' },
-  { href: '/service', label: 'Service' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/account', label: 'Account' },
-]
+  { href: '/test-drive', key: 'testDrive' },
+  { href: '/service', key: 'service' },
+  { href: '/contact', key: 'contact' },
+  { href: '/account', key: 'account' },
+] as const
 
 export function Footer({ branding = true }: { branding?: boolean }) {
   const year = new Date().getFullYear()
   const business = useStorefrontBusiness()
+  const { t } = useLocale()
   const hours = [
-    { label: 'Mon–Fri', value: business.hoursMonFri },
-    { label: 'Sat', value: business.hoursSaturday },
-    { label: 'Sun', value: business.hoursSunday },
+    { label: t('weekdays'), value: business.hoursMonFri },
+    { label: t('saturday'), value: business.hoursSaturday },
+    { label: t('sunday'), value: business.hoursSunday },
   ].filter((row) => row.value)
   const hasAddress = business.addressLine1 || business.addressLine2
 
@@ -52,7 +54,7 @@ export function Footer({ branding = true }: { branding?: boolean }) {
                 )}
                 {business.directionsHref && (
                   <a href={business.directionsHref} target="_blank" rel="noreferrer" className="sf-btn sf-btn-ghost sf-btn-sm">
-                    Directions
+                    {t('directions')}
                     <ArrowUpRight className="size-4" aria-hidden="true" />
                   </a>
                 )}
@@ -60,30 +62,30 @@ export function Footer({ branding = true }: { branding?: boolean }) {
             )}
           </div>
 
-          <nav aria-label="Shop" className="min-w-0">
-            <p className="sf-eyebrow mb-4">Shop</p>
+          <nav aria-label={t('shop')} className="min-w-0">
+            <p className="sf-eyebrow mb-4">{t('shop')}</p>
             <ul className="text-[length:var(--sf-text-sm)] md:space-y-2.5">
               {SHOP.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="inline-flex min-h-10 items-center transition-opacity hover:opacity-70 md:min-h-0">{link.label}</Link>
+                  <Link href={link.href} className="inline-flex min-h-10 items-center transition-opacity hover:opacity-70 md:min-h-0">{t(link.key)}</Link>
                 </li>
               ))}
             </ul>
           </nav>
 
-          <nav aria-label="Visit" className="min-w-0">
-            <p className="sf-eyebrow mb-4">Visit</p>
+          <nav aria-label={t('visit')} className="min-w-0">
+            <p className="sf-eyebrow mb-4">{t('visit')}</p>
             <ul className="text-[length:var(--sf-text-sm)] md:space-y-2.5">
               {VISIT.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="inline-flex min-h-10 items-center transition-opacity hover:opacity-70 md:min-h-0">{link.label}</Link>
+                  <Link href={link.href} className="inline-flex min-h-10 items-center transition-opacity hover:opacity-70 md:min-h-0">{t(link.key)}</Link>
                 </li>
               ))}
             </ul>
           </nav>
 
           <div className="col-span-2 min-w-0 md:col-span-1">
-            <p className="sf-eyebrow mb-4">Hours</p>
+            <p className="sf-eyebrow mb-4">{t('hours')}</p>
             {hours.length > 0 ? (
               <dl className="space-y-2 text-[length:var(--sf-text-sm)]">
                 {hours.map((row) => (
@@ -94,7 +96,7 @@ export function Footer({ branding = true }: { branding?: boolean }) {
                 ))}
               </dl>
             ) : (
-              <p className="text-[length:var(--sf-text-sm)]" style={{ color: 'var(--sf-on-dark-2)' }}>Hours not listed</p>
+              <p className="text-[length:var(--sf-text-sm)]" style={{ color: 'var(--sf-on-dark-2)' }}>{t('hoursNotListed')}</p>
             )}
             {business.salesEmail && (
               <a href={`mailto:${business.salesEmail}`} className="mt-4 block break-all text-[length:var(--sf-text-sm)] underline-offset-4 hover:underline">
@@ -107,7 +109,7 @@ export function Footer({ branding = true }: { branding?: boolean }) {
         <div className="mt-12 flex flex-col gap-3 border-t pt-6 text-[length:var(--sf-text-xs)] sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'var(--sf-rule-dark)', color: 'var(--sf-on-dark-2)' }}>
           <p>© {year} {business.fullName}</p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link href="/photo-credits" className="inline-flex min-h-11 items-center transition-opacity hover:opacity-70">Photo credits</Link>
+            <Link href="/photo-credits" className="inline-flex min-h-11 items-center transition-opacity hover:opacity-70">{t('photoCredits')}</Link>
             {branding && <OpenfrontCTA />}
           </div>
         </div>

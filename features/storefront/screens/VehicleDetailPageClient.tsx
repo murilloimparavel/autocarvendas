@@ -21,6 +21,7 @@ import { formatMileage, formatPrice, vehicleTitle } from '../lib/format'
 import { customerRequestReference } from '../lib/customerRequests'
 import { parseVehicleFeatures, resolveVehicleDetail } from '../lib/data/vehicle-detail-response'
 import { vehicleConditionLabel, vehicleStatus } from '../lib/vehicleStatus'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export type VehicleDetailPageState =
   | { id: string; status: 'loading' }
@@ -43,6 +44,7 @@ const emptyForm = {
 }
 
 export function VehicleDetailPageClient({ id, initialState }: { id: string; initialState: VehicleDetailPageState }) {
+  const { locale, t } = useLocale()
   const business = useStorefrontBusiness()
   const [loadState, setLoadState] = useState<VehicleDetailPageState>(initialState)
   const [retryToken, setRetryToken] = useState(0)
@@ -241,7 +243,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
   const status = vehicleStatus(vehicle.status)
   const conditionLabel = vehicleConditionLabel(vehicle.condition)
   const hasPublicPrice = typeof vehicle.price === 'number' && Number.isFinite(vehicle.price) && vehicle.price >= 0
-  const displayPrice = readOnly ? status.label : hasPublicPrice ? formatPrice(vehicle.price, business.currencyCode) : 'Price unavailable'
+  const displayPrice = readOnly ? status.label : hasPublicPrice ? formatPrice(vehicle.price, business.currencyCode, locale) : t('priceUnavailable')
   const similarParams = new URLSearchParams()
   if (vehicle.make) similarParams.set('make', vehicle.make)
   if (vehicle.model) similarParams.set('model', vehicle.model)
@@ -263,7 +265,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
     { label: 'Make', value: vehicle.make || '' },
     { label: 'Model', value: vehicle.model || '' },
     { label: 'Trim', value: vehicle.trim || '' },
-    { label: 'Mileage', value: formatMileage(vehicle.mileage), figure: true },
+    { label: t('mileageShort'), value: formatMileage(vehicle.mileage, locale), figure: true },
     { label: 'Color', value: vehicle.color || '' },
   ]
 
@@ -394,8 +396,8 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                   <dd className="text-[length:var(--sf-text-xs)]">{vehicle.vin || 'Not listed'}</dd>
                 </div>
                 <div className="sf-sticker-row">
-                  <dt>Mileage</dt>
-                  <dd>{formatMileage(vehicle.mileage)}</dd>
+                  <dt>{t('mileageShort')}</dt>
+                  <dd>{formatMileage(vehicle.mileage, locale)}</dd>
                 </div>
                 <div className="sf-sticker-row">
                   <dt>Condition</dt>
