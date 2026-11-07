@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { ListMeta } from '../types'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface FieldSelectionProps {
   listMeta: ListMeta
@@ -37,6 +38,7 @@ function FieldSelectionContent({
   listMeta: ListMeta
   selectedFields: Set<string>
 }) {
+  const { t } = useLocale()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -77,7 +79,7 @@ function FieldSelectionContent({
 
   return (
     <>
-      <DropdownMenuLabel>Display columns</DropdownMenuLabel>
+      <DropdownMenuLabel>{t('displayColumns')}</DropdownMenuLabel>
       <DropdownMenuSeparator />
       <div className="max-h-72 overflow-y-auto">
         {fields.map((field) => (
@@ -107,6 +109,7 @@ function FieldSelectionContent({
 }
 
 export function FieldSelection({ listMeta, selectedFields, children }: FieldSelectionProps) {
+  const { t } = useLocale()
   const [isOpen, setIsOpen] = useState(false)
 
   const DefaultTrigger = () => (
@@ -116,7 +119,7 @@ export function FieldSelection({ listMeta, selectedFields, children }: FieldSele
       className="flex gap-1.5 px-3 text-xs font-medium"
     >
       <Columns3 className="h-3 w-3" />
-      COLUMNS
+      {t('display')}
     </Button>
   )
 

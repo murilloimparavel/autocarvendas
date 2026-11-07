@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { signUp } from "@/features/dashboard/actions";
 import { Logo } from "@/features/dashboard/components/Logo";
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { LanguageSwitcher } from '@/features/i18n/LanguageSwitcher'
 
 type ActionState = {
   message: string | null;
@@ -32,6 +34,7 @@ const initialState: ActionState = {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { t } = useLocale()
 
   return (
     <Button
@@ -42,32 +45,34 @@ function SubmitButton() {
       {pending ? (
         <RiLoader2Fill className="size-4 shrink-0 animate-spin" />
       ) : (
-        "Sign up"
+        t('signUp')
       )}
     </Button>
   );
 }
 
 export function SignUpForm() {
+  const { t } = useLocale()
   const [showPassword, setShowPassword] = useState(false);
   const [state, formAction] = useActionState(signUp, initialState);
 
   return (
     <main className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
+        <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
         <div className="flex items-center space-x-1.5">
           <Logo aria-hidden="true" />
         </div>
         <h1 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
-          Create your account
+          {t('createYourAccount')}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground">
-          Already have an account?
+          {t('alreadyAccount')}
           <Link
             href="/dashboard/signin"
             className="ml-1 font-medium text-primary hover:text-primary/90 dark:text-primary hover:dark:text-primary/90"
           >
-            Sign in
+            {t('signIn')}
           </Link>
         </p>
 
@@ -77,7 +82,7 @@ export function SignUpForm() {
               htmlFor="email"
               className="text-sm font-medium text-foreground dark:text-foreground"
             >
-              Email
+              {t('email')}
             </Label>
             <Input
               type="email"
@@ -95,7 +100,7 @@ export function SignUpForm() {
               htmlFor="password"
               className="text-sm font-medium text-foreground dark:text-foreground"
             >
-              Password
+              {t('password')}
             </Label>
             <div className="relative mt-2">
               <Input
@@ -131,7 +136,7 @@ export function SignUpForm() {
           >
             <div className="flex flex-col gap-1">
               <h2 className="uppercase tracking-wider font-semibold text-sm">
-                Error
+                {t('error')}
               </h2>
               <span className="break-all text-sm opacity-75 font-normal">
                 {state.message}

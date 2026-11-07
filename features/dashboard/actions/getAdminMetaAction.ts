@@ -7,6 +7,8 @@
 import { cache } from 'react'
 import { keystoneClient, type KeystoneResponse } from '../lib/keystoneClient'
 import { getGraphQLNames } from '../lib/getGqlNames'
+import { getRequestLocale } from '@/features/i18n/server'
+import { translateAdminSchema } from '@/features/i18n/messages'
 
 // Cache the admin meta fetching to avoid repeated GraphQL calls
 // This is per-request caching using React's cache()
@@ -124,7 +126,8 @@ export async function getAdminMetaAction(listKey?: string): Promise<KeystoneResp
       return response
     }
 
-    const adminMeta = response.data
+    const locale = await getRequestLocale()
+    const adminMeta = translateAdminSchema(locale, response.data)
 
     // If listKey is provided, filter to that specific list
     if (listKey) {
@@ -153,8 +156,8 @@ export async function getAdminMetaAction(listKey?: string): Promise<KeystoneResp
       }
     }
 
-    // Return full admin meta
-    return response
+    // Return the current locale's schema labels while preserving the remaining metadata.
+    return { ...response, data: adminMeta }
   } catch (error) {
     console.error("Dashboard operation failed (details redacted).")
     return {

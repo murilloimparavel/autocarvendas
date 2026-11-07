@@ -39,6 +39,8 @@ import { toast } from 'sonner'
 import { useDashboard } from '../../context/DashboardProvider'
 import { updateItemAction, deleteItemAction } from '../../actions/item-actions'
 import { queryKeys } from '../../lib/queryKeys'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface ItemPageClientProps {
   list: any
@@ -72,6 +74,7 @@ function DeleteButton({
   queryClient: ReturnType<typeof useQueryClient>;
   isDesktop?: boolean;
 }) {
+  const { t, locale } = useLocale()
   const itemId = ((value.id ?? '') as string | number).toString()
   const router = useRouter()
   const { basePath } = useDashboard()
@@ -83,17 +86,17 @@ function DeleteButton({
       // Handle errors exactly like Keystone does
       const error = errors?.find((x: any) => x.path === undefined || x.path?.length === 1)
       if (error) {
-        toast.error('Unable to delete item.', {
+        toast.error(t('deleteFailure'), {
           description: error.message,
           action: {
-            label: 'Details',
+            label: t('details'),
             onClick: () => onError(new Error(error.message))
           }
         })
         return
       }
 
-      toast.success(`${list.singular} deleted successfully.`)
+      toast.success(t('deletedSuccessfully').replace('{singular}', translateSchemaLabel(locale, list.singular.toLowerCase())))
 
       // Invalidate React Query cache - this will automatically refetch the data
       // Invalidate all items queries for this list (partial match on query key)
@@ -107,9 +110,9 @@ function DeleteButton({
       // Navigate to list page after delete
       router.push(list.isSingleton ? `${basePath}/` : `${basePath}/${list.path}`)
     } catch (err: any) {
-      toast.error("Unable to delete item.", {
+      toast.error(t('deleteFailure'), {
         action: {
-          label: "Details",
+          label: t('details'),
           onClick: () => onError(err)
         }
       })
@@ -122,28 +125,23 @@ function DeleteButton({
         <Button variant="destructive" size="sm" className="sm:text-sm text-xs">
           <X className="size-3 shrink-0" />
           {isDesktop ? (
-            'Delete'
+            t('delete')
           ) : (
-            <span className="hidden sm:inline">Delete</span>
+            <span className="hidden sm:inline">{t('delete')}</span>
           )}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete item</AlertDialogTitle>
+          <AlertDialogTitle>{t('deleteItem')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete{' '}
-            <strong>
-              {list.singular}
-              {!list.isSingleton && ` ${itemId}`}
-            </strong>
-            ? This action cannot be undone.
+            {t('deleteConfirm').replace('{singular}', `${translateSchemaLabel(locale, list.singular.toLowerCase())}${!list.isSingleton ? ` ${itemId}` : ''}`)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete}>
-            Yes, delete
+            {t('yesDelete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -153,29 +151,30 @@ function DeleteButton({
 
 // Reset Button Component (adapted from Keystone with responsive design)
 function ResetButton(props: { onReset: () => void; hasChanges?: boolean; isDesktop?: boolean }) {
+  const { t } = useLocale()
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm" className="sm:text-sm text-xs" disabled={!props.hasChanges}>
           <Undo2 className="size-3 shrink-0" />
           {props.isDesktop ? (
-            'Reset'
+            t('reset')
           ) : (
-            <span className="hidden sm:inline">Reset</span>
+            <span className="hidden sm:inline">{t('reset')}</span>
           )}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Reset changes</AlertDialogTitle>
+          <AlertDialogTitle>{t('resetChanges')}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure? Lost changes cannot be recovered.
+            {t('resetConfirm')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={props.onReset}>
-            Yes, reset
+            {t('yesReset')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -185,6 +184,7 @@ function ResetButton(props: { onReset: () => void; hasChanges?: boolean; isDeskt
 
 // Item Not Found Component (adapted from Keystone)
 function ItemNotFound({ children }: { children: React.ReactNode }) {
+  const { t } = useLocale()
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 bg-muted/40 rounded-lg p-8 border shadow">
       <div className="text-gray-400">
@@ -192,7 +192,7 @@ function ItemNotFound({ children }: { children: React.ReactNode }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold">Not found</h2>
+      <h2 className="text-xl font-semibold">{t('recordNotFound')}</h2>
       <div className="text-center max-w-md text-muted-foreground">
         {children}
       </div>
@@ -202,18 +202,19 @@ function ItemNotFound({ children }: { children: React.ReactNode }) {
 
 // Error Dialog Component (adapted from Keystone)
 function ErrorDialog({ error, onClose }: { error: Error; onClose: () => void }) {
+  const { t } = useLocale()
   return (
     <AlertDialog open={true} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Error Details</AlertDialogTitle>
+          <AlertDialogTitle>{t('errorDetails')}</AlertDialogTitle>
           <AlertDialogDescription className="whitespace-pre-line break-words">
-            {error.message || 'Unable to save the item. Please try again.'}
+            {error.message || t('saveFailure')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction onClick={onClose}>
-            Close
+            {t('close')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -250,6 +251,7 @@ function deserializeItemToValue(
 
 // Main ItemPageClient component
 export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
+  const { t, locale } = useLocale()
   const router = useRouter()
   const queryClient = useQueryClient()
 
@@ -324,10 +326,10 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
       // Handle errors exactly like Keystone does
       const error = errors?.find((x: any) => x.path === undefined || x.path?.length === 1)
       if (error) {
-        toast.error('Unable to save item', {
+        toast.error(t('saveFailure'), {
           description: error.message,
           action: {
-            label: 'Details',
+            label: t('details'),
             onClick: () => setErrorDialogValue(new Error(error.message))
           }
         })
@@ -335,7 +337,7 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
         return
       }
 
-      toast.success(`Saved changes to ${list.singular.toLowerCase()}`)
+      toast.success(t('changesSaved').replace('{singular}', translateSchemaLabel(locale, list.singular.toLowerCase())))
       setSaveState('saved')
 
       // Reset validation state after successful save
@@ -352,9 +354,9 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
 
     } catch (error: any) {
       console.error("Dashboard operation failed (details redacted).")
-      toast.error("Unable to save item", {
+      toast.error(t('saveFailure'), {
         action: {
-          label: "Details",
+          label: t('details'),
           onClick: () => setErrorDialogValue(error)
         }
       })
@@ -371,13 +373,13 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
   }, [initialValue])
 
   const pageLabel = (item[list.labelField] || item.id || itemId) as string
-  const pageTitle = list.isSingleton || typeof pageLabel !== 'string' ? list.label : pageLabel
+  const pageTitle = list.isSingleton || typeof pageLabel !== 'string' ? translateSchemaLabel(locale, list.label) : pageLabel
 
   // Copy ID to clipboard handler
   const handleCopyId = useCallback(() => {
     navigator.clipboard.writeText(itemId)
-    toast.success('ID copied to clipboard')
-  }, [itemId])
+    toast.success(t('idCopied'))
+  }, [itemId, t])
 
   // Split fields by position for sidebar/main layout
   const fieldsSplit = useMemo(() => {
@@ -394,9 +396,9 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
 
   // Breadcrumb items
   const breadcrumbItems = [
-    { type: 'link' as const, label: 'Dashboard', href: '/' },
-    { type: 'link' as const, label: list.label, href: `/${list.path}` },
-    { type: 'page' as const, label: pageLabel }
+    { type: 'link' as const, label: t('dashboard'), href: '/' },
+    { type: 'link' as const, label: translateSchemaLabel(locale, list.label), href: `/${list.path}` },
+    { type: 'page' as const, label: pageTitle }
   ]
 
   // If item doesn't exist
@@ -407,19 +409,19 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
           {list.isSingleton ? (
             itemId === '1' ? (
               <div>
-                <p>"{list.label}" doesn't exist, or you don't have access to it.</p>
+                <p>{t('itemAccessMissing').replace('{list}', translateSchemaLabel(locale, list.label))}</p>
                 {!list.hideCreate && (
                   <Button className="mt-4" onClick={() => router.push(`/${list.path}/create`)}>
-                    Create {list.singular}
+                    {t('create')} {translateSchemaLabel(locale, list.singular.toLowerCase())}
                   </Button>
                 )}
               </div>
             ) : (
-              <p>An item with ID <strong>"{itemId}"</strong> does not exist.</p>
+              <p>{t('itemMissing').replace('{id}', itemId)}</p>
             )
           ) : (
             <p>
-              The item with ID <strong>"{itemId}"</strong> doesn't exist, or you don't have access to it.
+              {t('itemMissing').replace('{id}', itemId)}
             </p>
           )}
         </ItemNotFound>
@@ -456,7 +458,7 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
               onClick={handleSave}
               disabled={!hasChanges || loading || saveState === 'saving'}
             >
-              Save Changes
+              {t('saveChanges')}
               <Check className="ml-1 stroke-[1.5px]" width="8" height="8" />
             </Button>
           </div>
@@ -471,9 +473,9 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
               <div>
                 <h1
                   className="text-lg font-semibold md:text-2xl"
-                  title={pageLabel}
+                  title={pageTitle}
                 >
-                  {pageLabel}
+                  {pageTitle}
                 </h1>
                 <div className="mt-6">
                   <div className="relative border rounded-md bg-muted/40 transition-all">
@@ -497,7 +499,7 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
                         onClick={handleCopyId}
                       >
                         <Copy className="size-3" />
-                        <span className="sr-only">Copy ID</span>
+                        <span className="sr-only">{t('copyId')}</span>
                       </Button>
                     </div>
                   </div>

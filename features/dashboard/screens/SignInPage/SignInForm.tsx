@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/features/dashboard/actions";
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { LanguageSwitcher } from '@/features/i18n/LanguageSwitcher'
 
 type SignInFormProps = {
   from: string;
@@ -34,28 +36,31 @@ const initialState: ActionState = {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { t } = useLocale()
 
   return (
-    <Button 
-      type="submit" 
+    <Button
+      type="submit"
       className="w-full py-2 font-medium"
       disabled={pending}
     >
       {pending ? (
         <RiLoader2Fill className="size-4 shrink-0 animate-spin" />
       ) : (
-        "Sign in"
+        t('signIn')
       )}
     </Button>
   );
 }
 
 export function SignInForm({ from }: SignInFormProps) {
+  const { t } = useLocale()
   const [showPassword, setShowPassword] = useState(false);
   const [state, formAction] = useActionState(signIn, initialState);
 
   return (
     <>
+      <div className="flex justify-end"><LanguageSwitcher /></div>
       <form action={formAction} className="mt-8 space-y-4">
         <input type="hidden" name="from" value={from} />
         <div>
@@ -63,7 +68,7 @@ export function SignInForm({ from }: SignInFormProps) {
             htmlFor="email"
             className="text-sm font-medium text-foreground dark:text-foreground"
           >
-            Email
+            {t('email')}
           </Label>
           <Input
             type="email"
@@ -81,7 +86,7 @@ export function SignInForm({ from }: SignInFormProps) {
             htmlFor="password"
             className="text-sm font-medium text-foreground dark:text-foreground"
           >
-            Password
+            {t('password')}
           </Label>
           <div className="relative mt-2">
             <Input
@@ -113,11 +118,11 @@ export function SignInForm({ from }: SignInFormProps) {
       {state.message && (
         <Badge variant="destructive" className="hover:bg-destructive/10 bg-destructive/5 flex text-base items-start gap-2 border border-destructive/50 p-4 rounded-sm mt-4">
           <div className="flex flex-col gap-1">
-            <h2 className="uppercase tracking-wider font-semibold text-sm">Error</h2>
+            <h2 className="uppercase tracking-wider font-semibold text-sm">{t('error')}</h2>
             <span className="break-all text-sm opacity-75 font-normal">{state.message}</span>
           </div>
         </Badge>
       )}
     </>
   );
-} 
+}

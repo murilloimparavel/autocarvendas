@@ -28,6 +28,8 @@ import { useSort } from '../../hooks/useSort'
 import { useListItemsQuery } from '../../hooks/useListItems.query'
 import { buildOrderByClause } from '../../lib/buildOrderByClause'
 import { buildWhereClause } from '../../lib/buildWhereClause'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface ListPageClientProps {
   list: any
@@ -40,24 +42,26 @@ interface ListPageClientProps {
   }
 }
 
-function EmptyStateDefault({ list }: { list: any }) {
+function EmptyStateDefault({ list, t, locale }: { list: any; t: (key: import('@/features/i18n/messages').MessageKey) => string; locale: import('@/features/i18n/messages').Locale }) {
+  const listLabel = translateSchemaLabel(locale, list.label)
+  const singular = translateSchemaLabel(locale, list.singular.toLowerCase())
   return (
     <EmptyState
-      title={`No ${list.label} Created`}
-      description={`You can create a new ${list.singular.toLowerCase()} to get started.`}
+      title={t('noListRecords').replace('{list}', listLabel)}
+      description={t('createFirstRecord').replace('{singular}', singular).replace('{list}', listLabel)}
       icons={[Triangle, Square, Circle]}
     />
   )
 }
 
-function EmptyStateSearch({ onResetFilters }: { onResetFilters: () => void }) {
+function EmptyStateSearch({ onResetFilters, t }: { onResetFilters: () => void; t: (key: import('@/features/i18n/messages').MessageKey) => string }) {
   return (
     <EmptyState
-      title="No Results Found"
-      description="Try adjusting your search filters."
+      title={t('noSearchResults')}
+      description={t('adjustSearch')}
       icons={[Search]}
       action={{
-        label: "Reset Filters",
+        label: t('resetFilters'),
         onClick: onResetFilters
       }}
     />
@@ -73,6 +77,7 @@ export function ListPageClient({
 }: ListPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, locale } = useLocale()
   const { basePath } = useDashboard()
 
   // Hooks for sorting and field selection
@@ -181,28 +186,30 @@ export function ListPageClient({
 
   if (!list) {
     return (
-      <PageContainer title="List not found">
+      <PageContainer title={t('listNotFound')}>
         <Alert variant="destructive">
           <AlertDescription>
-            The requested list was not found.
+            {t('requestedListNotFound')}
           </AlertDescription>
         </Alert>
       </PageContainer>
     )
   }
 
+  const listLabel = translateSchemaLabel(locale, list.label)
+
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: list.label }
+    { type: 'link' as const, label: t('dashboard'), href: basePath },
+    { type: 'page' as const, label: listLabel }
   ]
 
   const header = (
     <div>
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
-        {list.label}
+        {listLabel}
       </h1>
       <p className="text-muted-foreground">
-        {list.description || `Create and manage ${list.label.toLowerCase()}`}
+        {locale === 'pt-BR' ? t('createManage').replace('{list}', listLabel.toLowerCase()) : list.description || t('createManage').replace('{list}', listLabel.toLowerCase())}
       </p>
     </div>
   )
@@ -213,7 +220,7 @@ export function ListPageClient({
   const isEmpty = data?.count === 0 && !isFiltered
 
   return (
-    <PageContainer title={list.label} header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={listLabel} header={header} breadcrumbs={breadcrumbs}>
       {/* Filter Bar - includes search, filters, sorting, field selection, and create button */}
       <div className="px-4 md:px-6">
         <FilterBar list={list} selectedFields={selectedFields} />
@@ -230,11 +237,11 @@ export function ListPageClient({
         </div>
       ) : isEmpty ? (
         <div className="px-4 md:px-6">
-          <EmptyStateDefault list={list} />
+          <EmptyStateDefault list={list} t={t} locale={locale} />
         </div>
       ) : data?.count === 0 ? (
         <div className="px-4 md:px-6">
-          <EmptyStateSearch onResetFilters={handleResetFilters} />
+          <EmptyStateSearch onResetFilters={handleResetFilters} t={t} />
         </div>
       ) : (
         <ListTable
