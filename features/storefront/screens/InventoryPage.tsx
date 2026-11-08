@@ -709,7 +709,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                   {locale === 'pt-BR' ? 'Nenhum veículo corresponde a estes filtros.' : 'No vehicles match these filters.'}
                 </p>
                 <button type="button" onClick={clearFilters} className="sf-btn sf-btn-ghost sf-btn-sm max-sm:min-h-11">
-                  Clear filters
+                  {locale === 'pt-BR' ? 'Limpar filtros' : 'Clear filters'}
                 </button>
               </div>
             )}

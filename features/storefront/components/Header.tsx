@@ -85,10 +85,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50" onKeyDown={handleHeaderKeyDown}>
       <div className="sf-band border-b" style={{ borderColor: 'var(--sf-rule-dark)' }}>
-        <Container className="flex h-16 items-center gap-3">
+        <Container className="sf-header-container flex h-16 items-center gap-2.5 sm:gap-3">
           <BrandMark className="flex-1 lg:flex-none lg:shrink-0" />
 
-          <nav className="mx-auto hidden min-w-0 items-center gap-0 lg:flex xl:gap-2" aria-label={t('menu')}>
+          <nav className="mx-2 hidden min-w-0 flex-1 items-center justify-center gap-0 2xl:flex" aria-label={t('menu')}>
             {NAV.map((item) => {
               const active = isActive(pathname, item.href)
               return (
@@ -96,7 +96,7 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className="sf-caps relative whitespace-nowrap px-2.5 py-2 text-[0.75rem] font-medium xl:px-3.5 transition-colors hover:text-[var(--sf-accent)]"
+                  className="sf-caps relative whitespace-nowrap px-2 py-2 text-[0.6875rem] font-medium transition-colors hover:text-[var(--sf-accent)] 2xl:px-2.5"
                   style={{ color: active ? 'var(--sf-accent)' : 'var(--sf-ink)' }}
                 >
                   {t(item.key as import('@/features/i18n/messages').MessageKey)}
@@ -106,7 +106,7 @@ export function Header() {
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5 lg:ml-0">
-            <LanguageSwitcher className="hidden sm:inline-flex" />
+            <LanguageSwitcher compact className="hidden sm:inline-flex" />
             {/* On phones Compare lives in the menu (and the compare bar) until something is selected. */}
             <Link
               href="/compare"
@@ -133,17 +133,14 @@ export function Header() {
               <UserRound className="size-5" aria-hidden="true" />
             </Link>
 
-            <Link href="/test-drive" className="sf-btn sf-btn-primary ml-1 hidden min-h-[2rem] px-6 py-1 text-[0.75rem] md:inline-flex">
+            <Link href="/test-drive" className="sf-btn sf-btn-primary ml-1 hidden min-h-[2rem] px-4 py-1 text-[0.6875rem] xl:inline-flex">
               {t('testDrive')}
-            </Link>
-            <Link href="/trade-in" className="sf-btn sf-btn-ghost hidden min-h-[2rem] px-6 py-1 text-[0.75rem] xl:inline-flex" style={{ borderColor: 'var(--sf-accent)' }}>
-              {t('tradeIn')}
             </Link>
 
             <button
               ref={menuButtonRef}
               type="button"
-              className="grid size-11 place-items-center rounded-[3px] transition-colors hover:text-[var(--sf-accent)] lg:hidden"
+              className="grid size-11 place-items-center rounded-[3px] transition-colors hover:text-[var(--sf-accent)] 2xl:hidden"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-controls="storefront-mobile-menu"

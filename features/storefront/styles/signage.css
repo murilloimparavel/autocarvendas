@@ -125,9 +125,17 @@ body:has(.storefront) {
   margin-inline: auto;
 }
 
+.sf-header-container {
+  width: min(84rem, 100% - 2rem);
+}
+
 @media (min-width: 768px) {
   .sf-container {
     width: min(68.5rem, 100% - 3rem);
+  }
+
+  .sf-header-container {
+    width: min(84rem, 100% - 3rem);
   }
 }
 
