@@ -35,7 +35,7 @@ import {
   type TradeInQueue,
 } from '../lib/tradeInState'
 
-type DeskData = { tradeIns: TradeIn[]; acquisitions: Record<string, TradeInAcquisition>; canSeeAcquisitions: boolean }
+type DeskData = { tradeIns: TradeIn[]; acquisitions: Record<string, TradeInAcquisition>; canSeeAcquisitions: boolean; currencyCode: string }
 
 export function TradeInDeskPageClient({
   initialData,
@@ -48,7 +48,7 @@ export function TradeInDeskPageClient({
 }) {
   const { t, locale } = useLocale()
   const router = useRouter()
-  const [data, setData] = useState<DeskData>(initialData ?? { tradeIns: [], acquisitions: {}, canSeeAcquisitions: false })
+  const [data, setData] = useState<DeskData>(initialData ?? { tradeIns: [], acquisitions: {}, canSeeAcquisitions: false, currencyCode: 'USD' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(initialError)
   const [search, setSearch] = useState('')
@@ -60,7 +60,7 @@ export function TradeInDeskPageClient({
   const [createOptions, setCreateOptions] = useState<{ rooftops: TradeInRooftop[]; leads: TradeInLeadOption[] } | null>(null)
   const createKeyRef = useRef<string>('')
 
-  const { tradeIns, acquisitions } = data
+  const { tradeIns, acquisitions, currencyCode } = data
 
   const load = async () => {
     setLoading(true)
@@ -194,7 +194,7 @@ export function TradeInDeskPageClient({
   )
 
   const customerLine = (tradeIn: TradeIn) => {
-    const customer = tradeInCustomer(tradeIn)
+    const customer = tradeInCustomer(tradeIn, locale)
     return `${customer || t('noCustomer')}${tradeIn.lead ? ` · ${formatPhone(tradeIn.lead.phone) || tradeIn.lead.email || t('noContact')}` : ''}`
   }
 
@@ -297,7 +297,7 @@ export function TradeInDeskPageClient({
               </thead>
               <tbody>
                 {visible.map(tradeIn => {
-                  const state = tradeInState(tradeIn, acquisitions[tradeIn.id])
+                  const state = tradeInState(tradeIn, acquisitions[tradeIn.id], locale)
                   return (
                     <Tr key={tradeIn.id} className="cursor-pointer" onClick={() => router.push(detailHref(tradeIn))}>
                       <Td className="min-w-0">
@@ -312,10 +312,10 @@ export function TradeInDeskPageClient({
                       <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">{tradeIn.mileage != null ? formatMileage(tradeIn.mileage, locale) : '-'}</Td>
                       <Td priority={3}>{conditionCell(tradeIn)}</Td>
                       <Td align="right" className="whitespace-nowrap">
-                        {tradeIn.offerAmount != null ? <Figure size="sm">{formatWholeUsd(tradeIn.offerAmount, locale)}</Figure> : <span className="text-muted-foreground">-</span>}
+                        {tradeIn.offerAmount != null ? <Figure size="sm">{formatWholeUsd(tradeIn.offerAmount, locale, currencyCode)}</Figure> : <span className="text-muted-foreground">-</span>}
                       </Td>
                       <Td priority={3} align="right" className="whitespace-nowrap text-muted-foreground">
-                        {tradeIn.referenceValue != null ? formatWholeUsd(tradeIn.referenceValue, locale) : '-'}
+                        {tradeIn.referenceValue != null ? formatWholeUsd(tradeIn.referenceValue, locale, currencyCode) : '-'}
                       </Td>
                     </Tr>
                   )

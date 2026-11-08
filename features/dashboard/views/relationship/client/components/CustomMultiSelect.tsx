@@ -1,7 +1,10 @@
+"use client";
+
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { XIcon, ChevronDown } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export interface Option {
   value: string;
@@ -32,6 +35,9 @@ export function CustomMultiSelect({
   className,
   isClearable = true,
 }: CustomMultiSelectProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const displayPlaceholder = pt ? (placeholder === 'Select...' ? 'Selecione…' : placeholder === 'Search...' ? 'Buscar…' : placeholder) : placeholder
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [availableOptions, setAvailableOptions] = useState<Option[]>(options);
@@ -142,7 +148,7 @@ export function CustomMultiSelect({
               "placeholder:text-muted-foreground flex-1 bg-transparent outline-none",
               value.length === 0 ? "w-full" : "w-20"
             )}
-            placeholder={value.length === 0 ? placeholder : ""}
+            placeholder={value.length === 0 ? displayPlaceholder : ""}
           />
         </div>
         <div className="flex items-center gap-1">
@@ -174,11 +180,11 @@ export function CustomMultiSelect({
                   {filteredOptions.length === 0 ? (
                     <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
                       {inputValue.length > 0 ? (
-                        <>No results found for "{inputValue}"</>
+                        <>{pt ? `Nenhum resultado para "${inputValue}"` : `No results found for "${inputValue}"`}</>
                       ) : availableOptions.length === 0 ? (
-                        <>No options available</>
+                        <>{pt ? 'Nenhuma opção disponível' : 'No options available'}</>
                       ) : (
-                        <>All options have been selected</>
+                        <>{pt ? 'Todas as opções já foram selecionadas' : 'All options have been selected'}</>
                       )}
                     </CommandEmpty>
                   ) : (
@@ -205,4 +211,4 @@ export function CustomMultiSelect({
       )}
     </div>
   );
-} 
+}

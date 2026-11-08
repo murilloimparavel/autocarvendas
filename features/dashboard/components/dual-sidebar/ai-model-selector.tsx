@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAiConfig } from "../../hooks/use-ai-config";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const POPULAR_MODELS = [
   { name: "GPT-5", slug: "openai/gpt-5" },
@@ -32,6 +33,8 @@ interface AIModelSelectorProps {
 }
 
 export function AIModelSelector({ disabled = false }: AIModelSelectorProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const { config, setConfig } = useAiConfig();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -85,7 +88,7 @@ export function AIModelSelector({ disabled = false }: AIModelSelectorProps) {
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Model is set by global configuration</p>
+            <p className="text-xs">{pt ? 'O modelo é definido pela configuração global.' : 'Model is set by global configuration'}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -106,7 +109,7 @@ export function AIModelSelector({ disabled = false }: AIModelSelectorProps) {
       <PopoverContent className="w-80 p-0" align="start">
         <div className="p-3 border-b">
           <Input
-            placeholder="Model slug (e.g. openai/gpt-4o-mini)"
+            placeholder={pt ? 'Identificador do modelo (ex.: openai/gpt-4o-mini)' : 'Model slug (e.g. openai/gpt-4o-mini)'}
             value={inputValue}
             onChange={(e) => {
               const value = e.target.value;
@@ -119,7 +122,7 @@ export function AIModelSelector({ disabled = false }: AIModelSelectorProps) {
         </div>
         <div className="py-2 max-h-[280px] overflow-y-auto">
           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-            Popular Models
+            {pt ? 'Modelos populares' : 'Popular Models'}
           </div>
           <div className="space-y-1">
             {POPULAR_MODELS.map((model) => (

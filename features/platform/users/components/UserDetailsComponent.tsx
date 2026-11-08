@@ -2,6 +2,7 @@
 import { formatInZone } from '@/features/dashboard/lib/storeTime';
 
 import React, { useState } from "react";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import {
@@ -44,6 +45,8 @@ export const STAFF_COLUMNS = 6;
 
 /** One staff member as a table row, with an expandable details row beneath. */
 export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -52,8 +55,10 @@ export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
   const functions = staffFunctions(user);
   const displayName = user.name || user.email;
   const joined = user.createdAt
-    ? formatInZone(user.createdAt, undefined, "date")
+    ? formatInZone(user.createdAt, undefined, "date", locale)
     : null;
+  const functionName = (name: string) => pt ? ({ Sales: 'Vendas', Service: 'Oficina', Finance: 'Financeiro' } as Record<string, string>)[name] || name : name
+  const functionsText = functions.map((item) => functionName(item.label)).join(', ')
 
   return (
     <>
@@ -68,16 +73,16 @@ export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
           </span>
         </Td>
         <Td priority={2}>
-          {user.role ? <span className="text-foreground">{user.role.name}</span> : <span className="text-muted-foreground">None</span>}
+          {user.role ? <span className="text-foreground">{user.role.name}</span> : <span className="text-muted-foreground">{pt ? 'Nenhuma' : 'None'}</span>}
         </Td>
         <Td priority={3} className="text-muted-foreground">
-          {functions.length ? functions.map((item) => item.label).join(", ") : "None"}
+          {functions.length ? functionsText : pt ? 'Nenhuma' : 'None'}
         </Td>
         <Td>
-          {user.role ? <Status tone="ok">Active</Status> : <Status tone="warn">No role</Status>}
+          {user.role ? <Status tone="ok">{pt ? 'Ativo' : 'Active'}</Status> : <Status tone="warn">{pt ? 'Sem função' : 'No role'}</Status>}
         </Td>
         <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">
-          {leads} {leads === 1 ? "lead" : "leads"} · {deals} {deals === 1 ? "deal" : "deals"}
+          {leads} {pt ? (leads === 1 ? 'lead' : 'leads') : (leads === 1 ? 'lead' : 'leads')} · {deals} {pt ? (deals === 1 ? 'negociação' : 'negociações') : (deals === 1 ? 'deal' : 'deals')}
         </Td>
         <Td align="right" className="w-px whitespace-nowrap">
           <div className="inline-flex items-center gap-1">
@@ -88,20 +93,20 @@ export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
               onClick={() => setIsOpen((open) => !open)}
               className="max-sm:h-10"
             >
-              Details
+              {pt ? 'Detalhes' : 'Details'}
             </Pill>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Pill size="sm" variant="plain" aria-label={`Actions for ${displayName}`} className="max-sm:h-10 max-sm:w-10">
+                <Pill size="sm" variant="plain" aria-label={`${pt ? 'Ações de' : 'Actions for'} ${displayName}`} className="max-sm:h-10 max-sm:w-10">
                   <MoreHorizontal />
                 </Pill>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setIsEditDrawerOpen(true)}>
-                  Edit staff member
+                  {pt ? 'Editar usuário' : 'Edit staff member'}
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href={`${basePath}/users/${user.id}`}>Open full record</Link>
+                  <Link href={`${basePath}/users/${user.id}`}>{pt ? 'Abrir cadastro completo' : 'Open full record'}</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -124,13 +129,13 @@ export function UserDetailsComponent({ user }: UserDetailsComponentProps) {
             <Facts
               className="grid gap-x-8 divide-y-0 md:grid-cols-2 [&>div]:border-b [&>div]:border-border/60"
               items={[
-                { label: "Email", value: user.email || "None" },
-                { label: "Phone", value: user.phone || "None" },
-                { label: "Role", value: user.role?.name || "None" },
-                { label: "Functions", value: functions.length ? functions.map((item) => item.label).join(", ") : "None" },
-                { label: "Assigned leads", value: leads },
-                { label: "Deals", value: deals },
-                joined ? { label: "Joined", value: joined } : null,
+                { label: pt ? 'E-mail' : "Email", value: user.email || (pt ? 'Nenhum' : "None") },
+                { label: pt ? 'Telefone' : "Phone", value: user.phone || (pt ? 'Nenhum' : "None") },
+                { label: pt ? 'Função' : "Role", value: user.role?.name || (pt ? 'Nenhuma' : "None") },
+                { label: pt ? 'Áreas de atuação' : "Functions", value: functions.length ? functionsText : (pt ? 'Nenhuma' : "None") },
+                { label: pt ? 'Leads atribuídos' : "Assigned leads", value: leads },
+                { label: pt ? 'Negociações' : "Deals", value: deals },
+                joined ? { label: pt ? 'Desde' : "Joined", value: joined } : null,
               ]}
             />
           </td>

@@ -3,12 +3,13 @@
 import { useMemo, useState } from 'react'
 import { CalendarClock, Download, Eye, Play } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Code, DeskTable, Facts, Notice, Panel, Pill, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { EmptyRow, TAP, TAP_INPUT, TAP_SM } from '@/features/platform/catalog/components/formKit'
 import { type ReportRun, type SavedReport, getReportRunResult, queueDueReports, runReport } from '../actions'
 import { downloadReportRun } from '../lib/downloadRun'
-import { RUN_STATE, type RunStatus, effectiveRunStatus, reportTypeLabel } from '../lib/reportOptions'
+import { RUN_STATE, type RunStatus, effectiveRunStatus, reportTypeLabel, runStatusLabel } from '../lib/reportOptions'
 import { formatDateTime } from '../lib/time'
 
 export type RunStatusFilter = RunStatus | 'all'
@@ -35,6 +36,8 @@ export function RunsPanel({
   /** Status tab to open on; the page's "needs you" queue opens runs on Failed or Queued. */
   initialStatusFilter?: StatusFilter
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter)
   const [workingId, setWorkingId] = useState<string | null>(null)
   const [bulk, setBulk] = useState<'queue' | 'process' | null>(null)
@@ -63,7 +66,7 @@ export function RunsPanel({
 
   const processOne = async (run: ReportRun) => {
     setNotice(null)
-    if (await process(run)) { setNotice({ tone: 'ok', text: `${run.savedReport?.name} completed` }); await onReload() }
+    if (await process(run)) { setNotice({ tone: 'ok', text: pt ? `${run.savedReport?.name} concluído` : `${run.savedReport?.name} completed` }); await onReload() }
   }
 
   const processAll = async () => {
@@ -71,7 +74,7 @@ export function RunsPanel({
     let done = 0
     for (const run of queued) { if (await process(run)) done += 1; else break }
     setBulk(null)
-    if (done) setNotice(current => current?.tone === 'bad' ? { ...current, text: `${done} completed. ${current.text}` } : { tone: 'ok', text: `${done} queued ${done === 1 ? 'run' : 'runs'} completed` })
+    if (done) setNotice(current => current?.tone === 'bad' ? { ...current, text: pt ? `${done} concluído(s). ${current.text}` : `${done} completed. ${current.text}` } : { tone: 'ok', text: pt ? `${done} execução(ões) concluída(s) da fila` : `${done} queued ${done === 1 ? 'run' : 'runs'} completed` })
     await onReload()
   }
 
@@ -81,7 +84,7 @@ export function RunsPanel({
     setBulk(null)
     if (!response.success) { setNotice({ tone: 'bad', text: response.error }); return }
     const count = response.data?.queuedCount || 0
-    setNotice({ tone: count ? 'ok' : 'warn', text: count ? `${count} due ${count === 1 ? 'report' : 'reports'} queued` : 'No scheduled reports are due' })
+    setNotice({ tone: count ? 'ok' : 'warn', text: pt ? (count ? `${count} relatório(s) agendado(s) adicionado(s) à fila` : 'Nenhum relatório agendado está vencido') : count ? `${count} due ${count === 1 ? 'report' : 'reports'} queued` : 'No scheduled reports are due' })
     await onReload()
   }
 
@@ -94,7 +97,7 @@ export function RunsPanel({
     setViewing(run); setPreview(null); setPreviewError(null)
     if (effectiveRunStatus(run) !== 'completed' && effectiveRunStatus(run) !== 'expired') return
     const response = await getReportRunResult(run.id)
-    if (!response.success || !response.data) { setPreviewError(response.success ? 'Run has no result' : response.error); return }
+    if (!response.success || !response.data) { setPreviewError(response.success ? (pt ? 'A execução não tem resultado' : 'Run has no result') : response.error); return }
     const report = (response.data.snapshot as { report?: { content?: string } } | null)?.report
     const text = typeof report?.content === 'string' ? report.content : JSON.stringify(report ?? {}, null, 2)
     setPreview({ text: text.slice(0, PREVIEW_LIMIT), truncated: text.length > PREVIEW_LIMIT })
@@ -106,52 +109,52 @@ export function RunsPanel({
       {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Segmented<StatusFilter>
-          label="Filter runs"
+          label={pt ? 'Filtrar execuções' : 'Filter runs'}
           value={statusFilter}
           onChange={setStatusFilter}
           size="sm"
           options={[
-            { value: 'all', label: 'All', count: counts.all },
-            { value: 'queued', label: 'Queued', count: counts.queued, tone: counts.queued ? 'info' : undefined },
-            { value: 'completed', label: 'Completed', count: counts.completed },
-            { value: 'expired', label: 'Expired', count: counts.expired },
-            { value: 'failed', label: 'Failed', count: counts.failed, tone: counts.failed ? 'bad' : undefined },
+            { value: 'all', label: pt ? 'Todas' : 'All', count: counts.all },
+            { value: 'queued', label: pt ? 'Na fila' : 'Queued', count: counts.queued, tone: counts.queued ? 'info' : undefined },
+            { value: 'completed', label: pt ? 'Concluídas' : 'Completed', count: counts.completed },
+            { value: 'expired', label: pt ? 'Expiradas' : 'Expired', count: counts.expired },
+            { value: 'failed', label: pt ? 'Falhas' : 'Failed', count: counts.failed, tone: counts.failed ? 'bad' : undefined },
           ]}
         />
         <Select value={reportFilter} onValueChange={onReportFilterChange}>
-          <SelectTrigger className={`${TAP_INPUT} w-full sm:w-56`} aria-label="Saved report"><SelectValue /></SelectTrigger>
+          <SelectTrigger className={`${TAP_INPUT} w-full sm:w-56`} aria-label={pt ? 'Relatório salvo' : 'Saved report'}><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All reports</SelectItem>
+            <SelectItem value="all">{pt ? 'Todos os relatórios' : 'All reports'}</SelectItem>
             {reports.map(report => <SelectItem key={report.id} value={report.id}>{report.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Track className="sm:ml-auto">
           <Pill className={TAP} disabled={bulk !== null} onClick={queueDue}>
             <CalendarClock />
-            {bulk === 'queue' ? 'Queueing…' : 'Queue due reports'}
+            {bulk === 'queue' ? (pt ? 'Adicionando à fila…' : 'Queueing…') : (pt ? 'Agendar relatórios pendentes' : 'Queue due reports')}
           </Pill>
-          <Pill variant="primary" className={TAP} disabled={bulk !== null || queued.length === 0} title={queued.length === 0 ? 'No queued runs' : undefined} onClick={processAll}>
+          <Pill variant="primary" className={TAP} disabled={bulk !== null || queued.length === 0} title={queued.length === 0 ? (pt ? 'Nenhuma execução na fila' : 'No queued runs') : undefined} onClick={processAll}>
             <Play />
-            {bulk === 'process' ? 'Processing…' : `Process queued${queued.length ? ` (${queued.length})` : ''}`}
+            {bulk === 'process' ? (pt ? 'Processando…' : 'Processing…') : `${pt ? 'Processar fila' : 'Process queued'}${queued.length ? ` (${queued.length})` : ''}`}
           </Pill>
         </Track>
       </div>
 
       {visible.length === 0 ? (
         <Panel>
-          <EmptyRow>{runs.length === 0 ? 'No report runs yet' : 'No runs match'}</EmptyRow>
+          <EmptyRow>{runs.length === 0 ? (pt ? 'Nenhuma execução de relatório ainda' : 'No report runs yet') : (pt ? 'Nenhuma execução encontrada' : 'No runs match')}</EmptyRow>
         </Panel>
       ) : (
         <DeskTable>
           <thead>
             <tr>
-              <Th>Status</Th>
-              <Th>Report</Th>
-              <Th priority={3}>Type</Th>
-              <Th priority={3}>Format</Th>
-              <Th priority={2}>Queued or completed</Th>
-              <Th priority={3}>Expires</Th>
-              <Th align="right"><span className="sr-only">Actions</span></Th>
+              <Th>{pt ? 'Status' : 'Status'}</Th>
+              <Th>{pt ? 'Relatório' : 'Report'}</Th>
+              <Th priority={3}>{pt ? 'Tipo' : 'Type'}</Th>
+              <Th priority={3}>{pt ? 'Formato' : 'Format'}</Th>
+              <Th priority={2}>{pt ? 'Na fila ou concluído' : 'Queued or completed'}</Th>
+              <Th priority={3}>{pt ? 'Expira' : 'Expires'}</Th>
+              <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
             </tr>
           </thead>
           <tbody>
@@ -160,36 +163,36 @@ export function RunsPanel({
               return (
                 <Tr key={run.id}>
                   <Td className="w-[1%]">
-                    <Status tone={RUN_STATE[status].tone}>{RUN_STATE[status].label}</Status>
+                    <Status tone={RUN_STATE[status].tone}>{runStatusLabel(status, locale)}</Status>
                   </Td>
                   <Td className="min-w-0 max-w-[18rem]">
-                    <span className="block truncate font-medium text-foreground">{run.savedReport?.name || 'Deleted report'}</span>
+                    <span className="block truncate font-medium text-foreground">{run.savedReport?.name || (pt ? 'Relatório excluído' : 'Deleted report')}</span>
                     <span className="block truncate text-[12px] text-muted-foreground md:hidden">
-                      {status === 'queued' ? `Queued ${formatDateTime(run.createdAt, timeZone)}` : `Completed ${formatDateTime(run.completedAt || run.createdAt, timeZone)}`}
+                      {status === 'queued' ? `${pt ? 'Na fila' : 'Queued'} ${formatDateTime(run.createdAt, timeZone, locale)}` : `${pt ? 'Concluído' : 'Completed'} ${formatDateTime(run.completedAt || run.createdAt, timeZone, locale)}`}
                     </span>
                     {run.errorCode && <span className="block break-words text-[12px] text-red-700 dark:text-red-300">{run.errorCode}</span>}
                   </Td>
-                  <Td priority={3} className="whitespace-nowrap text-muted-foreground">{run.savedReport ? reportTypeLabel(run.savedReport.reportType) : '-'}</Td>
+                  <Td priority={3} className="whitespace-nowrap text-muted-foreground">{run.savedReport ? reportTypeLabel(run.savedReport.reportType, locale) : '-'}</Td>
                   <Td priority={3} className="whitespace-nowrap"><Code>{run.exportFormat.toUpperCase()}</Code></Td>
                   <Td priority={2} className="whitespace-nowrap text-muted-foreground">
-                    {status === 'queued' ? `Queued ${formatDateTime(run.createdAt, timeZone)}` : formatDateTime(run.completedAt || run.createdAt, timeZone)}
+                    {status === 'queued' ? `${pt ? 'Na fila' : 'Queued'} ${formatDateTime(run.createdAt, timeZone, locale)}` : formatDateTime(run.completedAt || run.createdAt, timeZone, locale)}
                   </Td>
-                  <Td priority={3} className="whitespace-nowrap text-muted-foreground">{status === 'completed' && run.expiresAt ? formatDateTime(run.expiresAt, timeZone) : '-'}</Td>
+                  <Td priority={3} className="whitespace-nowrap text-muted-foreground">{status === 'completed' && run.expiresAt ? formatDateTime(run.expiresAt, timeZone, locale) : '-'}</Td>
                   <Td align="right" className="w-[1%] whitespace-nowrap">
                     <Track className="justify-end">
                       {status === 'queued' && (
                         <Pill size="sm" variant="primary" className={TAP_SM} disabled={workingId !== null || bulk !== null} onClick={() => processOne(run)}>
                           <Play />
-                          {workingId === run.id ? 'Processing…' : 'Process'}
+                          {workingId === run.id ? (pt ? 'Processando…' : 'Processing…') : (pt ? 'Processar' : 'Process')}
                         </Pill>
                       )}
                       {status === 'completed' && (
                         <Pill size="sm" className={TAP_SM} aria-label={`Download ${run.savedReport?.name || 'report'} run`} onClick={() => download(run)}>
                           <Download />
-                          <span className="max-sm:sr-only">Download</span>
+                          <span className="max-sm:sr-only">{pt ? 'Baixar' : 'Download'}</span>
                         </Pill>
                       )}
-                      <Pill size="sm" variant="plain" className={TAP_SM} aria-label="View run" onClick={() => view(run)}>
+                      <Pill size="sm" variant="plain" className={TAP_SM} aria-label={pt ? 'Ver execução' : 'View run'} onClick={() => view(run)}>
                         <Eye />
                       </Pill>
                     </Track>
@@ -207,16 +210,16 @@ export function RunsPanel({
             <>
               <SheetHeader>
                 <SheetTitle>{viewing.savedReport?.name || 'Report run'}</SheetTitle>
-                <SheetDescription>{RUN_STATE[effectiveRunStatus(viewing)].label}</SheetDescription>
+                <SheetDescription>{runStatusLabel(effectiveRunStatus(viewing), locale)}</SheetDescription>
               </SheetHeader>
               <div className="space-y-4 px-4 pb-24">
                 <Facts
                   items={[
-                    { label: 'Report type', value: viewing.savedReport ? reportTypeLabel(viewing.savedReport.reportType) : '-' },
+                    { label: pt ? 'Tipo de relatório' : 'Report type', value: viewing.savedReport ? reportTypeLabel(viewing.savedReport.reportType, locale) : '-' },
                     { label: 'Format', value: viewing.exportFormat.toUpperCase() },
-                    { label: 'Created', value: formatDateTime(viewing.createdAt, timeZone) },
-                    { label: 'Completed', value: formatDateTime(viewing.completedAt, timeZone) },
-                    { label: 'Expires', value: formatDateTime(viewing.expiresAt, timeZone) },
+                    { label: locale === 'pt-BR' ? 'Criado' : 'Created', value: formatDateTime(viewing.createdAt, timeZone, locale) },
+                    { label: locale === 'pt-BR' ? 'Concluído' : 'Completed', value: formatDateTime(viewing.completedAt, timeZone, locale) },
+                    { label: locale === 'pt-BR' ? 'Expira' : 'Expires', value: formatDateTime(viewing.expiresAt, timeZone, locale) },
                     viewing.resultDigest ? { label: 'Digest', value: <Code>{viewing.resultDigest.slice(0, 16)}</Code> } : null,
                     viewing.errorCode ? { label: 'Error', value: viewing.errorCode } : null,
                   ]}
@@ -232,7 +235,7 @@ export function RunsPanel({
                 {previewError && <Notice tone="bad">{previewError}</Notice>}
                 {preview && (
                   <div className="space-y-1">
-                    <p className="text-[12px] font-medium text-muted-foreground">Result{preview.truncated ? ' (first 6,000 characters)' : ''}</p>
+                    <p className="text-[12px] font-medium text-muted-foreground">{pt ? `Resultado${preview.truncated ? ' (primeiros 6.000 caracteres)' : ''}` : `Result${preview.truncated ? ' (first 6,000 characters)' : ''}`}</p>
                     <pre className="max-h-[50dvh] overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-3 font-mono text-xs">{preview.text}</pre>
                   </div>
                 )}

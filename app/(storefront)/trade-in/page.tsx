@@ -6,7 +6,10 @@ import { TradeInPage } from '@/features/storefront/screens/TradeInPage'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = { title: 'Trade-in' }
+export async function generateMetadata(): Promise<Metadata> {
+  const { getRequestLocale } = await import('@/features/i18n/server')
+  return { title: (await getRequestLocale()) === 'pt-BR' ? 'Veículo na troca' : 'Trade-in' }
+}
 
 export default function Page() {
   return <Suspense fallback={<PageFallback />}><TradeInPage /></Suspense>

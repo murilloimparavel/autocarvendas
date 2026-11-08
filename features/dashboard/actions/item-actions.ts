@@ -2,6 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { keystoneClient } from '../lib/keystoneClient'
+import { getRequestLocale } from '@/features/i18n/server'
+
+async function actionFailure(en: string, pt: string) {
+  return await getRequestLocale() === 'pt-BR' ? pt : en
+}
 
 // Server actions following Keystone's exact mutation pattern
 export async function updateItemAction(listKey: string, id: string, data: Record<string, unknown>) {
@@ -20,7 +25,7 @@ export async function updateItemAction(listKey: string, id: string, data: Record
     if (!response.success) {
       // Return Apollo-style errors array from GraphQL response
       return {
-        errors: response.errors || [{ message: response.error || 'Update failed', path: undefined }],
+        errors: response.errors || [{ message: response.error || await actionFailure('Update failed', 'Não foi possível atualizar o cadastro.'), path: undefined }],
         data: response.data || null
       }
     }
@@ -37,7 +42,7 @@ export async function updateItemAction(listKey: string, id: string, data: Record
   } catch (error) {
     // Return error in Apollo format
     return {
-      errors: [{ message: "Update failed", path: undefined }],
+      errors: [{ message: await actionFailure('Update failed', 'Não foi possível atualizar o cadastro.'), path: undefined }],
       data: null
     }
   }
@@ -59,7 +64,7 @@ export async function createItemAction(listKey: string, data: Record<string, unk
     if (!response.success) {
       // Return Apollo-style errors array from GraphQL response
       return {
-        errors: response.errors || [{ message: response.error || 'Create failed', path: undefined }],
+        errors: response.errors || [{ message: response.error || await actionFailure('Create failed', 'Não foi possível criar o cadastro.'), path: undefined }],
         data: null
       }
     }
@@ -77,7 +82,7 @@ export async function createItemAction(listKey: string, data: Record<string, unk
   } catch (error) {
     // Return error in Apollo format
     return {
-      errors: [{ message: "Create failed", path: undefined }],
+      errors: [{ message: await actionFailure('Create failed', 'Não foi possível criar o cadastro.'), path: undefined }],
       data: null
     }
   }
@@ -99,7 +104,7 @@ export async function deleteItemAction(listKey: string, id: string) {
     if (!response.success) {
       // Return Apollo-style errors array from GraphQL response
       return {
-        errors: response.errors || [{ message: response.error || 'Delete failed', path: undefined }],
+        errors: response.errors || [{ message: response.error || await actionFailure('Delete failed', 'Não foi possível excluir o cadastro.'), path: undefined }],
         data: null
       }
     }
@@ -115,7 +120,7 @@ export async function deleteItemAction(listKey: string, id: string) {
   } catch (error) {
     // Return error in Apollo format
     return {
-      errors: [{ message: "Delete failed", path: undefined }],
+      errors: [{ message: await actionFailure('Delete failed', 'Não foi possível excluir o cadastro.'), path: undefined }],
       data: null
     }
   }
@@ -143,7 +148,7 @@ export async function deleteManyItemsAction(
     if (!response.success) {
       // Return Apollo-style errors array from GraphQL response
       return {
-        errors: response.errors || [{ message: response.error || 'Bulk delete failed', path: undefined }],
+        errors: response.errors || [{ message: response.error || await actionFailure('Bulk delete failed', 'Não foi possível excluir os cadastros.'), path: undefined }],
         data: null
       }
     }
@@ -159,7 +164,7 @@ export async function deleteManyItemsAction(
   } catch (error) {
     // Return error in Apollo format
     return {
-      errors: [{ message: "Bulk delete failed", path: undefined }],
+      errors: [{ message: await actionFailure('Bulk delete failed', 'Não foi possível excluir os cadastros.'), path: undefined }],
       data: null
     }
   }

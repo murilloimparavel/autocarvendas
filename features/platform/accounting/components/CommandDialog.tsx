@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export type CommandField = {
   name: string
@@ -53,6 +54,8 @@ export function CommandDialog({
   onSubmit: () => void
   onOpenChange: (open: boolean) => void
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const change = (name: string, value: string) => onValuesChange({ ...values, [name]: value })
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -131,9 +134,9 @@ export function CommandDialog({
           {error && <Notice tone="bad">{error}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" className="h-11 sm:h-8" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
+              <Pill variant="plain" className="h-11 sm:h-8" disabled={busy} onClick={() => onOpenChange(false)}>{pt ? 'Cancelar' : 'Cancel'}</Pill>
               <Pill type="submit" variant={danger ? 'danger' : 'primary'} className="h-11 sm:h-8" disabled={busy}>
-                {busy ? 'Saving…' : submitLabel}
+                {busy ? (pt ? 'Salvando…' : 'Saving…') : submitLabel}
               </Pill>
             </Track>
           </DialogFooter>

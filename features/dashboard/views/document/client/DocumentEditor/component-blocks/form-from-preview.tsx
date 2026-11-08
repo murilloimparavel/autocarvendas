@@ -1,4 +1,5 @@
 import { useList } from '@keystone-6/core/admin-ui/context'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { RelationshipSelect } from '@/features/dashboard/views/relationship/client/components/RelationshipSelect'
 
 import { Button } from '@/components/ui/button'
@@ -160,6 +161,8 @@ export function previewPropsOnChange<Schema extends ComponentSchema>(
 }
 
 function ArrayFieldPreview(props: DefaultFieldProps<'array'>) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const { elements, onChange, schema } = props
   const { label } = schema
   const [modalState, setModalState] = useState<
@@ -215,7 +218,7 @@ function ArrayFieldPreview(props: DefaultFieldProps<'array'>) {
             <ShadDialog open={true} onOpenChange={(open) => !open && setModalState('closed')}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Edit item</DialogTitle>
+                  <DialogTitle>{pt ? 'Editar item' : 'Edit item'}</DialogTitle>
                 </DialogHeader>
                 <ArrayFieldItemModalContent
                   onChange={onModalChange}
@@ -229,7 +232,7 @@ function ArrayFieldPreview(props: DefaultFieldProps<'array'>) {
                       setModalState('closed')
                     }}
                   >
-                    Cancel
+                    {pt ? 'Cancelar' : 'Cancel'}
                   </Button>
                   <Button
                     onClick={() => {
@@ -244,7 +247,7 @@ function ArrayFieldPreview(props: DefaultFieldProps<'array'>) {
                       setModalState('closed')
                     }}
                   >
-                    Done
+                    {pt ? 'Concluído' : 'Done'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -427,6 +430,7 @@ function ArrayFieldListView<Element extends ComponentSchema>(
     onOpenItem: (index: number) => void
   }
 ) {
+  const { locale } = useLocale()
   // Drag and drop functionality from Keystar's ListView and useDragAndDrop has been removed.
   // This will require a new implementation if DND is needed.
   const onRemoveKey = useEventCallback((key: string) => {
@@ -434,7 +438,7 @@ function ArrayFieldListView<Element extends ComponentSchema>(
   })
 
   if (!props.elements.length) {
-    return arrayFieldEmptyState();
+    return arrayFieldEmptyState(locale)
   }
 
   return (
@@ -454,7 +458,7 @@ function ArrayFieldListView<Element extends ComponentSchema>(
                   </Button>
                 </ShadTooltipTrigger>
                 <ShadTooltipContent side="left">
-                  <p>Delete</p>
+                  <p>{locale === 'pt-BR' ? 'Excluir' : 'Delete'}</p>
                 </ShadTooltipContent>
               </ShadTooltip>
             </TooltipProvider>
@@ -477,14 +481,14 @@ function ArrayFieldItemModalContent(props: {
   return <FormValueContentFromPreviewProps {...previewProps} />
 }
 
-function arrayFieldEmptyState() {
+function arrayFieldEmptyState(locale: string) {
   return (
     <div className="flex flex-col gap-6 items-center justify-center h-full p-3 text-center">
       <h3 className="text-lg font-medium text-neutral-600">
-        Empty list
+        {locale === 'pt-BR' ? 'Lista vazia' : 'Empty list'}
       </h3>
       <p className="text-sm text-neutral-500">
-        Add the first item to see it here.
+        {locale === 'pt-BR' ? 'Adicione o primeiro item para exibi-lo aqui.' : 'Add the first item to see it here.'}
       </p>
     </div>
   )

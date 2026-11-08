@@ -1,5 +1,6 @@
 import { graphql } from '@keystone-6/core'
 import { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import type { HTMLAttributes, ReactElement, ReactNode } from 'react'
 import { isValidURL } from '../isValidURL'
 import type {
@@ -96,6 +97,7 @@ export const fields = {
     return {
       kind: 'form' as const,
       Input({ value, onChange, autoFocus, forceValidation }: InputArgs<number>) {
+        const { locale } = useLocale()
         const [blurred, setBlurred] = useState(false)
         const [inputValue, setInputValue] = useState(String(value))
         const showValidation = forceValidation || (blurred && !validate(value))
@@ -118,7 +120,7 @@ export const fields = {
                 }}
               />
             </FormControl>
-            {showValidation && <FormMessage>Please specify an integer</FormMessage>}
+            {showValidation && <FormMessage>{locale === 'pt-BR' ? 'Informe um número inteiro.' : 'Please specify an integer'}</FormMessage>}
           </FormItem>
         )
       },
@@ -144,6 +146,7 @@ export const fields = {
     return {
       kind: 'form' as const,
       Input({ value, onChange, autoFocus, forceValidation }: InputArgs<string>) {
+        const { locale } = useLocale()
         const [blurred, setBlurred] = useState(false)
         const showValidation = forceValidation || (blurred && !validate(value))
         return (
@@ -159,7 +162,7 @@ export const fields = {
                 }}
               />
             </FormControl>
-            {showValidation && <FormMessage>Please provide a valid URL</FormMessage>}
+            {showValidation && <FormMessage>{locale === 'pt-BR' ? 'Informe um endereço válido.' : 'Please provide a valid URL'}</FormMessage>}
           </FormItem>
         )
       },
@@ -189,6 +192,7 @@ export const fields = {
     return {
       kind: 'form' as const,
       Input({ value, onChange, autoFocus }: InputArgs<string>) {
+        const { locale } = useLocale()
         return (
           <FormItem>
             <FormLabel>{label}</FormLabel>
@@ -198,7 +202,7 @@ export const fields = {
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select an option" />
+                  <SelectValue placeholder={locale === 'pt-BR' ? 'Selecione uma opção' : 'Select an option'} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>

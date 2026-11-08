@@ -49,18 +49,28 @@ export const REPORT_FILTER_FIELDS: Record<string, FilterField[]> = {
   ],
 }
 
-export const reportTypeLabel = (value: string) => REPORT_TYPES.find(type => type.value === value)?.label || value
-export const scheduleLabel = (value: string) => SCHEDULES.find(schedule => schedule.value === value)?.label || value
+const ptLabels: Record<string, string> = {
+  'Operations summary': 'Resumo operacional', 'Audit log': 'Registro de auditoria',
+  'Accounting exceptions': 'Exceções contábeis', 'Payment reconciliation': 'Conciliação de pagamentos',
+  Manual: 'Manual', Daily: 'Diário', Weekly: 'Semanal', Monthly: 'Mensal',
+  'Last N days': 'Últimos N dias', 'Record type': 'Tipo de registro', 'Action contains': 'Ação contém',
+  Status: 'Situação', Failed: 'Com falha', Posting: 'Em lançamento', Reconciled: 'Conciliado', 'Not reconciled': 'Não conciliado',
+}
+const localized = (locale: 'pt-BR' | 'en-US', value: string) => locale === 'pt-BR' ? ptLabels[value] || value : value
+export const reportOptionLabel = localized
 
-export function describeFilters(reportType: string, filters: Record<string, string | number> | null | undefined) {
+export const reportTypeLabel = (value: string, locale: 'pt-BR' | 'en-US' = 'en-US') => localized(locale, REPORT_TYPES.find(type => type.value === value)?.label || value)
+export const scheduleLabel = (value: string, locale: 'pt-BR' | 'en-US' = 'en-US') => localized(locale, SCHEDULES.find(schedule => schedule.value === value)?.label || value)
+
+export function describeFilters(reportType: string, filters: Record<string, string | number> | null | undefined, locale: 'pt-BR' | 'en-US' = 'en-US') {
   const fields = REPORT_FILTER_FIELDS[reportType] || []
   return Object.entries(filters || {})
     .map(([key, value]) => {
       const field = fields.find(item => item.key === key)
       if (!field) return `${key}: ${value}`
-      if (field.kind === 'days') return `Last ${value} days`
-      if (field.kind === 'select') return `${field.label}: ${field.options.find(option => option.value === value)?.label || value}`
-      return `${field.label}: ${value}`
+      if (field.kind === 'days') return locale === 'pt-BR' ? `Últimos ${value} dias` : `Last ${value} days`
+      if (field.kind === 'select') return `${localized(locale, field.label)}: ${localized(locale, field.options.find(option => option.value === value)?.label || String(value))}`
+      return `${localized(locale, field.label)}: ${value}`
     })
 }
 
@@ -77,4 +87,9 @@ export const RUN_STATE: Record<RunStatus, { tone: 'info' | 'ok' | 'bad' | 'idle'
   completed: { tone: 'ok', label: 'Completed' },
   failed: { tone: 'bad', label: 'Failed' },
   expired: { tone: 'idle', label: 'Expired' },
+}
+
+export function runStatusLabel(status: RunStatus, locale: 'pt-BR' | 'en-US') {
+  if (locale === 'pt-BR') return ({ queued: 'Na fila', completed: 'Concluída', failed: 'Com falha', expired: 'Expirada' } as const)[status]
+  return RUN_STATE[status].label
 }

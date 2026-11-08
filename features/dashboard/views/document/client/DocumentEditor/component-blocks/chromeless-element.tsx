@@ -7,6 +7,7 @@ import { Trash2 } from 'lucide-react' // Example icon import
 import { BlockPopoverTrigger, BlockPopover } from '../primitives/BlockPopover'
 import { blockElementSpacing } from '../utils-hooks'
 import { type Element } from 'slate'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export function ChromelessComponentBlockElement(props: {
   renderedBlock: ReactNode
@@ -41,6 +42,7 @@ function DefaultToolbarWithoutChrome({
   onRemove(): void
   props: Record<string, any>
 }) {
+  const { locale } = useLocale()
   return (
     <TooltipProvider>
       <Tooltip>
@@ -50,7 +52,7 @@ function DefaultToolbarWithoutChrome({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <p>Remove</p>
+          <p>{locale === 'pt-BR' ? 'Remover' : 'Remove'}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

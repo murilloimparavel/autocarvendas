@@ -23,6 +23,7 @@ import { useElementWithSetNodes } from './utils-hooks'
 import { isValidURL } from './isValidURL'
 import { useForceValidation } from './utils-hooks'
 import { useToolbarState } from './toolbar-state'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export * from './link-shared'
 
@@ -31,6 +32,7 @@ export const LinkElement = ({
   children,
   element: __elementForGettingPath
 }: RenderElementProps & { element: { type: 'link'; href: string } }) => {
+  const { locale } = useLocale()
   const editor = useStaticEditor()
   const selected = useSelected()
   const focused = useFocused()
@@ -88,7 +90,7 @@ export const LinkElement = ({
             <div className="space-y-2">
               <Input
                 className="h-8"
-                placeholder="Enter URL"
+                placeholder={locale === 'pt-BR' ? 'Digite o endereço' : 'Enter URL'}
                 value={href}
                 onChange={(event) => {
                   setNode({ href: event.target.value })
@@ -125,7 +127,7 @@ export const LinkElement = ({
               </div>
             </div>
             {showInvalidState && (
-              <p className="text-xs text-red-500">Please enter a valid URL</p>
+              <p className="text-xs text-red-500">{locale === 'pt-BR' ? 'Informe um endereço válido' : 'Please enter a valid URL'}</p>
             )}
           </div>
         </PopoverContent>
@@ -152,15 +154,18 @@ const LinkButton = () => {
   )
 }
 
-export const linkButton = (
+export function LinkToolbarButton() {
+  const { locale } = useLocale()
+  return (
   <Tooltip>
     <TooltipTrigger asChild>
       <LinkButton />
     </TooltipTrigger>
     <TooltipContent side="bottom">
       <span className="flex items-center gap-2">
-        <span>Link</span>
+        <span>{locale === 'pt-BR' ? 'Link' : 'Link'}</span>
       </span>
     </TooltipContent>
   </Tooltip>
-)
+  )
+}

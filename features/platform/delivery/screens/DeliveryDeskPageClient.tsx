@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useMemo, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { CalendarClock, Check, ChevronRight, Pencil, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -87,18 +88,37 @@ function deliveryStatusLabel(delivery: Delivery, deliveryCase: DeliveryCase | un
   return !deliveryCase && delivery.status === 'financed' ? 'Not scheduled' : status.charAt(0).toUpperCase() + status.slice(1)
 }
 
-function customerName(delivery: Delivery) {
-  return [delivery.lead?.firstName, delivery.lead?.lastName].filter(Boolean).join(' ') || 'Customer not linked'
+function deliveryLabel(locale: 'pt-BR' | 'en-US', value: string) {
+  if (locale === 'en-US') return value
+  const labels: Record<string, string> = {
+    'Not scheduled': 'Não agendado', Scheduled: 'Agendado', Arrived: 'Cliente chegou', Ready: 'Pronto para entrega',
+    Delivered: 'Entregue', Cancelled: 'Cancelado', Identity: 'Identificação', Insurance: 'Seguro',
+    Financed: 'Financiado', Active: 'Ativo', 'Open we-owes': 'Pendências de entrega', 'All deliveries': 'Todas as entregas',
+    'Customer not linked': 'Cliente não vinculado', 'Vehicle unavailable': 'Veículo indisponível',
+    Registration: 'Documentação do veículo', 'Title handoff': 'Entrega dos documentos', Funding: 'Financiamento',
+    Payment: 'Pagamento', Complete: 'Concluído', Missing: 'Pendente', Recorded: 'Registrado',
+    'Reference recorded': 'Referência registrada', 'Customer acknowledgment': 'Confirmação do cliente',
+    Received: 'Recebido', Funded: 'Financiado', 'Recorded for an earlier worksheet': 'Registrado em uma versão anterior da proposta',
+    'Waiting on payment': 'Aguardando pagamento', 'Waiting on funding': 'Aguardando liberação do financiamento',
+    complete: 'Concluído', waived: 'Dispensado', missing: 'Pendente',
+    'We-owe items': 'Pendências da entrega', 'Ready to hand over': 'Pronto para entregar',
+    'Checklist item': 'Item da lista de conferência', 'The vehicle is ready for delivery.': 'O veículo está pronto para a entrega.',
+  }
+  return labels[value] || value
 }
 
-function vehicleName(delivery: Delivery) {
-  return delivery.vehicle ? `${delivery.vehicle.year} ${delivery.vehicle.make} ${delivery.vehicle.model}` : 'Vehicle unavailable'
+function customerName(delivery: Delivery, pt = false) {
+  return [delivery.lead?.firstName, delivery.lead?.lastName].filter(Boolean).join(' ') || (pt ? 'Cliente não vinculado' : 'Customer not linked')
+}
+
+function vehicleName(delivery: Delivery, pt = false) {
+  return delivery.vehicle ? `${delivery.vehicle.year} ${delivery.vehicle.make} ${delivery.vehicle.model}` : (pt ? 'Veículo indisponível' : 'Vehicle unavailable')
 }
 
 // Dealership time zone, so the server render and the browser agree.
-function formatDate(value: string | null | undefined, timeZone: string) {
+function formatDate(value: string | null | undefined, timeZone: string, locale: 'pt-BR' | 'en-US') {
   return value
-    ? new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    ? new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : 'Not scheduled'
 }
 
@@ -108,25 +128,29 @@ function recordedChecklist(deliveryCase: DeliveryCase | undefined) {
 }
 
 /** Funding comes from the funding case; a delivered case keeps the funding entry it was delivered with. */
-function fundingItem(delivery: Delivery, deliveryCase: DeliveryCase | undefined) {
+function fundingItem(delivery: Delivery, deliveryCase: DeliveryCase | undefined, locale: 'pt-BR' | 'en-US') {
   const finance = delivery.financeEvidence
   const cash = finance?.structureType === 'cash'
-  const label = cash ? 'Payment' : DELIVERY_FUNDING_ITEM.label
+  const label = deliveryLabel(locale, cash ? 'Payment' : DELIVERY_FUNDING_ITEM.label)
   const recorded = deliveryCase?.checklist?.find(item => item.code === DELIVERY_FUNDING_ITEM.code)
-  if (finance?.fundingCurrent) return { label, done: true, text: `${cash ? 'received' : 'funded'}${finance.fundingReference ? ` · ${finance.fundingReference}` : ''}` }
-  if (delivery.status === 'delivered' && recorded) return { label, done: true, text: `complete${recorded.evidenceReference ? ` · ${recorded.evidenceReference}` : ''}` }
-  return { label, done: false, text: finance?.fundingStatus === 'funded' ? 'recorded for an earlier worksheet' : cash ? 'waiting on payment' : 'waiting on funding' }
+  if (finance?.fundingCurrent) return { label, done: true, text: `${deliveryLabel(locale, cash ? 'Received' : 'Funded')}${finance.fundingReference ? ` · ${finance.fundingReference}` : ''}` }
+  if (delivery.status === 'delivered' && recorded) return { label, done: true, text: `${deliveryLabel(locale, 'Complete')}${recorded.evidenceReference ? ` · ${recorded.evidenceReference}` : ''}` }
+  return { label, done: false, text: deliveryLabel(locale, finance?.fundingStatus === 'funded' ? 'Recorded for an earlier worksheet' : cash ? 'Waiting on payment' : 'Waiting on funding') }
 }
 
 export function DeliveryDeskPageClient({
   initialWorkspace,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialWorkspace: DeliveryWorkspace | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [deliveries, setDeliveries] = useState<Delivery[]>(() => readDeliveries(initialWorkspace))
   const [cases, setCases] = useState<DeliveryCase[]>(initialWorkspace?.cases || [])
   const [rooftopByDeal, setRooftopByDeal] = useState<Record<string, string>>(initialWorkspace?.rooftopByDeal || {})
@@ -153,7 +177,7 @@ export function DeliveryDeskPageClient({
       setCases(response.data.deliveryWorkspace.cases || [])
       setRooftopByDeal(response.data.deliveryWorkspace.rooftopByDeal || {})
     } else {
-      setError(response.error || 'Unable to load deliveries.')
+      setError(response.error || (pt ? 'Não foi possível carregar as entregas.' : 'Unable to load deliveries.'))
     }
     setLoading(false)
   }
@@ -165,7 +189,7 @@ export function DeliveryDeskPageClient({
     if (!rooftopId || staffByRooftop[rooftopId]) return
     const response = await getDeliveryStaff(rooftopId)
     if (response.success) setStaffByRooftop(current => ({ ...current, [rooftopId]: response.data.users || [] }))
-    else setTaskError(response.error || 'Unable to load staff.')
+    else setTaskError(response.error || (pt ? 'Não foi possível carregar a equipe.' : 'Unable to load staff.'))
   }
 
   const staffFor = (delivery: Delivery) => {
@@ -217,7 +241,7 @@ export function DeliveryDeskPageClient({
       action,
       idempotencyKey: `delivery-case:${delivery.id}:${action}:${crypto.randomUUID()}`,
     })
-    setNotice(response.success ? 'Arrival recorded.' : `Unable to update delivery: ${response.error}`)
+    setNotice(response.success ? (pt ? 'Chegada registrada.' : 'Arrival recorded.') : `${pt ? 'Não foi possível atualizar a entrega' : 'Unable to update delivery'}: ${response.error}`)
     await load()
     setActiveId(null)
   }
@@ -239,10 +263,10 @@ export function DeliveryDeskPageClient({
     setActiveId(delivery.id)
     try {
       if (kind === 'complete') {
-        if (field('confirmed') !== 'yes') throw new Error('Confirm the vehicle is ready for delivery.')
+        if (field('confirmed') !== 'yes') throw new Error(pt ? 'Confirme que o veículo está pronto para entrega.' : 'Confirm the vehicle is ready for delivery.')
         const fundingUpdatedAt = delivery.financeEvidence?.fundingUpdatedAt
         if (!delivery.financeEvidence?.fundingCurrent || !fundingUpdatedAt || !task.deliveryCaseUpdatedAt) {
-          throw new Error(delivery.financeEvidence?.structureType === 'cash' ? 'Record payment on the finance desk first.' : 'Record funding on the finance desk first.')
+          throw new Error(pt ? (delivery.financeEvidence?.structureType === 'cash' ? 'Registre o pagamento na área financeira antes de continuar.' : 'Registre a liberação do financiamento na área financeira antes de continuar.') : delivery.financeEvidence?.structureType === 'cash' ? 'Record payment on the finance desk first.' : 'Record funding on the finance desk first.')
         }
         response = await completeDealDelivery({
           dealId: delivery.id,
@@ -253,7 +277,7 @@ export function DeliveryDeskPageClient({
         })
       } else if (kind === 'schedule') {
         const appointmentAt = fromZonedInput(field('appointmentAt'), timeZone)
-        if (!appointmentAt) throw new Error('Choose a valid delivery appointment time.')
+        if (!appointmentAt) throw new Error(pt ? 'Informe uma data e horário válidos para a entrega.' : 'Choose a valid delivery appointment time.')
         response = await manageDeliveryCase({
           dealId: delivery.id,
           action: 'schedule',
@@ -262,7 +286,7 @@ export function DeliveryDeskPageClient({
         })
       } else if (kind === 'checklist') {
         const reference = field('reference')
-        if (!reference) throw new Error('A reference is required.')
+        if (!reference) throw new Error(pt ? 'Informe o protocolo.' : 'A reference is required.')
         const checklist = [buildDeliveryChecklistEntry(field('code'), reference)]
         response = await manageDeliveryCase({
           dealId: delivery.id,
@@ -272,7 +296,7 @@ export function DeliveryDeskPageClient({
         })
       } else if (kind === 'acknowledge') {
         const customerAcknowledgment = field('acknowledgment')
-        if (!customerAcknowledgment) throw new Error('Customer acknowledgment reference is required.')
+        if (!customerAcknowledgment) throw new Error(pt ? 'Informe o protocolo de confirmação do cliente.' : 'Customer acknowledgment reference is required.')
         response = await manageDeliveryCase({
           dealId: delivery.id,
           action: 'acknowledge',
@@ -281,7 +305,7 @@ export function DeliveryDeskPageClient({
         })
       } else if (kind === 'cancel') {
         const reason = field('reason')
-        if (!reason) throw new Error('A cancellation reason is required.')
+        if (!reason) throw new Error(pt ? 'Informe o motivo do cancelamento.' : 'A cancellation reason is required.')
         response = await manageDeliveryCase({ dealId: delivery.id, action: 'cancel', reason, idempotencyKey: task.idempotencyKey })
       } else if (kind === 'waive') {
         const checklist = [buildDeliveryWaiverEntry(field('code'), field('reason'))]
@@ -290,9 +314,9 @@ export function DeliveryDeskPageClient({
         const description = field('description')
         const promisedAt = fromZonedInput(field('promisedAt'), timeZone)
         const ownerId = field('ownerId')
-        if (!description) throw new Error('Description is required.')
-        if (!promisedAt) throw new Error('Choose a valid promised date.')
-        if (!ownerId) throw new Error('Select an owner.')
+        if (!description) throw new Error(pt ? 'Informe a descrição da pendência.' : 'Description is required.')
+        if (!promisedAt) throw new Error(pt ? 'Informe uma data prevista válida.' : 'Choose a valid promised date.')
+        if (!ownerId) throw new Error(pt ? 'Selecione um responsável.' : 'Select an owner.')
         response = await manageWeOweItem({
           dealId: delivery.id,
           action: 'create',
@@ -304,8 +328,8 @@ export function DeliveryDeskPageClient({
         })
       } else if (kind === 'edit-we-owe' && item) {
         const promisedAt = fromZonedInput(field('promisedAt'), timeZone)
-        if (!field('ownerId')) throw new Error('Select an owner.')
-        if (!promisedAt) throw new Error('Choose a valid promised date.')
+        if (!field('ownerId')) throw new Error(pt ? 'Selecione um responsável.' : 'Select an owner.')
+        if (!promisedAt) throw new Error(pt ? 'Informe uma data prevista válida.' : 'Choose a valid promised date.')
         response = await manageWeOweItem({
           dealId: delivery.id,
           itemId: item.id,
@@ -319,7 +343,7 @@ export function DeliveryDeskPageClient({
         const fulfillmentEvidence = field('fulfillmentEvidence')
         const customerAcknowledgment = field('customerAcknowledgment')
         if (!fulfillmentEvidence || !customerAcknowledgment) {
-          throw new Error(`${task.action === 'waive' ? 'Waiver' : 'Fulfillment'} and customer acknowledgment references are required.`)
+          throw new Error(pt ? 'Informe o protocolo da baixa ou conclusão e a confirmação do cliente.' : `${task.action === 'waive' ? 'Waiver' : 'Fulfillment'} and customer acknowledgment references are required.`)
         }
         response = await manageWeOweItem({
           dealId: delivery.id,
@@ -331,14 +355,14 @@ export function DeliveryDeskPageClient({
         })
       }
       if (!response?.success) {
-        setTaskError(response?.error || 'Unable to save. Your entries are kept; try again.')
+        setTaskError(response?.error || (pt ? 'Não foi possível salvar. Os dados digitados foram mantidos; tente novamente.' : 'Unable to save. Your entries are kept; try again.'))
         return
       }
       setTask(null)
-      setNotice(kind === 'complete' ? 'Delivery completed.' : kind === 'cancel' ? 'Delivery cancelled.' : kind === 'schedule' && caseFor(delivery.id) ? 'Delivery rescheduled.' : 'Delivery updated.')
+      setNotice(pt ? (kind === 'complete' ? 'Entrega concluída.' : kind === 'cancel' ? 'Entrega cancelada.' : kind === 'schedule' && caseFor(delivery.id) ? 'Entrega reagendada.' : 'Entrega atualizada.') : kind === 'complete' ? 'Delivery completed.' : kind === 'cancel' ? 'Delivery cancelled.' : kind === 'schedule' && caseFor(delivery.id) ? 'Delivery rescheduled.' : 'Delivery updated.')
       await load()
     } catch (error) {
-      setTaskError(error instanceof Error ? error.message : 'Unable to update delivery.')
+      setTaskError(error instanceof Error ? error.message : pt ? 'Não foi possível atualizar a entrega.' : 'Unable to update delivery.')
     } finally {
       setActiveId(null)
     }
@@ -355,7 +379,7 @@ export function DeliveryDeskPageClient({
       if (filter === 'delivered' && delivery.status !== 'delivered') return false
       return (
         !term ||
-        `${vehicleName(delivery)} ${delivery.vehicle?.stockNumber || ''} ${delivery.vehicle?.vin || ''} ${customerName(delivery)}`.toLowerCase().includes(term)
+        `${vehicleName(delivery, pt)} ${delivery.vehicle?.stockNumber || ''} ${delivery.vehicle?.vin || ''} ${customerName(delivery, pt)}`.toLowerCase().includes(term)
       )
     })
     return rows.sort((a, b) =>
@@ -379,43 +403,43 @@ export function DeliveryDeskPageClient({
 
   const taskTitle =
     task?.kind === 'schedule'
-      ? caseFor(task.delivery.id) ? 'Reschedule delivery' : 'Schedule delivery'
+      ? caseFor(task.delivery.id) ? (pt ? 'Reagendar entrega' : 'Reschedule delivery') : (pt ? 'Agendar entrega' : 'Schedule delivery')
       : task?.kind === 'cancel'
-        ? 'Cancel delivery'
+        ? (pt ? 'Cancelar entrega' : 'Cancel delivery')
       : task?.kind === 'waive'
-        ? 'Waive checklist item'
+        ? (pt ? 'Dispensar item da lista de conferência' : 'Waive checklist item')
       : task?.kind === 'edit-we-owe'
-        ? 'Edit we-owe'
+        ? (pt ? 'Editar pendência da entrega' : 'Edit we-owe')
       : task?.kind === 'checklist'
-        ? 'Record checklist item'
+        ? (pt ? 'Registrar item da lista de conferência' : 'Record checklist item')
         : task?.kind === 'acknowledge'
-          ? 'Record customer acknowledgment'
+          ? (pt ? 'Registrar confirmação do cliente' : 'Record customer acknowledgment')
           : task?.kind === 'we-owe'
-            ? 'Add we-owe'
+            ? (pt ? 'Adicionar pendência da entrega' : 'Add we-owe')
             : task?.kind === 'close-we-owe'
-              ? `${task.action === 'waive' ? 'Waive' : 'Fulfill'} we-owe`
-              : 'Complete delivery'
+              ? `${pt ? (task.action === 'waive' ? 'Dispensar' : 'Concluir') : (task.action === 'waive' ? 'Waive' : 'Fulfill')} ${pt ? 'pendência da entrega' : 'we-owe'}`
+              : (pt ? 'Concluir entrega' : 'Complete delivery')
 
   const taskDescription =
     task?.kind === 'close-we-owe' || task?.kind === 'edit-we-owe'
-      ? task.item?.description || 'We-owe item'
+      ? task.item?.description || (pt ? 'Pendência da entrega' : 'We-owe item')
       : task?.kind === 'schedule'
-          ? `Dealership time (${timeZone.replace(/_/g, ' ')}).`
+          ? `${pt ? 'Horário da loja' : 'Dealership time'} (${timeZone.replace(/_/g, ' ')}).`
           : task
-            ? vehicleName(task.delivery)
+            ? vehicleName(task.delivery, pt)
             : ''
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Delivery' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Entrega' : 'Delivery' },
   ]
 
   /** Where one delivery stands: checklist progress, funding and the next step the server accepts. */
   const stateFor = (delivery: Delivery) => {
     const deliveryCase = caseFor(delivery.id)
     const recorded = recordedChecklist(deliveryCase)
-    const funding = fundingItem(delivery, deliveryCase)
+    const funding = fundingItem(delivery, deliveryCase, locale)
     const totalChecks = DELIVERY_CHECKLIST_ITEMS.length + 1
     const completedChecks = recorded.length + (funding.done ? 1 : 0)
     const openWeOwe = deliveryCase?.weOweItems.filter(item => item.status === 'open') || []
@@ -475,38 +499,38 @@ export function DeliveryDeskPageClient({
   const nextAction = (delivery: Delivery) => {
     const { next, busy, missingItem, funding, acknowledgeBlocked } = stateFor(delivery)
     if (delivery.status !== 'financed' || !next) return null
-    if (next === 'schedule') return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'schedule')} disabled={busy}><CalendarClock />Schedule</Pill>
-    if (next === 'arrive') return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'arrive')} disabled={busy}>Record arrival</Pill>
-    if (next === 'checklist' && missingItem) return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'record-checklist')} disabled={busy}>Record {missingItem.label.toLowerCase()}</Pill>
-    if (next === 'acknowledge') return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'acknowledge')} disabled={busy || Boolean(acknowledgeBlocked)}>Record acknowledgment</Pill>
-    return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => complete(delivery)} disabled={busy || !funding.done}><Check />Complete delivery</Pill>
+    if (next === 'schedule') return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'schedule')} disabled={busy}><CalendarClock />{pt ? 'Agendar' : 'Schedule'}</Pill>
+    if (next === 'arrive') return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'arrive')} disabled={busy}>{pt ? 'Registrar chegada' : 'Record arrival'}</Pill>
+    if (next === 'checklist' && missingItem) return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'record-checklist')} disabled={busy}>{pt ? 'Registrar' : 'Record'} {deliveryLabel(locale, missingItem.label).toLowerCase()}</Pill>
+    if (next === 'acknowledge') return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => manageCase(delivery, 'acknowledge')} disabled={busy || Boolean(acknowledgeBlocked)}>{pt ? 'Registrar confirmação' : 'Record acknowledgment'}</Pill>
+    return <Pill size="sm" variant="primary" className="h-10 sm:h-7" onClick={() => complete(delivery)} disabled={busy || !funding.done}><Check />{pt ? 'Concluir entrega' : 'Complete delivery'}</Pill>
   }
 
   const header = (
     <DeskHeader
-      title="Delivery"
-      status={error ? 'Unavailable' : `${ready.length} ready`}
-      meta={error ? 'Deliveries unavailable' : [
-        todayScheduled.length ? `${todayScheduled.length} due today` : 'Nothing due today',
-        overdueCount ? `${overdueCount} overdue` : null,
-        `${ready.length} ready`,
-        `${openPromises.length} open we-owes`,
+      title={pt ? 'Entrega' : 'Delivery'}
+      status={error ? (pt ? 'Indisponível' : 'Unavailable') : `${ready.length} ${pt ? 'prontos' : 'ready'}`}
+      meta={error ? (pt ? 'Entregas indisponíveis' : 'Deliveries unavailable') : [
+        todayScheduled.length ? (pt ? `${todayScheduled.length} previstas para hoje` : `${todayScheduled.length} due today`) : (pt ? 'Nenhuma prevista para hoje' : 'Nothing due today'),
+        overdueCount ? (pt ? `${overdueCount} em atraso` : `${overdueCount} overdue`) : null,
+        pt ? `${ready.length} prontas` : `${ready.length} ready`,
+        pt ? `${openPromises.length} pendências abertas` : `${openPromises.length} open we-owes`,
       ].filter(Boolean).join(' · ')}
       actions={
-        <Pill variant="plain" onClick={load} disabled={loading} aria-label="Refresh deliveries">
+        <Pill variant="plain" onClick={load} disabled={loading} aria-label={pt ? 'Atualizar entregas' : 'Refresh deliveries'}>
           <RefreshCw className={loading ? 'animate-spin' : undefined} />
-          Refresh
+          {pt ? 'Atualizar' : 'Refresh'}
         </Pill>
       }
     />
   )
 
   const filterOptions = [
-    { value: 'active', label: 'Active', count: deliveries.filter(delivery => delivery.status !== 'delivered').length },
-    { value: 'ready', label: 'Ready', tone: 'ok' as const, count: ready.length },
-    { value: 'we-owe', label: 'Open we-owes', tone: 'warn' as const, count: deliveries.filter(delivery => caseFor(delivery.id)?.weOweItems.some(item => item.status === 'open')).length },
-    { value: 'delivered', label: 'Delivered', count: completed.length },
-    { value: 'all', label: 'All', count: deliveries.length },
+    { value: 'active', label: pt ? 'Ativas' : 'Active', count: deliveries.filter(delivery => delivery.status !== 'delivered').length },
+    { value: 'ready', label: pt ? 'Prontas' : 'Ready', tone: 'ok' as const, count: ready.length },
+    { value: 'we-owe', label: pt ? 'Pendências de entrega' : 'Open we-owes', tone: 'warn' as const, count: deliveries.filter(delivery => caseFor(delivery.id)?.weOweItems.some(item => item.status === 'open')).length },
+    { value: 'delivered', label: pt ? 'Entregues' : 'Delivered', count: completed.length },
+    { value: 'all', label: pt ? 'Todas' : 'All', count: deliveries.length },
   ]
 
   const renderDetail = (delivery: Delivery) => {
@@ -516,22 +540,22 @@ export function DeliveryDeskPageClient({
         <p className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
           {delivery.lead ? (
             <Link className="text-foreground hover:underline" href={`${basePath}/platform/crm/${delivery.lead.id}`}>
-              {customerName(delivery)}
+              {customerName(delivery, pt)}
             </Link>
           ) : (
-            <span>{customerName(delivery)}</span>
+            <span>{customerName(delivery, pt)}</span>
           )}
           {delivery.salesperson?.name && <span>{delivery.salesperson.name}</span>}
-          <Code>Stock {delivery.vehicle?.stockNumber || '—'}</Code>
-          <Code className="break-all">VIN {delivery.vehicle?.vin || '—'}</Code>
-          <Link className="hover:text-foreground hover:underline" href={`${basePath}/platform/deals/${delivery.id}`}>Open deal</Link>
+          <Code>{pt ? 'Estoque' : 'Stock'} {delivery.vehicle?.stockNumber || '—'}</Code>
+          <Code className="break-all">{pt ? 'Chassi (VIN)' : 'VIN'} {delivery.vehicle?.vin || '—'}</Code>
+          <Link className="hover:text-foreground hover:underline" href={`${basePath}/platform/deals/${delivery.id}`}>{pt ? 'Abrir venda' : 'Open deal'}</Link>
         </p>
                         <div className="min-w-0 space-y-2">
                           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className={fieldLabel}>Checklist</span>
-                            <Meter value={completedChecks / totalChecks} segments={totalChecks} tone={allChecked ? 'ok' : 'warn'} label={`${vehicleName(delivery)} checklist progress`} />
+                            <span className={fieldLabel}>{pt ? 'Lista de conferência' : 'Checklist'}</span>
+                            <Meter value={completedChecks / totalChecks} segments={totalChecks} tone={allChecked ? 'ok' : 'warn'} label={`${vehicleName(delivery, pt)} checklist progress`} />
                             <span className="text-xs tabular-nums text-muted-foreground">
-                              {completedChecks}/{totalChecks} complete
+                              {completedChecks}/{totalChecks} {pt ? 'concluídos' : 'complete'}
                             </span>
                           </div>
                           <ul className="grid min-w-0 gap-x-4 gap-y-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -541,8 +565,8 @@ export function DeliveryDeskPageClient({
                               return (
                                 <li key={code} className="min-w-0 text-xs">
                                   <TitleLine as="span" tone={done ? 'ok' : 'idle'} className="text-foreground">
-                                    {label}
-                                    <span className="break-words text-muted-foreground"> · {item?.status || 'missing'}{item?.status === 'waived' && item.evidenceReference ? ` · ${item.evidenceReference}` : item?.evidenceReference ? ' · reference recorded' : ''}</span>
+                                    {deliveryLabel(locale, label)}
+                                    <span className="break-words text-muted-foreground"> · {deliveryLabel(locale, item?.status || 'Missing')}{item?.status === 'waived' && item.evidenceReference ? ` · ${item.evidenceReference}` : item?.evidenceReference ? ` · ${deliveryLabel(locale, 'Reference recorded')}` : ''}</span>
                                   </TitleLine>
                                 </li>
                               )
@@ -555,8 +579,8 @@ export function DeliveryDeskPageClient({
                             </li>
                             <li className="min-w-0 text-xs">
                               <TitleLine as="span" tone={deliveryCase?.customerAcknowledgment ? 'ok' : 'idle'} className="text-foreground">
-                                Customer acknowledgment
-                                <span className="text-muted-foreground"> · {deliveryCase?.customerAcknowledgment ? 'Recorded' : 'Missing'}</span>
+                                {deliveryLabel(locale, 'Customer acknowledgment')}
+                                <span className="text-muted-foreground"> · {deliveryLabel(locale, deliveryCase?.customerAcknowledgment ? 'Recorded' : 'Missing')}</span>
                               </TitleLine>
                             </li>
                           </ul>
@@ -573,13 +597,13 @@ export function DeliveryDeskPageClient({
                             </TitleLine>
                           )}
                           {delivery.status === 'delivered' && (
-                            <p className="text-sm text-muted-foreground">Delivered {formatDate(delivery.saleDate, timeZone)}.</p>
+                            <p className="text-sm text-muted-foreground">{locale === 'pt-BR' ? 'Entregue em' : 'Delivered'} {formatDate(delivery.saleDate, timeZone, locale)}.</p>
                           )}
                         </div>
 
                         {delivery.status === 'financed' && (
                           <div className="min-w-0 space-y-1.5">
-                            <Track aria-label={`${vehicleName(delivery)} actions`} className="flex-wrap max-sm:[&>button]:h-10">
+                            <Track aria-label={`${vehicleName(delivery, pt)} actions`} className="flex-wrap max-sm:[&>button]:h-10">
                               {!deliveryCase && (
                                 <Pill size="sm" variant="primary" onClick={() => manageCase(delivery, 'schedule')} disabled={busy}>
                                   Schedule
@@ -594,7 +618,7 @@ export function DeliveryDeskPageClient({
                               {deliveryCase?.status === 'ready' && (
                                 <Pill size="sm" variant="primary" onClick={() => complete(delivery)} disabled={busy || !funding.done}>
                                   <Check />
-                                  Complete delivery
+                                  {pt ? 'Concluir entrega' : 'Complete delivery'}
                                 </Pill>
                               )}
                               {deliveryCase?.status === 'scheduled' && (
@@ -609,7 +633,7 @@ export function DeliveryDeskPageClient({
                               )}
                               {activeCase && missingItem && (
                                 <Pill size="sm" onClick={() => openTask('waive', delivery)} disabled={busy}>
-                                  Waive item
+                                  {pt ? 'Dispensar item' : 'Waive item'}
                                 </Pill>
                               )}
                               {activeCase && activeCase.status !== 'ready' && (
@@ -637,7 +661,7 @@ export function DeliveryDeskPageClient({
                               {activeCase && (
                                 <Pill size="sm" variant="plain" onClick={() => openTask('cancel', delivery)} disabled={busy}>
                                   <X />
-                                  Cancel delivery
+                                  {pt ? 'Cancelar entrega' : 'Cancel delivery'}
                                 </Pill>
                               )}
                             </Track>
@@ -647,7 +671,7 @@ export function DeliveryDeskPageClient({
                                 {!funding.done && !missingItem && (
                                   <>
                                     {' · '}
-                                    <Link className="underline hover:text-foreground" href={`${basePath}/platform/finance`}>Open finance</Link>
+                                    <Link className="underline hover:text-foreground" href={`${basePath}/platform/finance`}>{pt ? 'Abrir financeiro' : 'Open finance'}</Link>
                                   </>
                                 )}
                               </p>
@@ -658,10 +682,10 @@ export function DeliveryDeskPageClient({
                         {(deliveryCase?.weOweItems.length || 0) > 0 && (
                           <div className="min-w-0">
                             <div className="flex items-baseline gap-2 border-b pb-1.5">
-                              <span className={fieldLabel}>We-owe items</span>
+                              <span className={fieldLabel}>{pt ? 'Pendências da entrega' : 'We-owe items'}</span>
                               {openWeOwe.length > 0 && (
                                 <span className="text-xs tabular-nums text-muted-foreground">
-                                  {openWeOwe.length} open
+                                  {openWeOwe.length} {pt ? 'em aberto' : 'open'}
                                 </span>
                               )}
                             </div>
@@ -673,21 +697,21 @@ export function DeliveryDeskPageClient({
                                       {item.description}
                                     </TitleLine>
                                     <p className="pl-4 text-xs text-muted-foreground">
-                                      {item.status} · promised {formatDate(item.promisedAt, timeZone)}{overduePromise(item) ? ' · overdue' : ''} · {item.owner?.name || 'Unassigned'}
-                                      {item.estimatedCostCents != null ? ` · est ${formatUsd(item.estimatedCostCents / 100)}` : ''}
+                                      {item.status} · {locale === 'pt-BR' ? 'prometido para' : 'promised'} {formatDate(item.promisedAt, timeZone, locale)}{overduePromise(item) ? (locale === 'pt-BR' ? ' · em atraso' : ' · overdue') : ''} · {item.owner?.name || (locale === 'pt-BR' ? 'Sem responsável' : 'Unassigned')}
+                                      {item.estimatedCostCents != null ? ` · ${locale === 'pt-BR' ? 'custo estimado' : 'est'} ${formatUsd(item.estimatedCostCents / 100, { currencyCode, locale })}` : ''}
                                     </p>
                                   </div>
                                   {item.status === 'open' && (
                                     <Track className="shrink-0 self-start max-sm:[&>button]:h-10 sm:self-auto">
-                                      <Pill size="sm" variant="plain" onClick={() => openTask('edit-we-owe', delivery, item)} disabled={busy} aria-label={`Edit ${item.description}`}>
+                                      <Pill size="sm" variant="plain" onClick={() => openTask('edit-we-owe', delivery, item)} disabled={busy} aria-label={`${pt ? 'Editar' : 'Edit'} ${item.description}`}>
                                         <Pencil />
-                                        Edit
+                                        {pt ? 'Editar' : 'Edit'}
                                       </Pill>
                                       <Pill size="sm" onClick={() => closeWeOwe(delivery, item, 'fulfill')} disabled={busy}>
-                                        Fulfill
+                                        {pt ? 'Concluir' : 'Fulfill'}
                                       </Pill>
                                       <Pill size="sm" variant="plain" onClick={() => closeWeOwe(delivery, item, 'waive')} disabled={busy}>
-                                        Waive
+                                        {pt ? 'Dispensar' : 'Waive'}
                                       </Pill>
                                     </Track>
                                   )}
@@ -698,8 +722,8 @@ export function DeliveryDeskPageClient({
                         )}
 
                         <div className="min-w-0 divide-y border-t">
-                          <FinanceEvidenceHistory dealId={delivery.id} aggregateType="DeliveryCase" label="Delivery history" timeZone={timeZone} />
-                          <FinanceEvidenceHistory dealId={delivery.id} aggregateType="Deal" label="Deal history" timeZone={timeZone} />
+                          <FinanceEvidenceHistory dealId={delivery.id} aggregateType="DeliveryCase" label={pt ? 'Histórico da entrega' : 'Delivery history'} timeZone={timeZone} />
+                          <FinanceEvidenceHistory dealId={delivery.id} aggregateType="Deal" label={pt ? 'Histórico da venda' : 'Deal history'} timeZone={timeZone} />
                           {deliveryCase?.deliverySnapshot != null && (
                             <details className="group min-w-0 text-sm">
                               <summary className="flex cursor-pointer list-none items-center gap-2 py-1.5 font-medium text-foreground [&::-webkit-details-marker]:hidden">
@@ -717,13 +741,13 @@ export function DeliveryDeskPageClient({
   }
 
   return (
-    <PageContainer title="Delivery" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Entrega' : 'Delivery'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
         {notice && <Notice tone={notice.startsWith('Unable') ? 'bad' : 'ok'} role="status">{notice}</Notice>}
 
         <DeskSection
           id="delivery-today"
-          title="Today"
+          title={pt ? 'Hoje' : 'Today'}
           count={todayQueue.length}
           actions={
             overdueCount || unscheduledCount ? (
@@ -735,9 +759,9 @@ export function DeliveryDeskPageClient({
           }
         >
           {error ? (
-            <p className="py-4 text-[13px] text-muted-foreground">Today's deliveries are unavailable until the desk loads.</p>
+            <p className="py-4 text-[13px] text-muted-foreground">{locale === 'pt-BR' ? 'As entregas de hoje estarão disponíveis quando o painel carregar.' : 'Today&apos;s deliveries are unavailable until the desk loads.'}</p>
           ) : todayQueue.length === 0 ? (
-            <p className="py-4 text-[13px] text-muted-foreground">No deliveries due today and none waiting to be scheduled.</p>
+            <p className="py-4 text-[13px] text-muted-foreground">{pt ? 'Nenhuma entrega prevista para hoje ou aguardando agendamento.' : 'No deliveries due today and none waiting to be scheduled.'}</p>
           ) : (
             <ul className="divide-y rounded-md border bg-card">
               {todayQueue.map(({ delivery, deliveryCase }) => {
@@ -750,37 +774,37 @@ export function DeliveryDeskPageClient({
                       {scheduledAt ? (
                         <time dateTime={scheduledAt} className="block">
                           <Figure size="md" attention={overdue}>
-                            {new Date(scheduledAt).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' })}
+                            {new Date(scheduledAt).toLocaleTimeString(locale, { timeZone, hour: 'numeric', minute: '2-digit' })}
                           </Figure>
                           <span className="mt-1 block text-[12px] text-muted-foreground">
-                            {overdue ? 'Overdue' : 'Today'}{dayKey(scheduledAt) < todayKey ? ` · ${new Date(scheduledAt).toLocaleDateString('en-US', { timeZone, month: 'short', day: 'numeric' })}` : ''}
+                            {overdue ? (locale === 'pt-BR' ? 'Atrasado' : 'Overdue') : (locale === 'pt-BR' ? 'Hoje' : 'Today')}{dayKey(scheduledAt) < todayKey ? ` · ${new Date(scheduledAt).toLocaleDateString(locale, { timeZone, month: 'short', day: 'numeric' })}` : ''}
                           </span>
                         </time>
                       ) : (
-                        <span className="block text-[12px] font-medium text-muted-foreground">Not scheduled</span>
+                        <span className="block text-[12px] font-medium text-muted-foreground">{pt ? 'Não agendado' : 'Not scheduled'}</span>
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-[14px] font-medium text-foreground">{vehicleName(delivery)}</p>
+                      <p className="truncate text-[14px] font-medium text-foreground">{vehicleName(delivery, pt)}</p>
                       <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[12px] text-muted-foreground">
-                        <Status tone={deliveryTone(delivery, deliveryCase)} className="text-[12px]">{deliveryStatusLabel(delivery, deliveryCase)}</Status>
-                        <span className="truncate">{customerName(delivery)}</span>
+                        <Status tone={deliveryTone(delivery, deliveryCase)} className="text-[12px]">{deliveryLabel(locale, deliveryStatusLabel(delivery, deliveryCase))}</Status>
+                        <span className="truncate">{customerName(delivery, pt)}</span>
                         {delivery.vehicle?.stockNumber && <Code>#{delivery.vehicle.stockNumber}</Code>}
                       </p>
                     </div>
                     <div className="col-start-2 min-w-0 md:col-start-auto">
                       <p className="flex items-center gap-2 text-[12px]">
-                        <Meter value={completedChecks / totalChecks} segments={totalChecks} tone={allChecked ? 'ok' : 'warn'} label={`${vehicleName(delivery)} readiness`} />
+                        <Meter value={completedChecks / totalChecks} segments={totalChecks} tone={allChecked ? 'ok' : 'warn'} label={`${vehicleName(delivery, pt)} readiness`} />
                         <span className="tabular-nums text-foreground">{completedChecks}/{totalChecks} checklist</span>
                       </p>
                       <p className="mt-0.5 break-words text-[12px] text-muted-foreground">
-                        {missing.length ? `Missing: ${missing.join(', ')}` : 'Ready to hand over'}
+                        {missing.length ? `${pt ? 'Pendentes:' : 'Missing:'} ${missing.map(item => deliveryLabel(locale, item)).join(', ')}` : (pt ? 'Pronto para entregar' : 'Ready to hand over')}
                       </p>
                     </div>
                     <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-2 md:col-start-auto md:justify-end">
                       {nextAction(delivery)}
-                      <Pill size="sm" variant="plain" className="h-10 sm:h-7" onClick={() => openDetails(delivery.id)} aria-label={`Details for ${vehicleName(delivery)}`}>
-                        Details
+                      <Pill size="sm" variant="plain" className="h-10 sm:h-7" onClick={() => openDetails(delivery.id)} aria-label={`${pt ? 'Detalhes de' : 'Details for'} ${vehicleName(delivery, pt)}`}>
+                        {pt ? 'Detalhes' : 'Details'}
                         <ChevronRight />
                       </Pill>
                     </div>
@@ -793,12 +817,12 @@ export function DeliveryDeskPageClient({
 
         <DeskSection
           id="delivery-board"
-          title="All deliveries"
+          title={pt ? 'Todas as entregas' : 'All deliveries'}
           count={visible.length}
-          actions={loading ? <span className="text-xs text-muted-foreground" role="status">Refreshing…</span> : undefined}
+          actions={loading ? <span className="text-xs text-muted-foreground" role="status">{pt ? 'Atualizando…' : 'Refreshing…'}</span> : undefined}
         >
           <div className="space-y-3">
-            <Segmented label="Filter deliveries" value={filter} onChange={setFilter} options={filterOptions} size="sm" className="w-full" />
+            <Segmented label={pt ? 'Filtrar entregas' : 'Filter deliveries'} value={filter} onChange={setFilter} options={filterOptions} size="sm" className="w-full" />
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative min-w-0 flex-1 sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -806,27 +830,27 @@ export function DeliveryDeskPageClient({
                   className={`${controlClass} pl-9`}
                   value={search}
                   onChange={event => setSearch(event.target.value)}
-                  placeholder="Customer, stock, vehicle or VIN"
-                  aria-label="Search deliveries"
+                  placeholder={pt ? 'Cliente, estoque, veículo ou chassi' : 'Customer, stock, vehicle or VIN'}
+                  aria-label={pt ? 'Buscar entregas' : 'Search deliveries'}
                 />
               </div>
               <Select value={sort} onValueChange={setSort}>
-                <SelectTrigger className={`${controlClass} w-full sm:w-[180px]`} aria-label="Sort deliveries">
+                <SelectTrigger className={`${controlClass} w-full sm:w-[180px]`} aria-label={pt ? 'Ordenar entregas' : 'Sort deliveries'}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="appointment">Appointment first</SelectItem>
-                  <SelectItem value="updated">Recently updated</SelectItem>
+                  <SelectItem value="appointment">{pt ? 'Agendamento primeiro' : 'Appointment first'}</SelectItem>
+                  <SelectItem value="updated">{pt ? 'Atualizadas recentemente' : 'Recently updated'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {error ? (
               <Notice tone="bad">
-                <p className="font-medium">Deliveries are unavailable</p>
+                <p className="font-medium">{pt ? 'Entregas indisponíveis' : 'Deliveries are unavailable'}</p>
                 <p className="mt-0.5 text-muted-foreground">{error}</p>
                 <Track className="mt-2">
-                  <Pill size="sm" onClick={load}>Retry</Pill>
+                  <Pill size="sm" onClick={load}>{pt ? 'Tentar novamente' : 'Retry'}</Pill>
                 </Track>
               </Notice>
             ) : visible.length === 0 ? (
@@ -834,7 +858,7 @@ export function DeliveryDeskPageClient({
                 <p>{deliveries.length > 0 && isFiltered ? 'No matching deliveries' : 'No deliveries'}</p>
                 {deliveries.length > 0 && isFiltered && (
                   <Track>
-                    <Pill size="sm" onClick={resetFilters}>Reset filters</Pill>
+                    <Pill size="sm" onClick={resetFilters}>{pt ? 'Limpar filtros' : 'Reset filters'}</Pill>
                   </Track>
                 )}
               </div>
@@ -842,14 +866,14 @@ export function DeliveryDeskPageClient({
               <DeskTable>
                 <thead>
                   <tr>
-                    <Th>Status</Th>
-                    <Th>Appointment</Th>
-                    <Th>Vehicle</Th>
-                    <Th priority={2}>Stock #</Th>
-                    <Th priority={2}>Customer</Th>
-                    <Th align="right" priority={3}>Checklist</Th>
-                    <Th align="right" priority={3}>We-owes</Th>
-                    <Th className="w-10"><span className="sr-only">Details</span></Th>
+                    <Th>{pt ? 'Situação' : 'Status'}</Th>
+                    <Th>{pt ? 'Agendamento' : 'Appointment'}</Th>
+                    <Th>{pt ? 'Veículo' : 'Vehicle'}</Th>
+                    <Th priority={2}>{pt ? 'Cód. estoque' : 'Stock #'}</Th>
+                    <Th priority={2}>{pt ? 'Cliente' : 'Customer'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Conferência' : 'Checklist'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Pendências da loja' : 'We-owes'}</Th>
+                    <Th className="w-10"><span className="sr-only">{pt ? 'Detalhes' : 'Details'}</span></Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -863,16 +887,16 @@ export function DeliveryDeskPageClient({
                       <Fragment key={delivery.id}>
                         <Tr id={`delivery-row-${delivery.id}`} className={`cursor-pointer scroll-mt-4 ${expanded ? 'bg-muted/40' : ''}`} onClick={toggle}>
                           <Td className="w-[1%]">
-                            <Status tone={deliveryTone(delivery, deliveryCase)}>{deliveryStatusLabel(delivery, deliveryCase)}</Status>
+                            <Status tone={deliveryTone(delivery, deliveryCase)}>{deliveryLabel(locale, deliveryStatusLabel(delivery, deliveryCase))}</Status>
                           </Td>
                           <Td className="whitespace-nowrap">
                             {scheduledAt ? (
                               <span className={isOverdue(deliveryCase) ? 'font-medium text-foreground' : 'text-foreground'}>
-                                {formatDate(scheduledAt, timeZone)}
-                                {isOverdue(deliveryCase) && <Attention className="ml-2">Overdue</Attention>}
+                                {formatDate(scheduledAt, timeZone, locale)}
+                                {isOverdue(deliveryCase) && <Attention className="ml-2">{pt ? 'Em atraso' : 'Overdue'}</Attention>}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">{delivery.status === 'delivered' ? formatDate(delivery.saleDate, timeZone) : 'Not scheduled'}</span>
+                              <span className="text-muted-foreground">{delivery.status === 'delivered' ? formatDate(delivery.saleDate, timeZone, locale) : (locale === 'pt-BR' ? 'Não agendado' : 'Not scheduled')}</span>
                             )}
                           </Td>
                           <Td className="min-w-0 max-w-[16rem]">
@@ -883,15 +907,15 @@ export function DeliveryDeskPageClient({
                               onClick={event => { event.stopPropagation(); toggle() }}
                               className="block max-w-full truncate text-left font-medium text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
                             >
-                              {vehicleName(delivery)}
+                              {vehicleName(delivery, pt)}
                             </button>
-                            <span className="block truncate text-[12px] text-muted-foreground md:hidden">{customerName(delivery)}</span>
+                            <span className="block truncate text-[12px] text-muted-foreground md:hidden">{customerName(delivery, pt)}</span>
                           </Td>
                           <Td priority={2} className="whitespace-nowrap">{delivery.vehicle?.stockNumber ? <Code>#{delivery.vehicle.stockNumber}</Code> : <span className="text-muted-foreground">-</span>}</Td>
-                          <Td priority={2} className="max-w-[12rem] truncate">{customerName(delivery)}</Td>
+                          <Td priority={2} className="max-w-[12rem] truncate">{customerName(delivery, pt)}</Td>
                           <Td align="right" priority={3} className="whitespace-nowrap">{completedChecks}/{totalChecks}</Td>
                           <Td align="right" priority={3} className="whitespace-nowrap">
-                            {openWeOwe.length === 0 ? <span className="text-muted-foreground">None</span> : lateWeOwes > 0 ? <Attention>{openWeOwe.length} open · {lateWeOwes} late</Attention> : `${openWeOwe.length} open`}
+                            {openWeOwe.length === 0 ? <span className="text-muted-foreground">{pt ? 'Nenhuma' : 'None'}</span> : lateWeOwes > 0 ? <Attention>{pt ? `${openWeOwe.length} em aberto · ${lateWeOwes} em atraso` : `${openWeOwe.length} open · ${lateWeOwes} late`}</Attention> : `${openWeOwe.length} ${pt ? 'em aberto' : 'open'}`}
                           </Td>
                           <Td className="w-10 text-muted-foreground">
                             <ChevronRight aria-hidden="true" className={`size-4 transition-transform duration-150 ${expanded ? 'rotate-90' : ''}`} />
@@ -915,10 +939,10 @@ export function DeliveryDeskPageClient({
 
         {deliveries.length > 0 && (
           <ReadoutStrip>
-            <Readout label="Scheduled" value={scheduled.length} />
-            <Readout label="Ready" value={ready.length} />
-            <Readout label="Open we-owes" value={openPromises.length} />
-            <Readout label="Delivered" value={completed.length} />
+            <Readout label={pt ? 'Agendadas' : 'Scheduled'} value={scheduled.length} />
+            <Readout label={pt ? 'Prontas' : 'Ready'} value={ready.length} />
+            <Readout label={pt ? 'Pendências de entrega' : 'Open we-owes'} value={openPromises.length} />
+            <Readout label={pt ? 'Entregues' : 'Delivered'} value={completed.length} />
           </ReadoutStrip>
         )}
 
@@ -939,7 +963,7 @@ export function DeliveryDeskPageClient({
             <form onSubmit={submitTask} className="space-y-4">
               {task?.kind === 'schedule' && (
                 <label htmlFor="delivery-appointment" className="grid gap-1.5 text-sm">
-                  <span className={fieldLabel}>Appointment</span>
+                  <span className={fieldLabel}>{pt ? 'Data e horário' : 'Appointment'}</span>
                   <Input
                     id="delivery-appointment"
                     className={controlClass}
@@ -955,11 +979,11 @@ export function DeliveryDeskPageClient({
                 <>
                   <div className="grid gap-1.5 text-sm">
                     <span className={fieldLabel} id="delivery-checklist-code-label">
-                      Checklist item
+                      {pt ? 'Item da lista de conferência' : 'Checklist item'}
                     </span>
                     <Select value={task.fields.code || ''} onValueChange={value => updateTaskField('code', value)}>
                       <SelectTrigger id="delivery-checklist-code" className={controlClass} aria-labelledby="delivery-checklist-code-label">
-                        <SelectValue placeholder="Select an item" />
+                        <SelectValue placeholder={pt ? 'Selecione uma opção' : 'Select an item'} />
                       </SelectTrigger>
                       <SelectContent>
                         {DELIVERY_CHECKLIST_ITEMS.map(item => (
@@ -971,7 +995,7 @@ export function DeliveryDeskPageClient({
                     </Select>
                   </div>
                   <label htmlFor="delivery-reference" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>Reference</span>
+                    <span className={fieldLabel}>{pt ? 'Referência' : 'Reference'}</span>
                     <Input
                       id="delivery-reference"
                     className={controlClass}
@@ -979,14 +1003,14 @@ export function DeliveryDeskPageClient({
                       maxLength={200}
                       value={task.fields.reference || ''}
                       onChange={event => updateTaskField('reference', event.target.value)}
-                      placeholder="Document or record number"
+                      placeholder={pt ? 'Número do documento ou registro' : 'Document or record number'}
                     />
                   </label>
                 </>
               )}
               {task?.kind === 'acknowledge' && (
                 <label htmlFor="delivery-acknowledgment" className="grid gap-1.5 text-sm">
-                  <span className={fieldLabel}>Customer acknowledgment reference</span>
+                  <span className={fieldLabel}>{pt ? 'Referência da confirmação do cliente' : 'Customer acknowledgment reference'}</span>
                   <Input
                     id="delivery-acknowledgment"
                     className={controlClass}
@@ -998,23 +1022,23 @@ export function DeliveryDeskPageClient({
               )}
               {task?.kind === 'cancel' && (
                 <label htmlFor="delivery-cancel-reason" className="grid gap-1.5 text-sm">
-                  <span className={fieldLabel}>Cancellation reason</span>
+                  <span className={fieldLabel}>{pt ? 'Motivo do cancelamento' : 'Cancellation reason'}</span>
                   <Textarea className="rounded-[4px] text-[13px] shadow-none" id="delivery-cancel-reason" required maxLength={500} rows={3} value={task.fields.reason || ''} onChange={event => updateTaskField('reason', event.target.value)} />
                 </label>
               )}
               {task?.kind === 'waive' && (
                 <>
                   <div className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel} id="delivery-waive-code-label">Checklist item</span>
+                    <span className={fieldLabel} id="delivery-waive-code-label">{pt ? 'Item da lista de conferência' : 'Checklist item'}</span>
                     <Select value={task.fields.code || ''} onValueChange={value => updateTaskField('code', value)}>
-                      <SelectTrigger id="delivery-waive-code" className={controlClass} aria-labelledby="delivery-waive-code-label"><SelectValue placeholder="Select an item" /></SelectTrigger>
+                      <SelectTrigger id="delivery-waive-code" className={controlClass} aria-labelledby="delivery-waive-code-label"><SelectValue placeholder={pt ? 'Selecione uma opção' : 'Select an item'} /></SelectTrigger>
                       <SelectContent>
                         {DELIVERY_CHECKLIST_ITEMS.map(item => <SelectItem key={item.code} value={item.code}>{item.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <label htmlFor="delivery-waive-reason" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>Waiver reason</span>
+                    <span className={fieldLabel}>{pt ? 'Motivo da dispensa' : 'Waiver reason'}</span>
                     <Textarea className="rounded-[4px] text-[13px] shadow-none" id="delivery-waive-reason" required maxLength={200} rows={2} value={task.fields.reason || ''} onChange={event => updateTaskField('reason', event.target.value)} />
                   </label>
                 </>
@@ -1022,9 +1046,9 @@ export function DeliveryDeskPageClient({
               {(task?.kind === 'we-owe' || task?.kind === 'edit-we-owe') && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel} id="we-owe-owner-label">Owner</span>
+                    <span className={fieldLabel} id="we-owe-owner-label">{pt ? 'Responsável' : 'Owner'}</span>
                     <Select value={task.fields.ownerId || ''} onValueChange={value => updateTaskField('ownerId', value)}>
-                      <SelectTrigger id="we-owe-owner" className={controlClass} aria-labelledby="we-owe-owner-label"><SelectValue placeholder="Select owner" /></SelectTrigger>
+                      <SelectTrigger id="we-owe-owner" className={controlClass} aria-labelledby="we-owe-owner-label"><SelectValue placeholder={pt ? 'Selecione o responsável' : 'Select owner'} /></SelectTrigger>
                       <SelectContent>
                         {staffFor(task.delivery).map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
                         {task.item?.owner && !staffFor(task.delivery).some(user => user.id === task.item?.owner?.id) && <SelectItem value={task.item.owner.id}>{task.item.owner.name}</SelectItem>}
@@ -1032,12 +1056,12 @@ export function DeliveryDeskPageClient({
                     </Select>
                   </div>
                   <label htmlFor="we-owe-cost" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>Estimated cost</span>
+                    <span className={fieldLabel}>{pt ? 'Custo estimado' : 'Estimated cost'}</span>
                     <MoneyInput id="we-owe-cost" className="h-10 text-[13px]" cents={Number(task.fields.estimatedCostCents) || 0} onCentsChange={cents => updateTaskField('estimatedCostCents', String(cents))} />
                   </label>
                   {task.kind === 'edit-we-owe' && (
                     <label htmlFor="we-owe-edit-promised-at" className="grid gap-1.5 text-sm sm:col-span-2">
-                      <span className={fieldLabel}>Promised by (dealership time)</span>
+                      <span className={fieldLabel}>{pt ? 'Prazo prometido (horário da loja)' : 'Promised by (dealership time)'}</span>
                       <Input id="we-owe-edit-promised-at" className={controlClass} type="datetime-local" required value={task.fields.promisedAt || ''} onChange={event => updateTaskField('promisedAt', event.target.value)} />
                     </label>
                   )}
@@ -1046,7 +1070,7 @@ export function DeliveryDeskPageClient({
               {task?.kind === 'we-owe' && (
                 <>
                   <label htmlFor="we-owe-description" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>Description</span>
+                    <span className={fieldLabel}>{pt ? 'Descrição' : 'Description'}</span>
                     <Textarea
                       className="rounded-[4px] text-[13px] shadow-none"
                       id="we-owe-description"
@@ -1058,7 +1082,7 @@ export function DeliveryDeskPageClient({
                     />
                   </label>
                   <label htmlFor="we-owe-promised-at" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>Promised by (dealership time)</span>
+                    <span className={fieldLabel}>{pt ? 'Prazo prometido (horário da loja)' : 'Promised by (dealership time)'}</span>
                     <Input
                       id="we-owe-promised-at"
                     className={controlClass}
@@ -1073,7 +1097,7 @@ export function DeliveryDeskPageClient({
               {task?.kind === 'close-we-owe' && (
                 <>
                   <label htmlFor="we-owe-fulfillment" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>{task.action === 'waive' ? 'Waiver' : 'Fulfillment'} reference</span>
+                    <span className={fieldLabel}>{pt ? (task.action === 'waive' ? 'Referência da dispensa' : 'Referência da conclusão') : `${task.action === 'waive' ? 'Waiver' : 'Fulfillment'} reference`}</span>
                     <Input
                       id="we-owe-fulfillment"
                     className={controlClass}
@@ -1083,7 +1107,7 @@ export function DeliveryDeskPageClient({
                     />
                   </label>
                   <label htmlFor="we-owe-ack" className="grid gap-1.5 text-sm">
-                    <span className={fieldLabel}>Customer acknowledgment reference</span>
+                    <span className={fieldLabel}>{pt ? 'Referência da confirmação do cliente' : 'Customer acknowledgment reference'}</span>
                     <Input
                       id="we-owe-ack"
                     className={controlClass}
@@ -1102,7 +1126,7 @@ export function DeliveryDeskPageClient({
                     checked={task.fields.confirmed === 'yes'}
                     onChange={event => updateTaskField('confirmed', event.target.checked ? 'yes' : '')}
                   />
-                  <span>The vehicle is ready for delivery.</span>
+                  <span>{pt ? 'O veículo está pronto para a entrega.' : 'The vehicle is ready for delivery.'}</span>
                 </label>
               )}
               {taskError && <Notice tone="bad">{taskError}</Notice>}
@@ -1119,7 +1143,7 @@ export function DeliveryDeskPageClient({
                     Cancel
                   </Pill>
                   <Pill type="submit" variant="primary" disabled={Boolean(activeId)}>
-                    {activeId ? 'Saving…' : task?.kind === 'complete' ? 'Complete delivery' : task?.kind === 'cancel' ? 'Cancel delivery' : task?.kind === 'waive' ? 'Waive item' : 'Save'}
+                    {activeId ? (pt ? 'Salvando…' : 'Saving…') : task?.kind === 'complete' ? (pt ? 'Concluir entrega' : 'Complete delivery') : task?.kind === 'cancel' ? (pt ? 'Cancelar entrega' : 'Cancel delivery') : task?.kind === 'waive' ? (pt ? 'Dispensar item' : 'Waive item') : (pt ? 'Salvar' : 'Save')}
                   </Pill>
                 </Track>
               </DialogFooter>

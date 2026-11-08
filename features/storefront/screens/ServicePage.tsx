@@ -9,6 +9,7 @@ import { fetchGraphQL } from '@/features/storefront/lib/data/graphql-client'
 import { submitStorefrontService } from '../actions/submissions'
 import { PageHeader } from '../components/PageHeader'
 import { useStorefrontBusiness } from '../components/StorefrontBusinessProvider'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { formatServicePackagePrice } from '../lib/servicePackagePrice'
 import { readServiceMenu, serviceTypeForPackage, type ServiceMenuState } from '../lib/serviceMenuState'
 import { customerRequestReference } from '../lib/customerRequests'
@@ -40,15 +41,15 @@ const GET_SERVICE_PACKAGES = `
 `
 
 const SERVICE_TYPES = [
-  { value: 'oil_change', label: 'Oil Change' },
-  { value: 'brake_service', label: 'Brake Service' },
-  { value: 'battery_service', label: 'Battery Service' },
-  { value: 'diagnostics', label: 'Diagnostics' },
-  { value: 'tire_service', label: 'Tire Service' },
-  { value: 'state_inspection', label: 'State Inspection' },
-  { value: 'scheduled_maintenance', label: 'Scheduled Maintenance' },
-  { value: 'repair', label: 'Repair' },
-  { value: 'other', label: 'Other' },
+  { value: 'oil_change', label: 'Oil Change', pt: 'Troca de óleo' },
+  { value: 'brake_service', label: 'Brake Service', pt: 'Serviço de freios' },
+  { value: 'battery_service', label: 'Battery Service', pt: 'Bateria' },
+  { value: 'diagnostics', label: 'Diagnostics', pt: 'Diagnóstico' },
+  { value: 'tire_service', label: 'Tire Service', pt: 'Pneus' },
+  { value: 'state_inspection', label: 'State Inspection', pt: 'Inspeção veicular' },
+  { value: 'scheduled_maintenance', label: 'Scheduled Maintenance', pt: 'Revisão programada' },
+  { value: 'repair', label: 'Repair', pt: 'Reparo' },
+  { value: 'other', label: 'Other', pt: 'Outro' },
 ]
 
 const PACKAGE_CHOICE = 'package:'
@@ -78,6 +79,8 @@ function formatDuration(minutes: number | null) {
 
 export function ServicePage() {
   const business = useStorefrontBusiness()
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [formData, setFormData] = useState(EMPTY)
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -150,17 +153,17 @@ export function ServicePage() {
   const selectedPackagePrice = serviceMenu.kind === 'ready' && selectedPackage
     ? formatServicePackagePrice(serviceMenu.packages.find((pkg) => pkg.name === selectedPackage)?.price, business.currencyCode)
     : null
-  const serviceTypeLabel = SERVICE_TYPES.find((type) => type.value === formData.serviceType)?.label ?? null
+  const serviceTypeLabel = SERVICE_TYPES.find((type) => type.value === formData.serviceType)?.[pt ? 'pt' : 'label'] ?? null
   const vehicleLabel = [formData.vehicleYear, formData.vehicleMake, formData.vehicleModel].filter(Boolean).join(' ')
 
   const summaryRows = (): StickerRowData[] => [
     ...(selectedPackage
-      ? [{ label: 'Package', value: selectedPackage }]
-      : [{ label: 'Service', value: serviceTypeLabel }]),
-    ...(selectedPackagePrice ? [{ label: 'Price', value: selectedPackagePrice, strong: true }] : []),
-    { label: 'Date', value: formData.appointmentDate ? formatRequestDate(formData.appointmentDate) : null },
-    { label: 'Time', value: formData.appointmentTime },
-    { label: 'Vehicle', value: vehicleLabel },
+      ? [{ label: pt ? 'Pacote' : 'Package', value: selectedPackage }]
+      : [{ label: pt ? 'Serviço' : 'Service', value: serviceTypeLabel }]),
+    ...(selectedPackagePrice ? [{ label: pt ? 'Preço' : 'Price', value: selectedPackagePrice, strong: true }] : []),
+    { label: pt ? 'Data' : 'Date', value: formData.appointmentDate ? formatRequestDate(formData.appointmentDate, locale) : null },
+    { label: pt ? 'Horário' : 'Time', value: formData.appointmentTime },
+    { label: pt ? 'Veículo' : 'Vehicle', value: vehicleLabel },
     ...(formData.vehicleVin ? [{ label: 'VIN', value: formData.vehicleVin }] : []),
   ]
 
@@ -206,14 +209,14 @@ export function ServicePage() {
   if (submitStatus === 'success') {
     return (
       <RequestReceived
-        context="Service"
+        context={pt ? 'Oficina' : 'Service'}
         reference={requestReference}
-        summary={<Sticker title="Service appointment" meta={business.shortName || business.fullName} rows={submittedRows ?? []} />}
+        summary={<Sticker title={pt ? 'Agendamento de serviço' : 'Service appointment'} meta={business.shortName || business.fullName} rows={submittedRows ?? []} />}
         actions={
           <>
-            <Link href="/" className="sf-btn sf-btn-primary">Back to home</Link>
-            <Link href="/inventory" className="sf-btn sf-btn-ghost">Inventory</Link>
-            <Link href="/account" className="sf-btn sf-btn-ghost">Account</Link>
+            <Link href="/" className="sf-btn sf-btn-primary">{pt ? 'Voltar ao início' : 'Back to home'}</Link>
+            <Link href="/inventory" className="sf-btn sf-btn-ghost">{pt ? 'Estoque' : 'Inventory'}</Link>
+            <Link href="/account" className="sf-btn sf-btn-ghost">{pt ? 'Minha conta' : 'Account'}</Link>
           </>
         }
       />
@@ -222,13 +225,13 @@ export function ServicePage() {
 
   const summary = (
     <Sticker
-      title="Service appointment"
+      title={pt ? 'Agendamento de serviço' : 'Service appointment'}
       meta={business.shortName || business.fullName}
       rows={summaryRows()}
       footer={selectedPackage ? (
         <button type="button" onClick={clearPackage} className="sf-link inline-flex min-h-11 items-center gap-1.5 text-[length:var(--sf-text-sm)]">
           <X className="size-4" aria-hidden="true" />
-          Remove package
+          {pt ? 'Remover pacote' : 'Remove package'}
         </button>
       ) : undefined}
     />
@@ -236,13 +239,13 @@ export function ServicePage() {
 
   return (
     <>
-      <PageHeader title="Book service" tone="lane" />
+      <PageHeader title={pt ? 'Agendar serviço na oficina' : 'Book service'} tone="lane" />
 
       <RequestLayout summary={summary}>
         <div className="space-y-[var(--sf-space-xl)]">
-          <FormSection title="Service menu" first>
+          <FormSection title={pt ? 'Serviços disponíveis' : 'Service menu'} first>
             {serviceMenu.kind === 'loading' ? (
-              <div className="space-y-2" aria-label="Loading service menu">
+              <div className="space-y-2" aria-label={pt ? 'Carregando serviços' : 'Loading service menu'}>
                 {Array.from({ length: 3 }).map((_, index) => (
                   <div key={index} className="sf-skeleton h-20" aria-hidden />
                 ))}
@@ -278,7 +281,7 @@ export function ServicePage() {
                         </span>
                         <span className="sf-price text-right text-[length:var(--sf-text-lg)]">
                           {formatServicePackagePrice(pkg.price, business.currencyCode) ?? (
-                            <span className="sf-faint font-sans text-[length:var(--sf-text-xs)] font-medium">Price unavailable</span>
+                            <span className="sf-faint font-sans text-[length:var(--sf-text-xs)] font-medium">{pt ? 'Preço indisponível' : 'Price unavailable'}</span>
                           )}
                         </span>
                       </button>
@@ -288,30 +291,30 @@ export function ServicePage() {
               </ul>
             ) : serviceMenu.kind === 'empty' ? (
               <div className="sf-well p-5">
-                <p className="sf-muted text-[length:var(--sf-text-sm)]" role="status">No service packages listed.</p>
+                <p className="sf-muted text-[length:var(--sf-text-sm)]" role="status">{pt ? 'Nenhum pacote de serviço cadastrado.' : 'No service packages listed.'}</p>
               </div>
             ) : (
               <div className="sf-well flex flex-col items-start gap-4 p-5" role="status">
                 <p className="sf-title-line text-[length:var(--sf-text-sm)]">
                   <span className="sf-dot" data-tone="bad" aria-hidden="true" />
                   <span>
-                    Service menu unavailable.
+                    {pt ? 'Lista de serviços indisponível.' : 'Service menu unavailable.'}
                     {business.serviceEmail ? (
-                      <> Email <a href={`mailto:${business.serviceEmail}`} className="sf-link break-all">{business.serviceEmail}</a>.</>
+                      <> {pt ? 'E-mail:' : 'Email'} <a href={`mailto:${business.serviceEmail}`} className="sf-link break-all">{business.serviceEmail}</a>.</>
                     ) : null}
                   </span>
                 </p>
-                <button type="button" onClick={retryServiceMenu} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">Retry service menu</button>
+                <button type="button" onClick={retryServiceMenu} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">{pt ? 'Tentar novamente' : 'Retry service menu'}</button>
               </div>
             )}
           </FormSection>
 
           <div ref={formRef} className="scroll-mt-28">
             <form onSubmit={handleSubmit} className="space-y-[var(--sf-space-xl)]">
-              <FormSection title="Date and time">
+              <FormSection title={pt ? 'Data e horário' : 'Date and time'}>
                 <div className="space-y-5">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Date" htmlFor="appointmentDate">
+                    <Field label={pt ? 'Data' : 'Date'} htmlFor="appointmentDate">
                       <PlatformDateInput
                         id="appointmentDate"
                         name="appointmentDate"
@@ -322,7 +325,7 @@ export function ServicePage() {
                         className="sf-input sf-trigger"
                       />
                     </Field>
-                    <Field label="Service" htmlFor="serviceType">
+                    <Field label={pt ? 'Serviço' : 'Service'} htmlFor="serviceType">
                       <PlatformSelect
                         id="serviceType"
                         name="serviceType"
@@ -330,10 +333,10 @@ export function ServicePage() {
                         value={serviceChoice}
                         onValueChange={chooseService}
                         className="sf-input sf-trigger"
-                        placeholder="Select service"
+                        placeholder={pt ? 'Selecione o serviço' : 'Select service'}
                         options={[
                           ...menuPackages.map((pkg) => ({ value: `${PACKAGE_CHOICE}${pkg.name}`, label: pkg.name })),
-                          ...SERVICE_TYPES.map((type) => ({ value: type.value, label: type.label })),
+                          ...SERVICE_TYPES.map((type) => ({ value: type.value, label: type[pt ? 'pt' : 'label'] })),
                         ]}
                       />
                     </Field>
@@ -343,12 +346,12 @@ export function ServicePage() {
                     <div className="sf-well p-4">
                       <p role="alert" className="sf-title-line text-[length:var(--sf-text-sm)]">
                         <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-                        <span>{closedDayLabel(availability)} Choose another date.</span>
+                        <span>{closedDayLabel(availability)} {pt ? 'Escolha outra data.' : 'Choose another date.'}</span>
                       </p>
                     </div>
                   ) : (
                     <RadioPills
-                      legend="Time"
+                      legend={pt ? 'Horário' : 'Time'}
                       name="appointmentTime"
                       required
                       variant="grid"
@@ -364,9 +367,9 @@ export function ServicePage() {
                 </div>
               </FormSection>
 
-              <FormSection title="Vehicle">
+              <FormSection title={pt ? 'Veículo' : 'Vehicle'}>
                 <div className="grid gap-4">
-                  <Field label="Year" htmlFor="vehicleYear" className="sm:max-w-[10rem]">
+                  <Field label={pt ? 'Ano' : 'Year'} htmlFor="vehicleYear" className="sm:max-w-[10rem]">
                     <input
                       id="vehicleYear"
                       name="vehicleYear"
@@ -378,10 +381,10 @@ export function ServicePage() {
                       value={formData.vehicleYear}
                       onChange={handleChange}
                       className="sf-input sf-figure"
-                      placeholder="e.g. 2020"
+                      placeholder={pt ? 'Ex.: 2020' : 'e.g. 2020'}
                     />
                   </Field>
-                  <Field label="Make" htmlFor="vehicleMake">
+                  <Field label={pt ? 'Marca' : 'Make'} htmlFor="vehicleMake">
                     <input
                       id="vehicleMake"
                       name="vehicleMake"
@@ -390,10 +393,10 @@ export function ServicePage() {
                       value={formData.vehicleMake}
                       onChange={handleChange}
                       className="sf-input"
-                      placeholder="e.g. Toyota"
+                      placeholder={pt ? 'Ex.: Toyota' : 'e.g. Toyota'}
                     />
                   </Field>
-                  <Field label="Model" htmlFor="vehicleModel">
+                  <Field label={pt ? 'Modelo' : 'Model'} htmlFor="vehicleModel">
                     <input
                       id="vehicleModel"
                       name="vehicleModel"
@@ -402,7 +405,7 @@ export function ServicePage() {
                       value={formData.vehicleModel}
                       onChange={handleChange}
                       className="sf-input"
-                      placeholder="e.g. Camry"
+                      placeholder={pt ? 'Ex.: Corolla' : 'e.g. Camry'}
                     />
                   </Field>
                   <Field label="VIN" htmlFor="vehicleVin" optional>
@@ -414,7 +417,7 @@ export function ServicePage() {
                       value={formData.vehicleVin}
                       onChange={handleChange}
                       className="sf-input sf-figure"
-                      placeholder="17 characters"
+                      placeholder={pt ? '17 caracteres' : '17 characters'}
                       autoCapitalize="characters"
                       spellCheck={false}
                     />
@@ -422,9 +425,9 @@ export function ServicePage() {
                 </div>
               </FormSection>
 
-              <FormSection title="Contact">
+              <FormSection title={pt ? 'Seus dados' : 'Contact'}>
                 <div className="grid gap-4">
-                  <Field label="Full name" htmlFor="customerName">
+                  <Field label={pt ? 'Nome completo' : 'Full name'} htmlFor="customerName">
                     <input
                       id="customerName"
                       name="customerName"
@@ -436,7 +439,7 @@ export function ServicePage() {
                       autoComplete="name"
                     />
                   </Field>
-                  <Field label="Email" htmlFor="customerEmail">
+                  <Field label="E-mail" htmlFor="customerEmail">
                     <input
                       id="customerEmail"
                       name="customerEmail"
@@ -448,7 +451,7 @@ export function ServicePage() {
                       autoComplete="email"
                     />
                   </Field>
-                  <Field label="Phone" htmlFor="customerPhone">
+                  <Field label={pt ? 'Telefone' : 'Phone'} htmlFor="customerPhone">
                     <input
                       id="customerPhone"
                       name="customerPhone"
@@ -460,7 +463,7 @@ export function ServicePage() {
                       autoComplete="tel"
                     />
                   </Field>
-                  <Field label="Service notes" htmlFor="description" optional>
+                  <Field label={pt ? 'Observações sobre o serviço' : 'Service notes'} htmlFor="description" optional>
                     <textarea
                       id="description"
                       name="description"
@@ -489,9 +492,9 @@ export function ServicePage() {
 
                 {submitStatus === 'error' && (
                   <Notice tone="bad">
-                    {submitError || 'There was an error submitting your service request.'} Please try again
+                    {submitError || (pt ? 'Ocorreu um erro ao enviar sua solicitação.' : 'There was an error submitting your service request.')} {pt ? 'Tente novamente' : 'Please try again'}
                     {business.serviceEmail ? (
-                      <> or email <a href={`mailto:${business.serviceEmail}`} className="sf-link break-all">{business.serviceEmail}</a></>
+                      <> {pt ? 'ou envie um e-mail para' : 'or email'} <a href={`mailto:${business.serviceEmail}`} className="sf-link break-all">{business.serviceEmail}</a></>
                     ) : null}.
                   </Notice>
                 )}
@@ -502,10 +505,10 @@ export function ServicePage() {
                     disabled={isSubmitting || availability.status === 'closed'}
                     className="sf-btn sf-btn-primary w-full sm:w-auto sm:min-w-56"
                   >
-                    {isSubmitting ? 'Sending…' : 'Send service request'}
+                    {isSubmitting ? (pt ? 'Enviando…' : 'Sending…') : (pt ? 'Solicitar atendimento' : 'Send service request')}
                   </button>
                   <Link href="/" className="sf-btn sf-btn-ghost w-full sm:w-auto">
-                    Cancel
+                    {pt ? 'Cancelar' : 'Cancel'}
                   </Link>
                 </div>
               </div>

@@ -368,8 +368,8 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
           <OnboardingCards
             steps={[{
               href: '#onboarding',
-              title: 'Welcome to Openfront',
-              description: 'Your store is empty. Click get started to configure your store with products, categories, and regions.',
+              title: locale === 'pt-BR' ? 'Bem-vindo ao AutoCarVendas' : 'Welcome to Openfront',
+              description: locale === 'pt-BR' ? 'Configure o perfil da sua revenda, o estoque, a oficina, as peças, o financiamento e as funções da equipe.' : 'Your store is empty. Click get started to configure your store with products, categories, and regions.',
             }]}
             onboardingStatus={user?.onboardingStatus}
             userRole={user?.role}

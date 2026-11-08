@@ -21,6 +21,8 @@ import Link from "next/link";
 import { Fields } from "@/features/dashboard/components/Fields";
 import { enhanceFields } from "@/features/dashboard/utils/enhanceFields";
 import { getFieldViews } from "@/features/dashboard/views/registry";
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface CardsProps {
   field: {
@@ -105,6 +107,10 @@ export function Cards({
   forceValidation = false,
   isDisabled = false,
 }: CardsProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const relatedItemName = translateSchemaLabel(locale, foreignList.singular)
+  const relatedListName = translateSchemaLabel(locale, foreignList.label || foreignList.singular)
   const [showConnectItems, setShowConnectItems] = useState(false);
   const [hideConnectItemsLabel, setHideConnectItemsLabel] = useState<
     "Cancel" | "Done"
@@ -303,9 +309,7 @@ export function Cards({
               <li key={id}>
                 <CardContainer mode={isEditMode ? "edit" : "view"}>
                   <div className="sr-only">
-                    <h2>{`${field.label} ${index + 1} ${
-                      isEditMode ? "edit" : "view"
-                    } mode`}</h2>
+                    <h2>{`${field.label} ${index + 1} ${pt ? (isEditMode ? 'modo de edição' : 'modo de visualização') : (isEditMode ? 'edit mode' : 'view mode')}`}</h2>
                   </div>
 
                   {isEditMode ? (
@@ -340,7 +344,7 @@ export function Cards({
                           <Button size="sm" variant="ghost" asChild>
                             <Link href={`/${foreignList.path}/${id}`}>
                               <ExternalLink className="h-3 w-3 mr-1" />
-                              View {foreignList.singular} details
+                              {pt ? `Ver detalhes de ${relatedItemName}` : `View ${relatedItemName} details`}
                             </Link>
                           </Button>
                         )}
@@ -351,10 +355,10 @@ export function Cards({
                               size="sm"
                               variant="destructive"
                               onClick={() => handleRemoveItem(id)}
-                              title="This item will not be deleted. It will only be removed from this field."
+                              title={pt ? 'Este registro não será excluído; será apenas desvinculado deste campo.' : 'This item will not be deleted. It will only be removed from this field.'}
                             >
                               <Trash2 className="h-3 w-3 mr-1" />
-                              Remove
+                              {pt ? 'Desvincular' : 'Remove'}
                             </Button>
                           )}
 
@@ -365,7 +369,7 @@ export function Cards({
                             onClick={() => handleEditItem(id)}
                           >
                             <Edit className="h-3 w-3 mr-1" />
-                            Edit
+                            {pt ? 'Editar' : 'Edit'}
                           </Button>
                         )}
                       </div>
@@ -409,11 +413,11 @@ export function Cards({
                   },
                 }}
                 autoFocus
-                placeholder={`Select a ${foreignList.singular}`}
+                placeholder={pt ? `Selecione ${relatedItemName}` : `Select a ${relatedItemName}`}
               />
             </div>
             <Button size="sm" onClick={() => setShowConnectItems(false)}>
-              {hideConnectItemsLabel}
+              {pt ? (hideConnectItemsLabel === 'Done' ? 'Concluído' : 'Cancelar') : hideConnectItemsLabel}
             </Button>
           </div>
         </CardContainer>
@@ -447,7 +451,7 @@ export function Cards({
                 }}
               >
                 <Plus className="h-3 w-3 mr-1" />
-                Create {foreignList.singular}
+                {pt ? `Cadastrar ${relatedItemName}` : `Create ${relatedItemName}`}
               </Button>
             )}
 
@@ -460,7 +464,7 @@ export function Cards({
                   setHideConnectItemsLabel("Cancel");
                 }}
               >
-                Link existing {foreignList.singular}
+                {pt ? `Vincular ${relatedItemName} existente` : `Link existing ${relatedItemName}`}
               </Button>
             )}
           </div>
@@ -470,9 +474,9 @@ export function Cards({
       {/* Validation Error */}
       {forceValidation && (
         <p className="text-sm text-red-600">
-          You must finish creating and editing any related{" "}
-          {foreignList.label?.toLowerCase() || "items"} before saving the{" "}
-          {foreignList.singular?.toLowerCase() || "item"}
+          {pt
+            ? `Conclua o cadastro e a edição dos itens relacionados antes de salvar ${relatedItemName.toLowerCase()}.`
+            : `You must finish creating and editing any related ${relatedListName.toLowerCase()} before saving the ${relatedItemName.toLowerCase()}.`}
         </p>
       )}
     </div>

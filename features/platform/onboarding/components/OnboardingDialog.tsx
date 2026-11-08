@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import {
   AlertCircle,
   ArrowUpRight,
@@ -101,6 +102,9 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const text = (en: string, br: string) => pt ? br : en
   const onboardingState = useOnboardingState();
   const {
     step,
@@ -151,18 +155,18 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
     ? Object.fromEntries(SECTION_TYPES.map((type) => [type, getItemsFromJsonData(currentJsonData, type)]))
     : templateConfig.displayNames;
   const savedCounts: Array<[number, string, string]> = [
-    [displayNames.vehicles.length, 'vehicle', 'vehicles'],
-    [displayNames.services.length, 'service package', 'service packages'],
-    [displayNames.parts.length, 'part', 'parts'],
-    [displayNames.financeProducts.length, 'finance product', 'finance products'],
-    [displayNames.staff.length, 'staff role', 'staff roles'],
+    [displayNames.vehicles.length, pt ? 'veículo' : 'vehicle', pt ? 'veículos' : 'vehicles'],
+    [displayNames.services.length, pt ? 'pacote de serviços' : 'service package', pt ? 'pacotes de serviços' : 'service packages'],
+    [displayNames.parts.length, pt ? 'peça' : 'part', pt ? 'peças' : 'parts'],
+    [displayNames.financeProducts.length, pt ? 'produto financeiro' : 'finance product', pt ? 'produtos financeiros' : 'finance products'],
+    [displayNames.staff.length, pt ? 'função da equipe' : 'staff role', pt ? 'funções da equipe' : 'staff roles'],
   ];
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[95vw] flex-col overflow-hidden p-0 gap-0 sm:max-w-4xl">
         <DialogHeader className="border-b px-4 sm:px-6 py-4 mb-0 shrink-0">
-          <DialogTitle>Dealership Setup</DialogTitle>
+          <DialogTitle>{text('Dealership Setup', 'Configuração da loja')}</DialogTitle>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
@@ -180,12 +184,12 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                   </div>
                   <div className="space-y-0.5">
                     <h3 className="text-sm font-medium text-foreground">
-                      Dealership Setup
+                      {text('Dealership Setup', 'Configuração da loja')}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {step === 'done'
-                        ? 'Your dealership is set up'
-                        : 'Set up inventory, service and staff'}
+                        ? text('Your dealership is set up', 'Sua loja está configurada')
+                        : text('Set up inventory, service and staff', 'Configure estoque, oficina e equipe')}
                     </p>
                   </div>
                 </div>
@@ -194,10 +198,10 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                 {step === 'done' ? (
                   <>
                     <h4 className="text-sm font-medium text-foreground mb-2">
-                      Setup complete
+                      {text('Setup complete', 'Configuração concluída')}
                     </h4>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Your {selectedTemplate === 'minimal' ? 'basic' : 'complete'} dealership setup is saved.
+                      {pt ? `A configuração ${selectedTemplate === 'minimal' ? 'básica' : 'completa'} da loja foi salva.` : `Your ${selectedTemplate === 'minimal' ? 'basic' : 'complete'} dealership setup is saved.`}
                     </p>
 
                     <div className="space-y-3 text-sm">
@@ -214,7 +218,7 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                 ) : !isLoading ? (
                   <>
                     <h4 className="text-sm font-medium text-foreground mb-4">
-                      Setup Type
+                      {text('Setup Type', 'Tipo de configuração')}
                     </h4>
                     
                     {/* Mobile: Dropdown selector */}
@@ -229,20 +233,20 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                         <SelectContent>
                           <SelectItem value="minimal">
                             <div className="flex flex-col items-start text-left">
-                              <span className="font-medium">Basic Setup</span>
-                              <span className="text-xs text-muted-foreground">A few vehicles, services and staff roles to get started</span>
+                              <span className="font-medium">{text('Basic Setup', 'Configuração básica')}</span>
+                              <span className="text-xs text-muted-foreground">{text('A few vehicles, services and staff roles to get started', 'Cadastre alguns veículos, serviços e funções da equipe para começar')}</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="full">
                             <div className="flex flex-col items-start text-left">
-                              <span className="font-medium">Complete Setup</span>
-                              <span className="text-xs text-muted-foreground">Full inventory, service, parts, financing and staff roles</span>
+                              <span className="font-medium">{text('Complete Setup', 'Configuração completa')}</span>
+                              <span className="text-xs text-muted-foreground">{text('Full inventory, service, parts, financing and staff roles', 'Estoque completo, oficina, peças, financiamento e funções da equipe')}</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="custom">
                             <div className="flex flex-col items-start text-left">
-                              <span className="font-medium">Custom Setup</span>
-                              <span className="text-xs text-muted-foreground">Use your own JSON templates</span>
+                              <span className="font-medium">{text('Custom Setup', 'Configuração personalizada')}</span>
+                              <span className="text-xs text-muted-foreground">{text('Use your own JSON templates', 'Use seus próprios modelos JSON')}</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -287,10 +291,10 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                                 className="flex-1 cursor-pointer"
                               >
                                 <div className="font-medium text-base mb-1">
-                                  Basic Setup
+                                  {text('Basic Setup', 'Configuração básica')}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  A few vehicles, services and staff roles to get started
+                                  {text('A few vehicles, services and staff roles to get started', 'Cadastre alguns veículos, serviços e funções da equipe para começar')}
                                 </div>
                               </Label>
                             </div>
@@ -325,10 +329,10 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                                 className="flex-1 cursor-pointer"
                               >
                                 <div className="font-medium text-base mb-1">
-                                  Complete Setup
+                                  {text('Complete Setup', 'Configuração completa')}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  Full inventory, service, parts, financing and staff roles
+                                  {text('Full inventory, service, parts, financing and staff roles', 'Estoque completo, oficina, peças, financiamento e funções da equipe')}
                                 </div>
                               </Label>
                             </div>
@@ -363,10 +367,10 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                                 className="flex-1 cursor-pointer"
                               >
                                 <div className="font-medium text-base mb-1">
-                                  Custom Setup
+                                  {text('Custom Setup', 'Configuração personalizada')}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  Use your own JSON templates
+                                  {text('Use your own JSON templates', 'Use seus próprios modelos JSON')}
                                 </div>
                               </Label>
                             </div>
@@ -397,7 +401,7 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                 >
                   <AlertCircle className="size-4 sm:size-7" />
                   <span className="text-xs sm:text-sm">
-                    {error} Saved records are reused when you retry.
+                    {error} {text('Saved records are reused when you retry.', 'Os registros já salvos serão reutilizados se você tentar novamente.')}
                   </span>
                 </Badge>
               )}
@@ -408,12 +412,12 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                   <div className="flex flex-col sm:flex-row gap-2 w-full">
                     <DialogClose asChild>
                       <Button type="button" variant="outline" className="w-full sm:w-auto">
-                        Close
+                        {text('Close', 'Fechar')}
                       </Button>
                     </DialogClose>
                     <Button asChild className="w-full sm:w-auto">
                       <a href="/" target="_blank" rel="noopener noreferrer">
-                        View your storefront
+                        {text('View your storefront', 'Ver a vitrine da loja')}
                         <ArrowUpRight className="ml-1.5 h-4 w-4" />
                       </a>
                     </Button>
@@ -427,17 +431,17 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                         disabled={isLoading}
                         className="w-full sm:w-auto"
                       >
-                        Cancel
+                        {text('Cancel', 'Cancelar')}
                       </Button>
                     </DialogClose>
                     {isLoading ? (
                       <Button disabled className="w-full sm:w-auto">
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
+                        {text('Creating...', 'Cadastrando…')}
                       </Button>
                     ) : (
                       <Button onClick={runOnboarding} className="w-full sm:w-auto">
-                        {error ? 'Retry setup' : 'Confirm'}
+                        {error ? text('Retry setup', 'Tentar novamente') : text('Confirm', 'Confirmar')}
                       </Button>
                     )}
                   </div>
@@ -462,10 +466,14 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
               <>
               {usesDealershipDetails && step === 'template' && !isLoading && (
                 <fieldset className="mb-6 grid gap-3 sm:grid-cols-2">
-                  <legend className="mb-3 text-sm font-medium text-foreground">Dealership</legend>
+                  <legend className="mb-3 text-sm font-medium text-foreground">{text('Dealership', 'Dados da loja')}</legend>
                   {DEALERSHIP_FIELDS.map((field) => (
                     <div key={field.key} className={field.key === 'name' || field.key === 'addressLine1' ? 'grid gap-1.5 sm:col-span-2' : 'grid gap-1.5'}>
-                      <Label htmlFor={`onboarding-${field.key}`}>{field.label}</Label>
+                      <Label htmlFor={`onboarding-${field.key}`}>{text(field.label, ({
+                        'Dealership name': 'Nome da loja', Phone: 'Telefone', 'Street address': 'Endereço', City: 'Cidade', State: 'Estado',
+                        'ZIP code': 'CEP', 'Sales email': 'E-mail de vendas', 'Hours Mon–Fri': 'Horário de atendimento de segunda a sexta',
+                        'Hours Saturday': 'Horário de atendimento aos sábados', 'Hours Sunday': 'Horário de atendimento aos domingos',
+                      } as Record<string, string>)[field.label] || field.label)}</Label>
                       <Input
                         id={`onboarding-${field.key}`}
                         type={'type' in field ? field.type : 'text'}
@@ -481,6 +489,7 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
               <SectionRenderer
                 sections={SECTION_DEFINITIONS}
                 selectedTemplate={selectedTemplate}
+                locale={locale}
                 isLoading={isLoading}
                 loadingItems={loadingItems}
                 completedItems={completedItems}
@@ -504,7 +513,7 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
             >
               <AlertCircle className="size-4 sm:size-7" />
               <span className="text-xs sm:text-sm">
-                {error} Saved records are reused when you retry.
+                {error} {text('Saved records are reused when you retry.', 'Os registros já salvos serão reutilizados se você tentar novamente.')}
               </span>
             </Badge>
           )}
@@ -515,12 +524,12 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
               <div className="flex flex-col sm:flex-row gap-2 w-full">
                 <DialogClose asChild>
                   <Button type="button" variant="outline" className="flex-1">
-                    Close
+                    {text('Close', 'Fechar')}
                   </Button>
                 </DialogClose>
                 <Button asChild className="flex-1">
                   <a href="/" target="_blank" rel="noopener noreferrer">
-                    View your storefront
+                    {text('View your storefront', 'Ver a vitrine da loja')}
                     <ArrowUpRight className="ml-1.5 h-4 w-4" />
                   </a>
                 </Button>
@@ -534,17 +543,17 @@ const OnboardingDialog: React.FC<OnboardingDialogProps> = ({
                     disabled={isLoading}
                     className="flex-1"
                   >
-                    Cancel
+                    {text('Cancel', 'Cancelar')}
                   </Button>
                 </DialogClose>
                 {isLoading ? (
                   <Button disabled className="flex-1">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {text('Creating...', 'Cadastrando…')}
                   </Button>
                 ) : (
                   <Button onClick={runOnboarding} className="flex-1">
-                    {error ? 'Retry setup' : 'Confirm'}
+                    {error ? text('Retry setup', 'Tentar novamente') : text('Confirm', 'Confirmar')}
                   </Button>
                 )}
               </div>

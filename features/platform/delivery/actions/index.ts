@@ -35,6 +35,13 @@ export type DeliveryWorkspace = { deliveries: DeliveryRecord[]; cases: DeliveryC
 
 const DELIVERY_PATH = '/dashboard/platform/delivery'
 
+export async function getDeliveryCurrencyCode() {
+  const response = await keystoneClient<{ storefrontProfile: { currencyCode: string | null } | null }>(`
+    query DeliveryCurrency { storefrontProfile { currencyCode } }
+  `, {}, { cache: 'no-store' })
+  return response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'
+}
+
 export async function getDeliveryWorkspace() {
   const response = await keystoneClient<{ deliveryWorkspace: Omit<DeliveryWorkspace, 'rooftopByDeal'>; deals: Array<{ id: string; rooftop: { id: string } | null }> }>(`
     query DeliveryWorkspace {

@@ -7,6 +7,8 @@
 
 import { keystoneClient } from '../lib/keystoneClient'
 import { getFieldTypeFromViewsIndex } from '../views/getFieldTypeFromViewsIndex'
+import { getRequestLocale } from '@/features/i18n/server'
+import { publicRequestError } from '../lib/security'
 
 interface CacheOptions {
   next?: {
@@ -129,7 +131,7 @@ export async function getItemAction(
     console.error("Dashboard operation failed (details redacted).")
     return {
       success: false,
-      error: "Unknown error"
+      error: publicRequestError(await getRequestLocale())
     }
   }
 }

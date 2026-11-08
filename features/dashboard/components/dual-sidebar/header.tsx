@@ -2,8 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export function Header() {
+  const { locale } = useLocale()
   return (
     <header
       className={cn(
@@ -12,7 +14,7 @@ export function Header() {
     >
       <div className="flex items-center gap-1 sm:gap-4">
         <SidebarTrigger className="-ml-1" />
-        <div>Dual Sidebar</div>
+        <div>{locale === 'pt-BR' ? 'Painel' : 'Dual Sidebar'}</div>
       </div>
 
       <div className="flex items-center gap-2">

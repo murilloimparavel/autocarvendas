@@ -1,25 +1,23 @@
 import type { DeskTone } from '@/features/platform/components/desk'
 
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
-
-export function money(cents: number | null | undefined, currency = 'usd') {
+export function money(cents: number | null | undefined, currency = 'usd', locale: 'pt-BR' | 'en-US' = 'en-US') {
   const value = (Number(cents) || 0) / 100
-  if (!currency || currency.toLowerCase() === 'usd') return usd.format(value)
+  const code = currency?.toUpperCase() || 'USD'
   try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(value)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: code }).format(value)
   } catch {
-    return usd.format(value)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(value)
   }
 }
 
-export function dateTime(value: string | null | undefined, timeZone: string) {
+export function dateTime(value: string | null | undefined, timeZone: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return ''
-  return new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-export function shortDate(value: string | null | undefined, timeZone: string) {
+export function shortDate(value: string | null | undefined, timeZone: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return ''
-  return new Date(value).toLocaleDateString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(value).toLocaleDateString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export const nonce = (prefix: string) => `${prefix}:${crypto.randomUUID()}`
@@ -34,6 +32,19 @@ export const BATCH_STATUS_LABEL: Record<string, string> = {
   posted: 'Posted',
   reconciled: 'Reconciled',
   locked: 'Locked',
+}
+
+const ACCOUNTING_UI_LABELS: Record<string, string> = {
+  Staged: 'Em preparação', Posting: 'Enviando', Failed: 'Falhou', Posted: 'Enviado', Reconciled: 'Conciliado', Locked: 'Bloqueado',
+  Balanced: 'Fechado', 'Out of balance': 'Com divergência', 'Not posted': 'Não enviado', 'Not locked': 'Não bloqueado',
+  Deal: 'Venda', 'Service order': 'Ordem de serviço', 'Parts PO': 'Pedido de compra de peças', Payment: 'Pagamento',
+  'Not reconciled': 'Não conciliado', 'Authorized, not captured': 'Autorizado, não capturado', 'Not captured': 'Não capturado', Unreconciled: 'Não conciliado',
+  'Queue for posting': 'Enviar para contabilização', 'Fix and queue again': 'Corrigir e enviar novamente', 'Record posting result': 'Registrar resultado do envio',
+  'out of balance': 'com divergência', balanced: 'conciliado', attempt: 'tentativa', attempts: 'tentativas',
+}
+
+export function accountingLabel(locale: 'pt-BR' | 'en-US', label: string) {
+  return locale === 'pt-BR' ? ACCOUNTING_UI_LABELS[label] || label : label
 }
 
 export function batchTone(status: string): DeskTone {
@@ -75,6 +86,17 @@ export const PAYMENT_STATUS_LABEL: Record<string, string> = {
   canceled: 'Canceled',
   'partially-refunded': 'Partially refunded',
   refunded: 'Refunded',
+}
+
+export function paymentStatusLabel(locale: 'pt-BR' | 'en-US', label: string) {
+  if (locale === 'en-US') return label
+  const labels: Record<string, string> = {
+    Creating: 'Criando', Pending: 'Pendente', Authorized: 'Autorizado', Captured: 'Capturado',
+    Failed: 'Falhou', Canceled: 'Cancelado', 'Partially refunded': 'Parcialmente estornado', Refunded: 'Estornado',
+    'Not reconciled': 'Não conciliado', 'Authorized, not captured': 'Autorizado, não capturado',
+    'Not captured': 'Não capturado', Unreconciled: 'Não conciliado',
+  }
+  return labels[label] || label
 }
 
 export function paymentTone(status: string): DeskTone {

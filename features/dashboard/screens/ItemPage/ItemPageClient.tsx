@@ -530,7 +530,7 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
               <Badge className="border border-red-200 bg-red-50 text-red-700 items-start gap-4 p-4">
                 <AlertCircle className="h-5 w-5" />
                 <div>
-                  <h2 className="font-medium">Error</h2>
+                  <h2 className="font-medium">{locale === 'pt-BR' ? 'Erro' : 'Error'}</h2>
                   <p>{errorDialogValue.message}</p>
                 </div>
               </Badge>

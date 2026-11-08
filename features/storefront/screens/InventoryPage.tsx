@@ -18,21 +18,6 @@ import { formatPrice } from '../lib/format'
 import { useLocale } from '@/features/i18n/LocaleProvider'
 import { isEscapeKey, trapDialogFocus } from '../lib/dialogAccessibility'
 
-const CONDITIONS = [
-  { value: '', label: 'All' },
-  { value: 'new', label: 'New' },
-  { value: 'used', label: 'Pre-owned' },
-  { value: 'certified', label: 'Certified' },
-]
-
-const SORTS = [
-  { value: 'year-desc', label: 'Newest' },
-  { value: 'year-asc', label: 'Oldest' },
-  { value: 'price-asc', label: 'Price low' },
-  { value: 'price-desc', label: 'Price high' },
-  { value: 'mileage-asc', label: 'Lowest miles' },
-]
-
 const SHEET_QUERY = '(max-width: 1023.98px)'
 
 function isSheetViewport() {
@@ -170,7 +155,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
         pageTransitionPending = true
         setVehicles([])
         setTotalCount(result.totalCount)
-        setPageNotice('That page is past the current results. Showing the last available page.')
+        setPageNotice(locale === 'pt-BR' ? 'Esta página passou do fim dos resultados. Exibindo a última página disponível.' : 'That page is past the current results. Showing the last available page.')
         setCurrentPage(resolution.lastPage)
         return
       }
@@ -180,7 +165,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
         setTotalCount(0)
         if (resolution.resetToFirstPage) {
           pageTransitionPending = true
-          setPageNotice('No matching vehicles were found. Returning to the first page.')
+          setPageNotice(locale === 'pt-BR' ? 'Nenhum veículo encontrado. Voltando à primeira página.' : 'No matching vehicles were found. Returning to the first page.')
           setCurrentPage(1)
         } else {
           setPageNotice(null)
@@ -195,7 +180,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
         setVehicles([])
         setTotalCount(0)
         setPageNotice(null)
-        setLoadError('Inventory could not be loaded. Please try again.')
+        setLoadError(locale === 'pt-BR' ? 'Não foi possível carregar o estoque. Tente novamente.' : 'Inventory could not be loaded. Please try again.')
       }
     } finally {
       if (sequence === requestSequence.current && !pageTransitionPending) setLoading(false)
@@ -242,6 +227,19 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
   const years = Array.from({ length: 20 }, (_, i) => currentYear - i)
 
   const { currencyCode } = useStorefrontBusiness()
+  const conditions = [
+    { value: '', label: locale === 'pt-BR' ? 'Todos' : 'All' },
+    { value: 'new', label: locale === 'pt-BR' ? 'Novos' : 'New' },
+    { value: 'used', label: locale === 'pt-BR' ? 'Usados' : 'Pre-owned' },
+    { value: 'certified', label: locale === 'pt-BR' ? 'Certificados' : 'Certified' },
+  ]
+  const sorts = [
+    { value: 'year-desc', label: locale === 'pt-BR' ? 'Mais novos' : 'Newest' },
+    { value: 'year-asc', label: locale === 'pt-BR' ? 'Mais antigos' : 'Oldest' },
+    { value: 'price-asc', label: locale === 'pt-BR' ? 'Menor preço' : 'Price low' },
+    { value: 'price-desc', label: locale === 'pt-BR' ? 'Maior preço' : 'Price high' },
+    { value: 'mileage-asc', label: locale === 'pt-BR' ? 'Menor quilometragem' : 'Lowest miles' },
+  ]
   const sheetRef = useRef<HTMLElement>(null)
   const sheetCloseRef = useRef<HTMLButtonElement>(null)
   const filtersButtonRef = useRef<HTMLButtonElement>(null)
@@ -297,11 +295,11 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
   }
   const miles = (value: string) => {
     const amount = Number(value)
-    return value.trim() && Number.isFinite(amount) ? `${new Intl.NumberFormat('en-US').format(amount)} mi` : value
+    return value.trim() && Number.isFinite(amount) ? `${new Intl.NumberFormat(locale).format(locale === 'pt-BR' ? Math.round(amount * 1.609344) : amount)} ${locale === 'pt-BR' ? 'km' : 'mi'}` : value
   }
   const range = (min: string, max: string, format: (value: string) => string) => {
     if (min && max) return min === max ? format(min) : `${format(min)}–${format(max)}`
-    return min ? `From ${format(min)}` : `Up to ${format(max)}`
+    return min ? (locale === 'pt-BR' ? `A partir de ${format(min)}` : `From ${format(min)}`) : (locale === 'pt-BR' ? `Até ${format(max)}` : `Up to ${format(max)}`)
   }
 
   const chips: { key: string; label: string; clear: () => void }[] = []
@@ -309,7 +307,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
   if (filters.condition) {
     chips.push({
       key: 'condition',
-      label: CONDITIONS.find((option) => option.value === filters.condition)?.label ?? filters.condition,
+      label: conditions.find((option) => option.value === filters.condition)?.label ?? filters.condition,
       clear: () => handleFilterChange('condition', ''),
     })
   }
@@ -335,21 +333,21 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
       },
     })
   }
-  if (filters.mileageMax) chips.push({ key: 'mileage', label: `Max ${miles(filters.mileageMax)}`, clear: () => handleFilterChange('mileageMax', '') })
+  if (filters.mileageMax) chips.push({ key: 'mileage', label: `${locale === 'pt-BR' ? 'Até' : 'Max'} ${miles(filters.mileageMax)}`, clear: () => handleFilterChange('mileageMax', '') })
 
   const readout = loading
-    ? 'Loading'
+    ? (locale === 'pt-BR' ? 'Carregando' : 'Loading')
     : invalidPage
-      ? 'Invalid page'
+      ? (locale === 'pt-BR' ? 'Página inválida' : 'Invalid page')
       : loadError
-        ? 'Unavailable'
-        : `${new Intl.NumberFormat('en-US').format(totalCount)} ${totalCount === 1 ? 'vehicle' : 'vehicles'}`
+        ? (locale === 'pt-BR' ? 'Indisponível' : 'Unavailable')
+        : `${new Intl.NumberFormat(locale).format(totalCount)} ${locale === 'pt-BR' ? (totalCount === 1 ? 'veículo' : 'veículos') : (totalCount === 1 ? 'vehicle' : 'vehicles')}`
   const readoutTone = loading ? 'idle' : invalidPage || loadError ? 'bad' : totalCount > 0 ? 'ok' : 'idle'
   const pages = Array.from({ length: visiblePageCount }, (_, i) => firstVisiblePage + i)
 
   const sortTrack = (className: string, pillClassName = '') => (
-    <div role="group" aria-label="Sort" className={`sf-track ${className}`}>
-      {SORTS.map((option) => (
+    <div role="group" aria-label={locale === 'pt-BR' ? 'Ordenar' : 'Sort'} className={`sf-track ${className}`}>
+      {sorts.map((option) => (
         <button
           key={option.value}
           type="button"
@@ -367,7 +365,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
     <>
       <section className="border-b" style={{ borderColor: 'var(--sf-rule)' }}>
         <Container className="py-5 md:py-8">
-          <h1 className="sf-display text-[length:var(--sf-text-2xl)] md:text-[2.75rem]">On the lot</h1>
+          <h1 className="sf-display text-[length:var(--sf-text-2xl)] md:text-[2.75rem]">{locale === 'pt-BR' ? 'Estoque de veículos' : 'On the lot'}</h1>
         </Container>
       </section>
 
@@ -388,21 +386,21 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
               style={{ borderColor: 'var(--sf-rule)' }}
             >
               <h2 id="inventory-filters-title" className="sf-title-line sf-heading text-[length:var(--sf-text-lg)]">
-                Filters
+                {locale === 'pt-BR' ? 'Filtros' : 'Filters'}
                 {activeFilterCount > 0 && (
-                  <span className="sf-chip sf-figure" aria-label={`${activeFilterCount} active`}>{activeFilterCount}</span>
+                  <span className="sf-chip sf-figure" aria-label={locale === 'pt-BR' ? `${activeFilterCount} ativos` : `${activeFilterCount} active`}>{activeFilterCount}</span>
                 )}
               </h2>
               <div className="flex items-center gap-1">
                 <button type="button" onClick={clearFilters} className="sf-btn sf-btn-ghost sf-btn-sm hidden lg:inline-flex" disabled={activeFilterCount === 0}>
-                  Reset
+                  {locale === 'pt-BR' ? 'Limpar' : 'Reset'}
                 </button>
                 <button
                   ref={sheetCloseRef}
                   type="button"
                   onClick={closeSheet}
                   className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] transition-colors hover:bg-[var(--sf-paper-2)] lg:hidden"
-                  aria-label="Close filters"
+                  aria-label={locale === 'pt-BR' ? 'Fechar filtros' : 'Close filters'}
                 >
                   <X className="size-5" aria-hidden="true" />
                 </button>
@@ -411,9 +409,9 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
 
             <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-5 lg:-mx-1 lg:px-1 lg:py-1">
               <div>
-                <p id="inventory-condition-label" className="sf-label">Condition</p>
+                <p id="inventory-condition-label" className="sf-label">{locale === 'pt-BR' ? 'Condição' : 'Condition'}</p>
                 <div role="group" aria-labelledby="inventory-condition-label" className="sf-track sf-track-block">
-                  {CONDITIONS.map((option) => (
+                  {conditions.map((option) => (
                     <button
                       key={option.value || 'all'}
                       type="button"
@@ -428,7 +426,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
               </div>
 
               <div>
-                <label htmlFor="inventory-search" className="sf-label">Search</label>
+                <label htmlFor="inventory-search" className="sf-label">{locale === 'pt-BR' ? 'Buscar' : 'Search'}</label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" style={{ color: 'var(--sf-ink-3)' }} aria-hidden="true" />
                   <input
@@ -436,7 +434,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                     type="search"
                     value={filters.search}
                     onChange={(e) => handleFilterChange('search', e.target.value)}
-                    placeholder="Make, model or trim"
+                    placeholder={locale === 'pt-BR' ? 'Marca, modelo ou versão' : 'Make, model or trim'}
                     className="sf-input pl-9"
                   />
                 </div>
@@ -444,61 +442,61 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="min-w-0">
-                  <label htmlFor="inventory-make" className="sf-label">Make</label>
+                  <label htmlFor="inventory-make" className="sf-label">{locale === 'pt-BR' ? 'Marca' : 'Make'}</label>
                   <PlatformSelect
                     id="inventory-make"
                     value={filters.make}
                     onValueChange={(value) => handleFilterChange('make', value)}
                     className="sf-input sf-trigger"
-                    options={[{ value: '', label: facets ? 'Any' : 'Loading' }, ...makeOptions.map((make) => ({ value: make, label: make }))]}
+                    options={[{ value: '', label: facets ? (locale === 'pt-BR' ? 'Qualquer' : 'Any') : (locale === 'pt-BR' ? 'Carregando' : 'Loading') }, ...makeOptions.map((make) => ({ value: make, label: make }))]}
                   />
                 </div>
                 <div className="min-w-0">
-                  <label htmlFor="inventory-model" className="sf-label">Model</label>
+                  <label htmlFor="inventory-model" className="sf-label">{locale === 'pt-BR' ? 'Modelo' : 'Model'}</label>
                   <PlatformSelect
                     id="inventory-model"
                     value={filters.model}
                     onValueChange={(value) => handleFilterChange('model', value)}
                     className="sf-input sf-trigger"
-                    options={[{ value: '', label: facets ? 'Any' : 'Loading' }, ...modelOptions.map((model) => ({ value: model, label: model }))]}
+                    options={[{ value: '', label: facets ? (locale === 'pt-BR' ? 'Qualquer' : 'Any') : (locale === 'pt-BR' ? 'Carregando' : 'Loading') }, ...modelOptions.map((model) => ({ value: model, label: model }))]}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="inventory-year-min" className="sf-label">Year</label>
+                <label htmlFor="inventory-year-min" className="sf-label">{locale === 'pt-BR' ? 'Ano' : 'Year'}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <PlatformSelect
                     id="inventory-year-min"
                     value={filters.yearMin}
                     onValueChange={(value) => handleFilterChange('yearMin', value)}
                     className="sf-input sf-trigger sf-figure"
-                    aria-label="Minimum year"
-                    options={[{ value: '', label: 'Min' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+                    aria-label={locale === 'pt-BR' ? 'Ano mínimo' : 'Minimum year'}
+                    options={[{ value: '', label: locale === 'pt-BR' ? 'Mín.' : 'Min' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
                   />
                   <PlatformSelect
                     value={filters.yearMax}
                     onValueChange={(value) => handleFilterChange('yearMax', value)}
                     className="sf-input sf-trigger sf-figure"
-                    aria-label="Maximum year"
-                    options={[{ value: '', label: 'Max' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+                    aria-label={locale === 'pt-BR' ? 'Ano máximo' : 'Maximum year'}
+                    options={[{ value: '', label: locale === 'pt-BR' ? 'Máx.' : 'Max' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="inventory-price-min" className="sf-label">Price</label>
+                <label htmlFor="inventory-price-min" className="sf-label">{locale === 'pt-BR' ? 'Preço' : 'Price'}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     id="inventory-price-min"
-                    aria-label="Minimum price"
+                    aria-label={locale === 'pt-BR' ? 'Preço mínimo' : 'Minimum price'}
                     type="number"
                     inputMode="decimal"
                     min="0"
                     step="0.01"
                     value={filters.priceMin}
                     onChange={(e) => handleFilterChange('priceMin', e.target.value)}
-                    placeholder="Min"
+                    placeholder={locale === 'pt-BR' ? 'Mín.' : 'Min'}
                     className="sf-input sf-figure"
                   />
                   <input
@@ -508,15 +506,15 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                     step="0.01"
                     value={filters.priceMax}
                     onChange={(e) => handleFilterChange('priceMax', e.target.value)}
-                    placeholder="Max"
+                    placeholder={locale === 'pt-BR' ? 'Máx.' : 'Max'}
                     className="sf-input sf-figure"
-                    aria-label="Maximum price"
+                    aria-label={locale === 'pt-BR' ? 'Preço máximo' : 'Maximum price'}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="inventory-mileage-max" className="sf-label">Max mileage</label>
+                <label htmlFor="inventory-mileage-max" className="sf-label">{locale === 'pt-BR' ? 'Quilometragem máxima' : 'Max mileage'}</label>
                 <input
                   id="inventory-mileage-max"
                   type="number"
@@ -525,7 +523,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                   step="1"
                   value={filters.mileageMax}
                   onChange={(e) => handleFilterChange('mileageMax', e.target.value)}
-                  placeholder="Any"
+                  placeholder={locale === 'pt-BR' ? 'Qualquer' : 'Any'}
                   className="sf-input sf-figure"
                 />
               </div>
@@ -537,10 +535,10 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
             >
               <div className="flex gap-2">
                 <button type="button" onClick={clearFilters} className="sf-btn sf-btn-ghost flex-1" disabled={activeFilterCount === 0}>
-                  Reset
+                  {locale === 'pt-BR' ? 'Limpar' : 'Reset'}
                 </button>
                 <button type="button" onClick={closeSheet} className="sf-btn sf-btn-primary flex-[2]">
-                  {loading || loadError || invalidPage ? 'Show results' : `Show ${new Intl.NumberFormat('en-US').format(totalCount)}`}
+                  {loading || loadError || invalidPage ? (locale === 'pt-BR' ? 'Ver resultados' : 'Show results') : (locale === 'pt-BR' ? `Ver ${new Intl.NumberFormat(locale).format(totalCount)} resultados` : `Show ${new Intl.NumberFormat(locale).format(totalCount)}`)}
                 </button>
               </div>
             </div>
@@ -565,18 +563,18 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                   aria-controls="inventory-filters"
                 >
                   <SlidersHorizontal className="size-4" aria-hidden="true" />
-                  Filters
-                  {activeFilterCount > 0 && <span className="sf-figure text-[length:var(--sf-text-xs)]" aria-label={`${activeFilterCount} active`}>{activeFilterCount}</span>}
+                  {locale === 'pt-BR' ? 'Filtros' : 'Filters'}
+                  {activeFilterCount > 0 && <span className="sf-figure text-[length:var(--sf-text-xs)]" aria-label={locale === 'pt-BR' ? `${activeFilterCount} ativos` : `${activeFilterCount} active`}>{activeFilterCount}</span>}
                 </button>
-                <label htmlFor="inventory-sort-mobile" className="sr-only">Sort</label>
+                <label htmlFor="inventory-sort-mobile" className="sr-only">{locale === 'pt-BR' ? 'Ordenar' : 'Sort'}</label>
                 <div className="min-w-0 flex-1">
                   <PlatformSelect
                     id="inventory-sort-mobile"
                     value={sortBy}
                     onValueChange={changeSort}
                     className="sf-input sf-trigger"
-                    aria-label="Sort"
-                    options={SORTS.map((option) => ({ value: option.value, label: option.label }))}
+                    aria-label={locale === 'pt-BR' ? 'Ordenar' : 'Sort'}
+                    options={sorts.map((option) => ({ value: option.value, label: option.label }))}
                   />
                 </div>
               </div>
@@ -584,14 +582,14 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
             </div>
 
             {chips.length > 0 && (
-              <ul className="mb-6 flex flex-wrap items-center gap-x-1.5" aria-label="Active filters">
+              <ul className="mb-6 flex flex-wrap items-center gap-x-1.5" aria-label={locale === 'pt-BR' ? 'Filtros ativos' : 'Active filters'}>
                 {chips.map((chip) => (
                   <li key={chip.key}>
                     <button
                       type="button"
                       onClick={chip.clear}
                       className="group inline-flex min-h-11 items-center"
-                      aria-label={`Remove filter ${chip.label}`}
+                      aria-label={locale === 'pt-BR' ? `Remover filtro ${chip.label}` : `Remove filter ${chip.label}`}
                     >
                       <span className="sf-chip normal-case tracking-normal transition-colors group-hover:text-[var(--sf-ink)]">
                         {chip.label}
@@ -602,19 +600,19 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                 ))}
                 <li>
                   <button type="button" onClick={clearFilters} className="sf-link inline-flex min-h-11 items-center px-2 text-[length:var(--sf-text-xs)]">
-                    Clear all
+                    {locale === 'pt-BR' ? 'Limpar tudo' : 'Clear all'}
                   </button>
                 </li>
               </ul>
             )}
 
-            <h2 className="sr-only">Results</h2>
+            <h2 className="sr-only">{locale === 'pt-BR' ? 'Resultados' : 'Results'}</h2>
             {pageNotice && !loading && !loadError && !invalidPage && (
               <p role="status" className="sf-notice mb-6" data-tone="warn">{pageNotice}</p>
             )}
 
             {loading ? (
-              <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true" aria-label="Loading vehicles">
+              <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true" aria-label={locale === 'pt-BR' ? 'Carregando veículos' : 'Loading vehicles'}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <InventoryCardSkeleton key={i} />
                 ))}
@@ -623,7 +621,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
               <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                 <p role="alert" className="sf-title-line font-semibold">
                   <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-                  Page not found.
+                  {locale === 'pt-BR' ? 'Página não encontrada.' : 'Page not found.'}
                 </p>
                 <button
                   type="button"
@@ -634,7 +632,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                   }}
                   className="sf-btn sf-btn-ghost sf-btn-sm max-sm:min-h-11"
                 >
-                  Return to first page
+                  {locale === 'pt-BR' ? 'Voltar à primeira página' : 'Return to first page'}
                 </button>
               </div>
             ) : loadError ? (
@@ -645,10 +643,10 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                 </p>
                 <div className="flex shrink-0 flex-wrap gap-2">
                   <button type="button" onClick={() => void loadVehicles()} className="sf-btn sf-btn-primary sf-btn-sm max-sm:min-h-11">
-                    Retry
+                    {locale === 'pt-BR' ? 'Tentar novamente' : 'Retry'}
                   </button>
                   <button type="button" onClick={clearFilters} className="sf-btn sf-btn-ghost sf-btn-sm max-sm:min-h-11">
-                    Clear filters
+                    {locale === 'pt-BR' ? 'Limpar filtros' : 'Clear filters'}
                   </button>
                 </div>
               </div>
@@ -661,17 +659,17 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                 </div>
 
                 {totalPages > 1 && (
-                  <nav className="mt-12 flex flex-col items-center gap-3 border-t pt-6" style={{ borderColor: 'var(--sf-rule)' }} aria-label="Pagination">
+                  <nav className="mt-12 flex flex-col items-center gap-3 border-t pt-6" style={{ borderColor: 'var(--sf-rule)' }} aria-label={locale === 'pt-BR' ? 'Paginação' : 'Pagination'}>
                     <div className="sf-track">
                       <button
                         type="button"
                         onClick={() => goToPage(Math.max(1, currentPage - 1))}
                         disabled={currentPage === 1}
                         className="sf-pill min-h-11 min-w-11 px-3 sm:min-h-9"
-                        aria-label="Previous page"
+                        aria-label={locale === 'pt-BR' ? 'Página anterior' : 'Previous page'}
                       >
                         <ChevronLeft className="size-4" aria-hidden="true" />
-                        <span className="hidden sm:inline">Previous</span>
+                        <span className="hidden sm:inline">{locale === 'pt-BR' ? 'Anterior' : 'Previous'}</span>
                       </button>
                       {firstVisiblePage > 1 && <span className="sf-pill sf-faint pointer-events-none hidden px-2 sm:inline-flex" aria-hidden="true">…</span>}
                       {pages.map((page) => (
@@ -680,7 +678,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                           type="button"
                           onClick={() => goToPage(page)}
                           aria-current={currentPage === page ? 'page' : undefined}
-                          aria-label={`Page ${page}`}
+                          aria-label={locale === 'pt-BR' ? `Página ${page}` : `Page ${page}`}
                           className={`sf-pill sf-figure min-h-11 min-w-11 px-2 sm:min-h-9 sm:min-w-9 ${Math.abs(page - currentPage) > 1 ? 'max-sm:hidden' : ''}`}
                         >
                           {page}
@@ -692,14 +690,14 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
                         onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
                         disabled={currentPage === totalPages}
                         className="sf-pill min-h-11 min-w-11 px-3 sm:min-h-9"
-                        aria-label="Next page"
+                        aria-label={locale === 'pt-BR' ? 'Próxima página' : 'Next page'}
                       >
-                        <span className="hidden sm:inline">Next</span>
+                        <span className="hidden sm:inline">{locale === 'pt-BR' ? 'Próxima' : 'Next'}</span>
                         <ChevronRight className="size-4" aria-hidden="true" />
                       </button>
                     </div>
                     <p className="sf-figure sf-faint text-[length:var(--sf-text-xs)]" aria-live="polite">
-                      Page {currentPage} of {totalPages}
+                      {locale === 'pt-BR' ? `Página ${currentPage} de ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
                     </p>
                   </nav>
                 )}
@@ -708,7 +706,7 @@ export function InventoryPage({ initial }: { initial?: InitialInventory | null }
               <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                 <p className="sf-title-line font-semibold">
                   <span className="sf-dot" aria-hidden="true" />
-                  No vehicles match these filters.
+                  {locale === 'pt-BR' ? 'Nenhum veículo corresponde a estes filtros.' : 'No vehicles match these filters.'}
                 </p>
                 <button type="button" onClick={clearFilters} className="sf-btn sf-btn-ghost sf-btn-sm max-sm:min-h-11">
                   Clear filters

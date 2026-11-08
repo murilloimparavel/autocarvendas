@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Plus, RefreshCw, Search } from 'lucide-react'
@@ -31,7 +32,7 @@ import {
 import { dayKey, formatPhone, countLabel } from '@/features/platform/lib/format'
 import { bookServiceAppointment, getFixedOpsWorkspace, openServiceOrder, transitionServiceAppointment } from '../actions'
 import { createAttemptKeys } from '../lib/attemptKeys'
-import { formatAge, formatCents, formatDateTime, formatTime } from '../lib/serviceFormat'
+import { formatAge, formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, formatTime as formatTimeBase } from '../lib/serviceFormat'
 import {
   APPOINTMENT_ACTION_LABELS,
   APPOINTMENT_STATUS_LABELS,
@@ -41,6 +42,7 @@ import {
   appointmentTransitions,
   customerName,
   roReference,
+  serviceLabel,
 } from '../lib/serviceStatus'
 import { EMPTY_BOOKING, bookingFields, repairOrderTotalsCheck, splitLocalDateTime } from '../lib/serviceTasks'
 import type { FixedOpsAppointment, FixedOpsOrder, FixedOpsPart, FixedOpsWorkspace } from '../lib/types'
@@ -81,11 +83,12 @@ function carriedOver(value: string | null | undefined, timeZone: string) {
 const ROW_BUTTON = 'max-sm:h-10'
 
 function Empty({ label, onReset }: { label: string; onReset?: () => void }) {
+  const { locale } = useLocale()
   return (
     <div className="flex flex-col items-center gap-3 rounded-md border border-dashed py-8 text-center text-[13px] text-muted-foreground">
       <p>{label}</p>
       {onReset && (
-        <Pill size="sm" className={ROW_BUTTON} onClick={onReset}>Reset filters</Pill>
+        <Pill size="sm" className={ROW_BUTTON} onClick={onReset}>{locale === 'pt-BR' ? 'Limpar filtros' : 'Reset filters'}</Pill>
       )}
     </div>
   )
@@ -95,11 +98,18 @@ export function ServiceAdvisorPageClient({
   initialWorkspace,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialWorkspace: FixedOpsWorkspace | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string, empty?: string) => formatDateTimeBase(value, zone, empty, locale)
+  const formatTime = (value: string | null | undefined, zone: string, empty?: string) => formatTimeBase(value, zone, empty, locale)
   const router = useRouter()
   const [workspace, setWorkspace] = useState<FixedOpsWorkspace | null>(initialWorkspace)
   const [loading, setLoading] = useState(false)
@@ -129,7 +139,7 @@ export function ServiceAdvisorPageClient({
       setWorkspace(response.data.fixedOpsWorkspace)
       setError(null)
     } else {
-      setError(response.error || 'Unable to load service.')
+      setError(response.error || (pt ? 'Não foi possível carregar a oficina.' : 'Unable to load service.'))
     }
     setNow(Date.now())
     setLoading(false)
@@ -162,10 +172,10 @@ export function ServiceAdvisorPageClient({
       })
       if (!response.success) throw new Error(response.error)
       setBooking(null)
-      setNotice({ tone: 'ok', text: 'Appointment booked' })
+      setNotice({ tone: 'ok', text: pt ? 'Agendamento criado.' : 'Appointment booked' })
       await loadServiceData()
     } catch (error) {
-      setBookingError(error instanceof Error ? error.message : 'Unable to book appointment')
+      setBookingError(error instanceof Error ? error.message : (pt ? 'Não foi possível criar o agendamento.' : 'Unable to book appointment'))
     } finally {
       setBookingBusy(false)
     }
@@ -176,7 +186,7 @@ export function ServiceAdvisorPageClient({
     setUpdatingId(appointmentId)
     const response = await transitionServiceAppointment({ id: appointmentId, toStatus: status, idempotencyKey: attemptKeys.key(scope) })
     attemptKeys.settle(scope, response)
-    setNotice(response.success ? { tone: 'ok', text: APPOINTMENT_STATUS_LABELS[status] || 'Saved' } : { tone: 'bad', text: `Unable to update appointment: ${response.error}` })
+    setNotice(response.success ? { tone: 'ok', text: serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || (pt ? 'Salvo' : 'Saved')) } : { tone: 'bad', text: `${pt ? 'Não foi possível atualizar o agendamento' : 'Unable to update appointment'}: ${response.error}` })
     await loadServiceData()
     setUpdatingId(null)
   }
@@ -194,7 +204,7 @@ export function ServiceAdvisorPageClient({
       grandTotalCents: 0,
     })
     if (!response.success) {
-      setNotice({ tone: 'bad', text: `Unable to open repair order: ${response.error}` })
+      setNotice({ tone: 'bad', text: `${pt ? 'Não foi possível abrir a ordem de serviço' : 'Unable to open repair order'}: ${response.error}` })
       setUpdatingId(null)
       return
     }
@@ -249,9 +259,9 @@ export function ServiceAdvisorPageClient({
   }
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Service' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Oficina' : 'Service' },
   ]
 
   const orderCounts: Record<string, number> = { all: visibleOrders.length }
@@ -270,19 +280,19 @@ export function ServiceAdvisorPageClient({
 
   const header = (
     <DeskHeader
-      title="Service"
+      title={pt ? 'Oficina' : 'Service'}
       tone={error ? 'bad' : appointmentCounts['waiting-parts'] > 0 ? 'warn' : 'ok'}
-      status={error ? 'Unavailable' : `${appointmentCounts['waiting-parts']} waiting parts`}
-      meta={error ? 'Unavailable' : `${countLabel(appointmentCounts.today, 'appointment')} today · ${countLabel(waitingOrders.length, 'RO')} waiting · ${countLabel(workingOrders.length, 'open RO')}`}
+      status={error ? (pt ? 'Indisponível' : 'Unavailable') : `${appointmentCounts['waiting-parts']} ${pt ? 'aguardando peças' : 'waiting parts'}`}
+      meta={error ? (pt ? 'Indisponível' : 'Unavailable') : pt ? `${appointmentCounts.today} ${appointmentCounts.today === 1 ? 'agendamento hoje' : 'agendamentos hoje'} · ${waitingOrders.length} ${waitingOrders.length === 1 ? 'ordem aguardando' : 'ordens aguardando'} · ${workingOrders.length} ${workingOrders.length === 1 ? 'ordem em aberto' : 'ordens em aberto'}` : `${countLabel(appointmentCounts.today, 'appointment')} today · ${countLabel(waitingOrders.length, 'RO')} waiting · ${countLabel(workingOrders.length, 'open RO')}`}
       actions={
         <>
-          <Pill variant="plain" className="max-sm:h-11" onClick={loadServiceData} disabled={loading} aria-label="Refresh">
+          <Pill variant="plain" className="max-sm:h-11" onClick={loadServiceData} disabled={loading} aria-label={pt ? 'Atualizar' : 'Refresh'}>
             <RefreshCw className={loading ? 'animate-spin' : undefined} />
-            Refresh
+            {pt ? 'Atualizar' : 'Refresh'}
           </Pill>
-          <Pill className="max-sm:h-11" variant="primary" onClick={openBooking} disabled={!serviceRooftops.length} title={serviceRooftops.length ? undefined : 'No active service locations'}>
+          <Pill className="max-sm:h-11" variant="primary" onClick={openBooking} disabled={!serviceRooftops.length} title={serviceRooftops.length ? undefined : (pt ? 'Nenhuma oficina ativa cadastrada' : 'No active service locations')}>
             <Plus />
-            New appointment
+            {pt ? 'Novo agendamento' : 'New appointment'}
           </Pill>
         </>
       }
@@ -291,14 +301,14 @@ export function ServiceAdvisorPageClient({
 
   if (error && !workspace) {
     return (
-      <PageContainer title="Service" header={header} breadcrumbs={breadcrumbs}>
+      <PageContainer title={pt ? 'Oficina' : 'Service'} header={header} breadcrumbs={breadcrumbs}>
         <div className="space-y-3 px-4 pb-24 md:px-6">
           <Notice tone="bad">
-            <p className="font-medium">Service is unavailable</p>
+            <p className="font-medium">{pt ? 'Oficina indisponível' : 'Service is unavailable'}</p>
             <p className="mt-0.5 text-muted-foreground">{error}</p>
           </Notice>
           <Track>
-            <Pill className="max-sm:h-11" onClick={loadServiceData} disabled={loading}>Retry</Pill>
+            <Pill className="max-sm:h-11" onClick={loadServiceData} disabled={loading}>{pt ? 'Tentar novamente' : 'Retry'}</Pill>
           </Track>
         </div>
       </PageContainer>
@@ -315,12 +325,12 @@ export function ServiceAdvisorPageClient({
       <div className="flex flex-wrap justify-end gap-1.5">
         {!appointment.serviceOrder && !closed && (
           <Pill size="sm" variant="primary" className={ROW_BUTTON} onClick={() => createRepairOrder(appointment)} disabled={busy}>
-            Open RO
+          {pt ? 'Abrir ordem de serviço' : 'Open RO'}
           </Pill>
         )}
         {transitions.map(next => (
           <Pill key={next} size="sm" className={ROW_BUTTON} onClick={() => updateAppointmentStatus(appointment.id, next)} disabled={busy}>
-            {APPOINTMENT_ACTION_LABELS[next]}
+            {serviceLabel(locale, APPOINTMENT_ACTION_LABELS[next])}
           </Pill>
         ))}
       </div>
@@ -331,7 +341,7 @@ export function ServiceAdvisorPageClient({
   const orderHref = (order: { id: string }) => `${basePath}/platform/service/orders/${order.id}`
 
   return (
-    <PageContainer title="Service" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Oficina' : 'Service'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
         {(notice || error || !serviceRooftops.length) && (
           <div className="space-y-2">
@@ -339,29 +349,29 @@ export function ServiceAdvisorPageClient({
               <Notice tone={notice.tone}>
                 <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
                   <p className="min-w-0">{notice.text}</p>
-                  <Pill size="sm" variant="plain" className="max-sm:h-11" onClick={() => setNotice(null)}>Dismiss</Pill>
+                  <Pill size="sm" variant="plain" className="max-sm:h-11" onClick={() => setNotice(null)}>{pt ? 'Fechar' : 'Dismiss'}</Pill>
                 </div>
               </Notice>
             )}
             {error && <Notice tone="bad">{error}</Notice>}
-            {!serviceRooftops.length && <Notice tone="warn">No active service locations</Notice>}
+            {!serviceRooftops.length && <Notice tone="warn">{pt ? 'Nenhuma oficina ativa cadastrada' : 'No active service locations'}</Notice>}
           </div>
         )}
 
-        <DeskSection title="Today's lane" count={todaysLane.length} id="service-today">
+        <DeskSection title={pt ? 'Agenda de hoje' : "Today's lane"} count={todaysLane.length} id="service-today">
           {todaysLane.length === 0 ? (
-            <Empty label="No appointments today" />
+            <Empty label={pt ? 'Nenhum agendamento para hoje' : 'No appointments today'} />
           ) : (
             <DeskTable aria-labelledby="service-today">
               <thead>
                 <tr>
-                  <Th>Time</Th>
-                  <Th>Customer</Th>
-                  <Th priority={2}>Vehicle</Th>
-                  <Th priority={3}>Concern</Th>
-                  <Th priority={3}>Tech</Th>
-                  <Th>Status</Th>
-                  <Th align="right" priority={2}><span className="sr-only">Actions</span></Th>
+                  <Th>{pt ? 'Horário' : 'Time'}</Th>
+                  <Th>{pt ? 'Cliente' : 'Customer'}</Th>
+                  <Th priority={2}>{pt ? 'Veículo' : 'Vehicle'}</Th>
+                  <Th priority={3}>{pt ? 'Solicitação' : 'Concern'}</Th>
+                  <Th priority={3}>{pt ? 'Mecânico' : 'Tech'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th align="right" priority={2}><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -377,21 +387,21 @@ export function ServiceAdvisorPageClient({
                       </Td>
                       <Td className="max-w-[16rem]">
                         <Link href={appointmentHref(appointment)} className="block truncate font-medium text-foreground hover:underline">
-                          {name || 'Walk-in'}
+                          {name || (pt ? 'Cliente sem cadastro' : 'Walk-in')}
                         </Link>
-                        <p className="truncate text-xs text-muted-foreground md:hidden">{appointment.customerVehicleDescription || 'Vehicle not set'}</p>
+                        <p className="truncate text-xs text-muted-foreground md:hidden">{appointment.customerVehicleDescription || (pt ? 'Veículo não informado' : 'Vehicle not set')}</p>
                         {appointment.lead?.phone && <p className="truncate text-xs text-muted-foreground max-md:hidden">{formatPhone(appointment.lead.phone)}</p>}
                         <div className="mt-2 md:hidden [&>div]:justify-start">{appointmentActions(appointment)}</div>
                       </Td>
-                      <Td priority={2} className="max-w-[14rem] truncate">{appointment.customerVehicleDescription || 'Vehicle not set'}</Td>
+                      <Td priority={2} className="max-w-[14rem] truncate">{appointment.customerVehicleDescription || (pt ? 'Veículo não informado' : 'Vehicle not set')}</Td>
                       <Td priority={3} className="max-w-[18rem]">
                         <p className="line-clamp-2 text-muted-foreground">{appointment.description || appointment.servicePackage?.name || appointment.serviceType || '—'}</p>
                       </Td>
-                      <Td priority={3} className="whitespace-nowrap text-muted-foreground">{appointment.assignedTech?.name || 'Unassigned'}</Td>
+                      <Td priority={3} className="whitespace-nowrap text-muted-foreground">{appointment.assignedTech?.name || (pt ? 'Não atribuído' : 'Unassigned')}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
-                          <Status tone={STATUS_TONES[status] || 'idle'}>{APPOINTMENT_STATUS_LABELS[status] || status}</Status>
-                          {late && <Attention>Late</Attention>}
+                          <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}</Status>
+                          {late && <Attention>{pt ? 'Atrasado' : 'Late'}</Attention>}
                           {appointment.serviceOrder && (
                             <Link href={orderHref(appointment.serviceOrder)} className="hover:underline">
                               <Code>{roReference(appointment.serviceOrder.id)}</Code>
@@ -408,19 +418,19 @@ export function ServiceAdvisorPageClient({
           )}
         </DeskSection>
 
-        <DeskSection title="ROs waiting" count={waitingOrders.length} id="service-waiting">
+        <DeskSection title={pt ? 'Ordens de serviço aguardando' : 'ROs waiting'} count={waitingOrders.length} id="service-waiting">
           {waitingOrders.length === 0 ? (
-            <Empty label="No repair orders waiting on parts, approval or pickup" />
+            <Empty label={pt ? 'Nenhuma ordem aguardando peças, aprovação ou retirada' : 'No repair orders waiting on parts, approval or pickup'} />
           ) : (
             <DeskTable aria-labelledby="service-waiting">
               <thead>
                 <tr>
-                  <Th>Waiting on</Th>
-                  <Th>RO</Th>
-                  <Th priority={2}>Customer · vehicle</Th>
-                  <Th priority={3}>Status</Th>
-                  <Th align="right" priority={2}>Total</Th>
-                  <Th align="right">Age</Th>
+                  <Th>{pt ? 'Aguardando' : 'Waiting on'}</Th>
+                  <Th>{pt ? 'OS' : 'RO'}</Th>
+                  <Th priority={2}>{pt ? 'Cliente · veículo' : 'Customer · vehicle'}</Th>
+                  <Th priority={3}>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th align="right" priority={2}>{pt ? 'Valor total' : 'Total'}</Th>
+                  <Th align="right">{pt ? 'Tempo' : 'Age'}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -440,7 +450,7 @@ export function ServiceAdvisorPageClient({
                         {name ? `${name} · ` : ''}{order.appointment?.customerVehicleDescription || 'Vehicle not set'}
                       </Td>
                       <Td priority={3}>
-                        <Status tone={STATUS_TONES[status] || 'idle'}>{ORDER_STATUS_LABELS[status] || status}</Status>
+                        <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, ORDER_STATUS_LABELS[status] || status)}</Status>
                       </Td>
                       <Td priority={2} align="right">{formatCents(order.grandTotalCents)}</Td>
                       <Td align="right" className="whitespace-nowrap">
@@ -459,52 +469,52 @@ export function ServiceAdvisorPageClient({
           <div className="relative min-w-0 flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              aria-label="Search service records"
+              aria-label={pt ? 'Buscar registros da oficina' : 'Search service records'}
               className="h-11 rounded-[4px] pl-9 text-[13px] sm:h-9"
               value={search}
               onChange={event => setSearch(event.target.value)}
-              placeholder="Search customer, vehicle, concern, RO, or invoice"
+              placeholder={pt ? 'Buscar cliente, veículo, solicitação, OS ou nota fiscal' : 'Search customer, vehicle, concern, RO, or invoice'}
             />
           </div>
           <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger aria-label="Sort appointments" className="h-11 w-full rounded-[4px] px-3 text-[13px] sm:h-9 sm:w-[190px]">
+            <SelectTrigger aria-label={pt ? 'Ordenar agendamentos' : 'Sort appointments'} className="h-11 w-full rounded-[4px] px-3 text-[13px] sm:h-9 sm:w-[190px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="appointment">Appointment first</SelectItem>
-              <SelectItem value="recent">Most recent first</SelectItem>
+              <SelectItem value="appointment">{pt ? 'Agendamento mais próximo' : 'Appointment first'}</SelectItem>
+              <SelectItem value="recent">{pt ? 'Mais recentes primeiro' : 'Most recent first'}</SelectItem>
             </SelectContent>
           </Select>
-          {loading && <span className="text-[13px] text-muted-foreground" role="status">Refreshing…</span>}
+          {loading && <span className="text-[13px] text-muted-foreground" role="status">{pt ? 'Atualizando…' : 'Refreshing…'}</span>}
         </div>
 
-        <DeskSection title="Repair orders" count={visibleOrders.length} id="service-orders">
+        <DeskSection title={pt ? 'Ordens de serviço' : 'Repair orders'} count={visibleOrders.length} id="service-orders">
           <Segmented
-            label="Filter repair orders"
+            label={pt ? 'Filtrar ordens de serviço' : 'Filter repair orders'}
             size="sm"
             className="mb-3"
             value={orderFilter}
             onChange={setOrderFilter}
             options={orderFilters.map(value => ({
               value,
-              label: value === 'all' ? 'All' : ORDER_STATUS_LABELS[value],
+              label: value === 'all' ? (pt ? 'Todas' : 'All') : serviceLabel(locale, ORDER_STATUS_LABELS[value]),
               count: orderCounts[value] || 0,
             }))}
           />
           {shownOrders.length === 0 ? (
-            term || orderFilter !== 'all' ? <Empty label="No matching repair orders" onReset={resetFilters} /> : <Empty label="No repair orders" />
+            term || orderFilter !== 'all' ? <Empty label={pt ? 'Nenhuma ordem de serviço encontrada' : 'No matching repair orders'} onReset={resetFilters} /> : <Empty label={pt ? 'Nenhuma ordem de serviço' : 'No repair orders'} />
           ) : (
             <DeskTable aria-labelledby="service-orders">
               <thead>
                 <tr>
-                  <Th>RO</Th>
-                  <Th>Customer</Th>
-                  <Th priority={2}>Vehicle</Th>
-                  <Th priority={3}>Appointment</Th>
-                  <Th priority={3}>Authorization</Th>
-                  <Th>Status</Th>
-                  <Th align="right" priority={3}>Lines</Th>
-                  <Th align="right">Total</Th>
+                  <Th>{pt ? 'OS' : 'RO'}</Th>
+                  <Th>{pt ? 'Cliente' : 'Customer'}</Th>
+                  <Th priority={2}>{pt ? 'Veículo' : 'Vehicle'}</Th>
+                  <Th priority={3}>{pt ? 'Agendamento' : 'Appointment'}</Th>
+                  <Th priority={3}>{pt ? 'Autorização' : 'Authorization'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th align="right" priority={3}>{pt ? 'Itens' : 'Lines'}</Th>
+                  <Th align="right">{pt ? 'Valor total' : 'Total'}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -531,8 +541,8 @@ export function ServiceAdvisorPageClient({
                       <Td priority={3} className="capitalize text-muted-foreground">{order.authorizationStatus || 'pending'}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
-                          <Status tone={STATUS_TONES[status] || 'idle'}>{ORDER_STATUS_LABELS[status] || status}</Status>
-                          {!balanced && <Attention>Totals mismatch</Attention>}
+                          <Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, ORDER_STATUS_LABELS[status] || status)}</Status>
+                          {!balanced && <Attention>{pt ? 'Totais divergentes' : 'Totals mismatch'}</Attention>}
                         </div>
                       </Td>
                       <Td priority={3} align="right" className="text-muted-foreground">{order.lineItems.length}</Td>
@@ -545,28 +555,28 @@ export function ServiceAdvisorPageClient({
           )}
         </DeskSection>
 
-        <DeskSection title="Appointments" count={filteredAppointments.length} id="service-appointments">
+        <DeskSection title={pt ? 'Agendamentos' : 'Appointments'} count={filteredAppointments.length} id="service-appointments">
           <Segmented
-            label="Filter appointments"
+            label={pt ? 'Filtrar agendamentos' : 'Filter appointments'}
             size="sm"
             className="mb-3"
             value={appointmentFilter}
             onChange={setAppointmentFilter}
-            options={appointmentFilters.map(option => ({ ...option, count: appointmentCounts[option.value] }))}
+            options={appointmentFilters.map(option => ({ ...option, label: pt ? ({ Open: 'Em aberto', Today: 'Hoje', 'Waiting parts': 'Aguardando peças', All: 'Todos' } as Record<string, string>)[option.label] : option.label, count: appointmentCounts[option.value] }))}
           />
           {filteredAppointments.length === 0 ? (
-            term || appointmentFilter !== 'open' ? <Empty label="No matching appointments" onReset={resetFilters} /> : <Empty label="No service appointments" />
+            term || appointmentFilter !== 'open' ? <Empty label={pt ? 'Nenhum agendamento encontrado' : 'No matching appointments'} onReset={resetFilters} /> : <Empty label={pt ? 'Nenhum agendamento de oficina' : 'No service appointments'} />
           ) : (
             <DeskTable aria-labelledby="service-appointments">
               <thead>
                 <tr>
-                  <Th>When</Th>
-                  <Th>Customer</Th>
-                  <Th priority={3}>Service</Th>
-                  <Th priority={3}>Tech</Th>
-                  <Th>Status</Th>
-                  <Th priority={2}>RO</Th>
-                  <Th align="right" priority={2}><span className="sr-only">Actions</span></Th>
+                  <Th>{pt ? 'Quando' : 'When'}</Th>
+                  <Th>{pt ? 'Cliente' : 'Customer'}</Th>
+                  <Th priority={3}>{pt ? 'Serviço' : 'Service'}</Th>
+                  <Th priority={3}>{pt ? 'Mecânico' : 'Tech'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th priority={2}>{pt ? 'OS' : 'RO'}</Th>
+                  <Th align="right" priority={2}><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -590,7 +600,7 @@ export function ServiceAdvisorPageClient({
                         {appointment.description && <p className="line-clamp-1 text-xs text-muted-foreground">{appointment.description}</p>}
                       </Td>
                       <Td priority={3} className="whitespace-nowrap text-muted-foreground">{appointment.assignedTech?.name || 'Unassigned'}</Td>
-                      <Td><Status tone={STATUS_TONES[status] || 'idle'}>{APPOINTMENT_STATUS_LABELS[status] || status}</Status></Td>
+                      <Td><Status tone={STATUS_TONES[status] || 'idle'}>{serviceLabel(locale, APPOINTMENT_STATUS_LABELS[status] || status)}</Status></Td>
                       <Td priority={2} className="whitespace-nowrap">
                         {appointment.serviceOrder ? (
                           <Link href={orderHref(appointment.serviceOrder)} className="hover:underline">
@@ -611,26 +621,26 @@ export function ServiceAdvisorPageClient({
         </DeskSection>
 
         <DeskSection
-          title="Low stock"
+          title={pt ? 'Estoque baixo' : 'Low stock'}
           count={lowParts.length}
           id="service-low-stock"
           actions={
             <Pill size="sm" variant="plain" className="max-sm:h-11" asChild>
-              <Link href={`${basePath}/platform/parts`}>Parts</Link>
+              <Link href={`${basePath}/platform/parts`}>{pt ? 'Peças' : 'Parts'}</Link>
             </Pill>
           }
         >
           {lowParts.length === 0 ? (
-            <Empty label={parts.length ? 'No parts below reorder point' : 'No parts configured'} />
+            <Empty label={parts.length ? (pt ? 'Nenhuma peça abaixo do ponto de reposição' : 'No parts below reorder point') : (pt ? 'Nenhuma peça cadastrada' : 'No parts configured')} />
           ) : (
             <DeskTable aria-labelledby="service-low-stock">
               <thead>
                 <tr>
-                  <Th>Part</Th>
-                  <Th priority={2}>Part #</Th>
-                  <Th priority={3}>Supplier</Th>
-                  <Th align="right">On hand</Th>
-                  <Th align="right" priority={2}>Reorder at</Th>
+                  <Th>{pt ? 'Peça' : 'Part'}</Th>
+                  <Th priority={2}>{pt ? 'Cód. da peça' : 'Part #'}</Th>
+                  <Th priority={3}>{pt ? 'Fornecedor' : 'Supplier'}</Th>
+                  <Th align="right">{pt ? 'Em estoque' : 'On hand'}</Th>
+                  <Th align="right" priority={2}>{pt ? 'Ponto de reposição' : 'Reorder at'}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -641,7 +651,7 @@ export function ServiceAdvisorPageClient({
                       <p className="md:hidden"><Code>#{part.partNumber}</Code></p>
                     </Td>
                     <Td priority={2}><Code>#{part.partNumber}</Code></Td>
-                    <Td priority={3} className="text-muted-foreground">{part.supplier || 'No supplier'}</Td>
+                    <Td priority={3} className="text-muted-foreground">{part.supplier || (pt ? 'Sem fornecedor' : 'No supplier')}</Td>
                     <Td align="right"><Figure size="sm" attention>{part.quantity ?? 0}</Figure></Td>
                     <Td align="right" priority={2} className="text-muted-foreground">{part.minimumQuantity ?? 0}</Td>
                   </Tr>
@@ -653,12 +663,12 @@ export function ServiceAdvisorPageClient({
 
         <OperatorActionDialog
           open={Boolean(booking)}
-          title="New appointment"
+          title={pt ? 'Novo agendamento' : 'New appointment'}
           fields={bookingFields()}
           values={booking?.values || {}}
           error={bookingError}
           busy={bookingBusy}
-          submitLabel="Book appointment"
+          submitLabel={pt ? 'Agendar serviço' : 'Book appointment'}
           onValuesChange={values => setBooking(current => (current ? { ...current, values } : null))}
           onSubmit={submitBooking}
           onOpenChange={open => {
@@ -669,11 +679,11 @@ export function ServiceAdvisorPageClient({
           }}
         />
         <ReadoutStrip>
-          <Readout label="Today" value={appointmentCounts.today} sub="Appointments" />
-          <Readout label="Open ROs" value={workingOrders.length} />
-          <Readout label="Open RO value" value={formatCents(workingValue)} />
-          <Readout label="Waiting parts" value={appointmentCounts['waiting-parts']} tone={appointmentCounts['waiting-parts'] > 0 ? 'warn' : undefined} />
-          <Readout label="Low stock" value={lowParts.length} tone={lowParts.length > 0 ? 'bad' : undefined} sub={countLabel(parts.length, 'part')} />
+          <Readout label={pt ? 'Hoje' : 'Today'} value={appointmentCounts.today} sub={pt ? 'Agendamentos' : 'Appointments'} />
+          <Readout label={pt ? 'Ordens em aberto' : 'Open ROs'} value={workingOrders.length} />
+          <Readout label={pt ? 'Valor das ordens em aberto' : 'Open RO value'} value={formatCents(workingValue)} />
+          <Readout label={pt ? 'Aguardando peças' : 'Waiting parts'} value={appointmentCounts['waiting-parts']} tone={appointmentCounts['waiting-parts'] > 0 ? 'warn' : undefined} />
+          <Readout label={pt ? 'Estoque baixo' : 'Low stock'} value={lowParts.length} tone={lowParts.length > 0 ? 'bad' : undefined} sub={pt ? `${parts.length} peças` : countLabel(parts.length, 'part')} />
         </ReadoutStrip>
       </div>
     </PageContainer>

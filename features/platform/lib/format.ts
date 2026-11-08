@@ -1,4 +1,5 @@
 /** Display helpers shared by the platform desks. */
+import type { Locale } from '@/features/i18n/messages'
 
 /** "1 photo", "3 photos"; pass the plural when it is not just the singular plus s. */
 export function countLabel(count: number, singular: string, plural = `${singular}s`) {
@@ -6,10 +7,16 @@ export function countLabel(count: number, singular: string, plural = `${singular
 }
 
 /** "2025550147" -> "(202) 555-0147"; NANP numbers with or without a leading 1. Anything else is returned trimmed. */
-export function formatPhone(value: string | null | undefined) {
+export function formatPhone(value: string | null | undefined, locale: Locale = 'en-US') {
   const raw = String(value ?? '').trim()
   if (!raw) return ''
   const digits = raw.replace(/\D/g, '')
+  if (locale === 'pt-BR') {
+    const national = digits.length >= 12 && digits.startsWith('55') ? digits.slice(2) : digits
+    if (national.length === 11) return `${raw.startsWith('+55') ? '+55 ' : ''}(${national.slice(0, 2)}) ${national[2]}${national.slice(3, 7)}-${national.slice(7)}`
+    if (national.length === 10) return `${raw.startsWith('+55') ? '+55 ' : ''}(${national.slice(0, 2)}) ${national.slice(2, 6)}-${national.slice(6)}`
+    return raw
+  }
   const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
   if (national.length !== 10 || (raw.startsWith('+') && !raw.startsWith('+1'))) return raw
   return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6)}`

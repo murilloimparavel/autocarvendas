@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { serializeValueToOperationItem } from './useHasChanges'
 import { createItemAction } from '../actions/item-actions'
 import { useInvalidFields } from './useInvalidFields'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface CreateItemError {
   networkError?: Error
@@ -36,6 +37,7 @@ function makeDefaultValue(fields: Record<string, any>) {
 
 export function useCreateItem(list: any, enhancedFields: Record<string, any>, options?: { skipRevalidation?: boolean }) {
   // IMPORTANT: Always call all hooks unconditionally to follow React's rules
+  const { locale } = useLocale()
   const queryClient = useQueryClient()
 
   // State initialization - EXACT Keystone pattern
@@ -117,12 +119,12 @@ export function useCreateItem(list: any, enhancedFields: Record<string, any>, op
         ...prev,
         state: 'error',
         error: {
-          graphQLErrors: [{ message: 'Unable to create the item. Please try again.' }]
+          graphQLErrors: [{ message: locale === 'pt-BR' ? 'Não foi possível criar o cadastro. Tente novamente.' : 'Unable to create the item. Please try again.' }]
         }
       }))
       return null
     }
-  }, [list, enhancedFields, value, invalidFields, options, queryClient])
+  }, [list, enhancedFields, value, invalidFields, options, queryClient, locale])
 
   // Props for the Fields component - SAME AS ITEMPAGE
   const props = useMemo(() => {

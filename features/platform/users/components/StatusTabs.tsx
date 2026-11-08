@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Segmented, type DeskTone } from "@/features/platform/components/desk";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const statusConfig = {
   sales: {
@@ -33,6 +34,8 @@ interface StatusTabsProps {
 }
 
 export function StatusTabs({ statusCounts }: StatusTabsProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const router = useRouter();
   const searchParams = useSearchParams()!;
   const pathname = usePathname();
@@ -60,10 +63,10 @@ export function StatusTabs({ statusCounts }: StatusTabsProps) {
   };
 
   const options = [
-    { value: "all", label: "All staff", count: statusCounts.all },
+    { value: "all", label: pt ? 'Todos os usuários' : 'All staff', count: statusCounts.all },
     ...(Object.keys(statusConfig) as StaffStatus[]).map((status) => ({
       value: status,
-      label: statusConfig[status].label,
+      label: pt ? ({ sales: 'Vendas', service: 'Oficina', finance: 'Financeiro' } as Record<StaffStatus, string>)[status] : statusConfig[status].label,
       count: statusCounts[status],
       tone: statusConfig[status].tone as DeskTone,
     })),
@@ -71,7 +74,7 @@ export function StatusTabs({ statusCounts }: StatusTabsProps) {
 
   return (
     <Segmented
-      label="Filter staff by role"
+      label={pt ? 'Filtrar usuários por função' : 'Filter staff by role'}
       value={currentStatus as string}
       onChange={handleStatusChange}
       options={options}

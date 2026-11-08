@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Segmented, type DeskTone } from "./desk";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const statusTone: Record<string, DeskTone> = {
   pending: "info",
@@ -26,16 +27,18 @@ interface StatusTabsProps {
 
 /** Underline status tabs bound to the `!status_matches` URL filter. */
 export function StatusTabs({ statusCounts, entityName = "Items" }: StatusTabsProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const router = useRouter();
   const searchParams = useSearchParams()!;
   const pathname = usePathname();
 
   const statuses = [
-    { value: "pending", label: "Pending", count: statusCounts.pending },
-    { value: "requires_action", label: "Requires action", count: statusCounts.requires_action },
-    { value: "completed", label: "Completed", count: statusCounts.completed },
-    { value: "archived", label: "Archived", count: statusCounts.archived },
-    { value: "canceled", label: "Canceled", count: statusCounts.canceled },
+    { value: "pending", label: pt ? "Pendente" : "Pending", count: statusCounts.pending },
+    { value: "requires_action", label: pt ? "Requer ação" : "Requires action", count: statusCounts.requires_action },
+    { value: "completed", label: pt ? "Concluído" : "Completed", count: statusCounts.completed },
+    { value: "archived", label: pt ? "Arquivado" : "Archived", count: statusCounts.archived },
+    { value: "canceled", label: pt ? "Cancelado" : "Canceled", count: statusCounts.canceled },
   ] as const;
 
   // Get current status from URL
@@ -67,11 +70,11 @@ export function StatusTabs({ statusCounts, entityName = "Items" }: StatusTabsPro
   return (
     <div className="px-4 md:px-6">
       <Segmented
-        label={`Filter ${entityName.toLowerCase()} by status`}
+        label={pt ? `Filtrar ${entityName.toLocaleLowerCase('pt-BR')} por status` : `Filter ${entityName.toLowerCase()} by status`}
         value={currentStatus}
         onChange={handleStatusChange}
         options={[
-          { value: "all", label: `All ${entityName}`, count: statusCounts.all },
+          { value: "all", label: pt ? `Todos: ${entityName}` : `All ${entityName}`, count: statusCounts.all },
           ...statuses.map((status) => ({
             value: status.value,
             label: status.label,

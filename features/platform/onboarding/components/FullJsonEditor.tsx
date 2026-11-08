@@ -3,6 +3,7 @@ import { Copy, Check, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { SECTION_TYPES } from '../config/templates';
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface FullJsonEditorProps {
   currentJson?: any;
@@ -38,6 +39,8 @@ export function FullJsonEditor({
   onJsonUpdate = () => {}, 
   templateName = "Custom" 
 }: FullJsonEditorProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isEditing, setIsEditing] = useState(false);
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState('');
@@ -71,7 +74,7 @@ export function FullJsonEditor({
       );
       
       if (missingKeys.length > 0) {
-        setError(`Missing required arrays: ${missingKeys.join(', ')}`);
+        setError(pt ? `Estruturas obrigatórias ausentes: ${missingKeys.join(', ')}` : `Missing required arrays: ${missingKeys.join(', ')}`);
         return;
       }
 
@@ -79,7 +82,7 @@ export function FullJsonEditor({
       setError('');
       setIsEditing(false);
     } catch (err) {
-      setError('Invalid JSON format');
+      setError(pt ? 'Formato JSON inválido.' : 'Invalid JSON format');
     }
   };
 
@@ -92,11 +95,11 @@ export function FullJsonEditor({
     <div className="space-y-4">
       <div className="space-y-2">
         <Label className="text-sm font-medium">
-          {templateName} Setup Configuration
+          {pt ? `Configuração ${templateName === 'Custom' ? 'personalizada' : templateName}` : `${templateName} Setup Configuration`}
         </Label>
         {templateName === 'Custom' && (
           <p className="text-xs text-muted-foreground">
-            Copy this configuration, edit it, and paste it back to set up your dealership.
+            {pt ? 'Copie esta configuração, edite o JSON e cole de volta para configurar sua loja.' : 'Copy this configuration, edit it, and paste it back to set up your dealership.'}
           </p>
         )}
       </div>
@@ -104,7 +107,7 @@ export function FullJsonEditor({
       <div className="relative">
         <div className="bg-muted rounded-lg border">
           <div className="flex items-center justify-between p-3 border-b border-border">
-            <span className="text-xs font-medium text-muted-foreground">JSON Configuration</span>
+            <span className="text-xs font-medium text-muted-foreground">{pt ? 'Configuração JSON' : 'JSON Configuration'}</span>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -115,12 +118,12 @@ export function FullJsonEditor({
                 {copied ? (
                   <>
                     <Check className="h-3 w-3 mr-1" />
-                    Copied
+                    {pt ? 'Copiado' : 'Copied'}
                   </>
                 ) : (
                   <>
                     <Copy className="h-3 w-3 mr-1" />
-                    Copy
+                    {pt ? 'Copiar' : 'Copy'}
                   </>
                 )}
               </Button>
@@ -132,7 +135,7 @@ export function FullJsonEditor({
                   className="h-7 px-2"
                 >
                   <Edit3 className="h-3 w-3 mr-1" />
-                  {isEditing ? 'Cancel' : 'Edit'}
+                  {isEditing ? (pt ? 'Cancelar' : 'Cancel') : (pt ? 'Editar' : 'Edit')}
                 </Button>
               )}
             </div>
@@ -165,7 +168,7 @@ export function FullJsonEditor({
               onClick={validateAndApply}
               disabled={!isEditing}
             >
-              Apply Configuration
+              {pt ? 'Aplicar configuração' : 'Apply Configuration'}
             </Button>
           </div>
         </div>

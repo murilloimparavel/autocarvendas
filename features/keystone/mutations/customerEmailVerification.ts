@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import { recordDomainEventInTransaction } from '../lifecycle/domainEvents'
 import { sendCustomerEmailVerification, storefrontBaseUrl } from '../lib/customerVerificationMail'
-import { localeFromCookieHeader } from '@/features/i18n/server'
+import { localeFromCookieHeader } from '../../i18n/server'
 import { normalizeCustomerEmail } from './customerIdentity'
 import { requireCustomerAccount } from './customerOwnership'
 

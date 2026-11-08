@@ -5,15 +5,17 @@ import { vehicleTitle } from '../../lib/format'
 import { primaryVehicleImage, vehicleImageUrl, skipImageOptimizer } from '../../lib/images'
 import { Container } from '../Container'
 import { VehiclePhotoPlaceholder } from '../VehiclePhotoPlaceholder'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 /* Two-column request page: form on the left, sticky sticker summary on the right.
    Below lg the aside is hidden; pages place <MobileSummary> above their submit. */
 export function RequestLayout({ children, summary }: { children: ReactNode; summary: ReactNode }) {
+  const { locale } = useLocale()
   return (
     <Container className="sf-section">
       <div className="grid gap-[var(--sf-space-xl)] lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start xl:gap-[var(--sf-space-2xl)]">
         <div className="min-w-0">{children}</div>
-        <aside className="hidden lg:sticky lg:top-28 lg:block" aria-label="Request summary">
+        <aside className="hidden lg:sticky lg:top-28 lg:block" aria-label={locale === 'pt-BR' ? 'Resumo da solicitação' : 'Request summary'}>
           {summary}
         </aside>
       </div>
@@ -60,11 +62,12 @@ export function Field({
   className?: string
   children: ReactNode
 }) {
+  const { locale } = useLocale()
   return (
     <div className={`min-w-0 ${className}`}>
       <label htmlFor={htmlFor} className="sf-label">
         {label}
-        {optional && <span className="sf-faint"> / Optional</span>}
+        {optional && <span className="sf-faint"> / {locale === 'pt-BR' ? 'Opcional' : 'Optional'}</span>}
       </label>
       {children}
     </div>
@@ -152,6 +155,7 @@ export function Sticker({
   children?: ReactNode
   footer?: ReactNode
 }) {
+  const { locale } = useLocale()
   return (
     <div className="sf-sticker">
       <div className="sf-sticker-head">
@@ -165,7 +169,7 @@ export function Sticker({
             <div key={row.label} className="sf-sticker-row">
               <dt>{row.label}</dt>
               <dd className={row.strong ? 'font-semibold' : undefined}>
-                {row.value === null || row.value === undefined || row.value === '' ? <span className="sf-faint">Not set</span> : row.value}
+                {row.value === null || row.value === undefined || row.value === '' ? <span className="sf-faint">{locale === 'pt-BR' ? 'Não informado' : 'Not set'}</span> : row.value}
               </dd>
             </div>
           ))}
@@ -216,23 +220,24 @@ export function RequestReceived({
   actions: ReactNode
   note?: string
 }) {
+  const { locale } = useLocale()
   return (
     <Container className="sf-section">
       <div className="grid gap-[var(--sf-space-xl)] lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start">
         <div className="min-w-0">
           <h1 className="sf-title-line">
             <span className="sf-dot" data-tone="ok" aria-hidden="true" />
-            <span className="sf-display text-[length:var(--sf-text-display)]">Request received</span>
+            <span className="sf-display text-[length:var(--sf-text-display)]">{locale === 'pt-BR' ? 'Solicitação recebida' : 'Request received'}</span>
           </h1>
           <p className="sf-muted mt-3 text-[length:var(--sf-text-md)]">{context}</p>
           {reference && (
             <p role="status" className="mt-5 flex flex-wrap items-baseline gap-3">
-              <span className="sf-eyebrow">Reference</span>
+              <span className="sf-eyebrow">{locale === 'pt-BR' ? 'Protocolo' : 'Reference'}</span>
               <span className="sf-figure text-[length:var(--sf-text-xl)] font-semibold">{reference}</span>
             </p>
           )}
           {note && <p className="sf-muted mt-4 max-w-md text-[length:var(--sf-text-sm)]">{note}</p>}
-          <nav aria-label="Next" className={`mt-[var(--sf-space-lg)] ${ACTION_ROW}`}>
+          <nav aria-label={locale === 'pt-BR' ? 'Próximas etapas' : 'Next'} className={`mt-[var(--sf-space-lg)] ${ACTION_ROW}`}>
             {actions}
           </nav>
         </div>
@@ -248,9 +253,9 @@ export const PILL_TARGET = 'min-h-11'
 export const ACTION_ROW = 'flex flex-wrap gap-2'
 
 /* "2026-10-24" -> "Sat, Oct 24, 2026" without shifting the day across time zones. */
-export function formatRequestDate(value: string) {
+export function formatRequestDate(value: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
   if (!match) return value
   const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  return date.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }

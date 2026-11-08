@@ -2,7 +2,11 @@
  * Text field view - Exact copy of Keystone implementation with ShadCN UI
  */
 
+'use client'
+
 import React, { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { localizeValidationMessages } from '@/features/i18n/validation'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -116,6 +120,7 @@ function NullableFieldWrapper({
   children: React.ReactNode
   errorMessage?: string
 }) {
+  const { locale } = useLocale()
   const nullId = React.useId()
   return (
     <div className="space-y-2">
@@ -134,7 +139,7 @@ function NullableFieldWrapper({
             disabled={isReadOnly}
           />
           <Label htmlFor={nullId} className="text-sm text-gray-600">
-            Set field as null
+            {locale === 'pt-BR' ? 'Definir campo como nulo' : 'Set field as null'}
           </Label>
         </div>
       )}
@@ -144,10 +149,11 @@ function NullableFieldWrapper({
 
 // Field component - exact copy from Keystone with ShadCN UI
 export function Field(props: FieldProps) {
+  const { locale } = useLocale()
   const { autoFocus, field, forceValidation, onChange, value, isRequired = false } = props
 
   const [shouldShowErrors, setShouldShowErrors] = useState(false)
-  const validationMessages = validate(value, field.validation, isRequired, field.label)
+  const validationMessages = localizeValidationMessages(validate(value, field.validation, isRequired, field.label), locale)
 
   const isReadOnly = onChange == null
   const isNull = value.inner.kind === 'null'
@@ -278,13 +284,10 @@ export const controller = (config: {
     validation,
     validate: (val: TextValue, opts: { isRequired: boolean }) => validate(val, validation, opts.isRequired, config.label).length === 0,
     filter: {
-      Filter: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Search..."
-        />
-      ),
+      Filter: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => {
+        const { locale } = useLocale()
+        return <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={locale === 'pt-BR' ? 'Buscar…' : 'Search...'} />
+      },
       Label: ({ label, value }: { label: string; value: string }) => {
         const trimmedLabel = label.toLowerCase().replace(' exactly', '')
         return `${trimmedLabel} "${value}"`

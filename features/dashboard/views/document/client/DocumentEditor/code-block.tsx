@@ -1,3 +1,4 @@
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import {
   Tooltip,
   TooltipContent,
@@ -35,16 +36,19 @@ function CodeButton() {
   )
 }
 
-export const codeButton = (
+export function CodeToolbarButton() {
+  const { locale } = useLocale()
+  return (
   <Tooltip>
     <TooltipTrigger asChild>
       <CodeButton />
     </TooltipTrigger>
     <TooltipContent side="bottom">
       <span className="flex items-center gap-2">
-        <span>Code block</span>
+        <span>{locale === 'pt-BR' ? 'Bloco de código' : 'Code block'}</span>
         <KeyboardInTooltip>```</KeyboardInTooltip>
       </span>
     </TooltipContent>
   </Tooltip>
-)
+  )
+}

@@ -3,6 +3,7 @@
 import { Sparkles } from 'lucide-react'
 import { useSidebarWithSide } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 /**
  * Phone-only assistant trigger that sits in the page header. While it is on
@@ -11,12 +12,13 @@ import { cn } from '@/lib/utils'
  */
 export function AssistantHeaderButton({ className }: { className?: string }) {
   const { toggleSidebar } = useSidebarWithSide('right')
+  const { locale } = useLocale()
   return (
     <button
       type="button"
       data-assistant-header=""
       onClick={toggleSidebar}
-      aria-label="Open assistant"
+      aria-label={locale === 'pt-BR' ? 'Abrir assistente' : 'Open assistant'}
       className={cn('inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background shadow-sm transition-colors hover:bg-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden', className)}
     >
       <Sparkles className="size-4" aria-hidden="true" />

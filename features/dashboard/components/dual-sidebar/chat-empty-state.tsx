@@ -1,4 +1,5 @@
 "use client";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface ChatEmptyStateProps {
   userName?: string;
@@ -6,7 +7,9 @@ interface ChatEmptyStateProps {
 }
 
 export function ChatEmptyState({ userName, variant = "default" }: ChatEmptyStateProps) {
-  const greeting = userName ? `Hi ${userName},` : "Hey,";
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const greeting = userName ? (pt ? `Olá, ${userName}!` : `Hi ${userName},`) : (pt ? 'Olá!' : 'Hey,');
   const isCompact = variant === "compact";
 
   return (
@@ -218,7 +221,7 @@ export function ChatEmptyState({ userName, variant = "default" }: ChatEmptyState
             {greeting}
           </h2>
           <h3 className={`font-medium tracking-[-0.006em] ${isCompact ? "text-sm" : "text-lg"}`}>
-            Welcome back! How can I help?
+            {pt ? 'Como posso ajudar?' : 'Welcome back! How can I help?'}
           </h3>
         </div>
       </div>

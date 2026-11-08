@@ -578,7 +578,7 @@ export function VehicleDetailPageClient({
                 ]} />
               </div>
               {vehicle.features.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Features">
+                <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={label('Features', 'Equipamentos e opcionais')}>
                   {vehicle.features.map(feature => <li key={feature} className="rounded-[4px] border px-2 py-0.5 text-xs">{feature}</li>)}
                 </ul>
               )}
@@ -609,7 +609,7 @@ export function VehicleDetailPageClient({
             >
               <SectionError locale={locale} section={detail.reconWorkItems}>
                 {!stock ? <EmptyRow>{label('Not stocked', 'Fora do estoque')}</EmptyRow> : reconItems.length === 0 ? <EmptyRow>{label('No work items', 'Nenhuma tarefa')}</EmptyRow> : (
-                  <DeskTable aria-label="Recon work items">
+                  <DeskTable aria-label={label('Recon work items', 'Serviços de preparação')}>
                     <thead>
                       <tr>
                         <Th>{label('Work item', 'Tarefa')}</Th>

@@ -8,8 +8,9 @@ import { formatCentsForInput, parseDollarsToCents } from '@/features/platform/de
 import { decideDealFinanceMenu, getDealFinanceMenu, presentDealFinanceMenu, quoteFinanceProduct } from '../actions/menu'
 import { FinanceFormDialog, type FieldErrors, type FinanceFormField } from './FinanceFormDialog'
 import type { DealMenuData, MenuOption, MenuProduct, MenuQuote, MenuVersion } from '../lib/menuTypes'
-import { categoryLabels, formatCents, formatDay, newIdempotencyKey, stateTone } from '../lib/display'
+import { categoryLabels, financeLabel, formatCents, formatDay, newIdempotencyKey, stateTone } from '../lib/display'
 import { countLabel } from '@/features/platform/lib/format'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export type MenuRequest = { kind: 'quotes' | 'present-menu' | 'decide-menu'; nonce: number }
 
@@ -44,6 +45,9 @@ export function DealMenuPanel({
   decideStep: StepHint
   onChanged: (message: string) => void | Promise<void>
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const money = (value: number | null | undefined, empty = '-') => formatCents(value, empty, pt ? 'BRL' : 'USD', locale)
   const [data, setData] = useState<DealMenuData | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -79,7 +83,7 @@ export function DealMenuPanel({
   })
   const currentMenu = data?.menus[0] ?? null
   const dealActive = ACTIVE_DEAL.includes(deal.status || '')
-  const inactiveReason = dealActive ? null : 'Deal must be submitted, approved or financed'
+  const inactiveReason = dealActive ? null : (pt ? 'A negociação precisa estar enviada, aprovada ou financiada' : 'Deal must be submitted, approved or financed')
 
   const openQuote = useCallback((product: MenuProduct) => {
     const prior = latestQuote.get(product.id)
@@ -88,13 +92,13 @@ export function DealMenuPanel({
       kind: 'quote', product, idempotencyKey: newIdempotencyKey(`finance-quote:${deal.id}:${product.id}`),
       values: {
         status: 'quoted',
-        retail: formatCentsForInput(prior?.retailPriceCents ?? product.retailPriceCents),
-        cost: prior?.costCents != null ? formatCentsForInput(prior.costCents) : product.costCents != null ? formatCentsForInput(product.costCents) : '',
+        retail: formatCentsForInput(prior?.retailPriceCents ?? product.retailPriceCents, locale),
+        cost: prior?.costCents != null ? formatCentsForInput(prior.costCents, locale) : product.costCents != null ? formatCentsForInput(product.costCents, locale) : '',
         term: termOf(prior)?.toString() || '',
         reference: '',
       },
     })
-  }, [deal.id, latestQuote])
+  }, [deal.id, latestQuote, locale])
 
   const openPresent = useCallback(() => {
     setFieldErrors({}); setFormError(null)
@@ -128,97 +132,97 @@ export function DealMenuPanel({
     if (!dialog) return
     const errors: FieldErrors = {}
     let run: (() => Promise<{ success: boolean; error?: string }>) | null = null
-    let message = 'Saved.'
+    let message = pt ? 'Salvo.' : 'Saved.'
     if (dialog.kind === 'quote') {
       const v = dialog.values
       const status = v.status as 'requested' | 'quoted' | 'failed'
-      if (!['requested', 'quoted', 'failed'].includes(status)) errors.status = 'Select a quote result.'
-      const retail = (v.retail || '').trim() ? parseDollarsToCents(v.retail) : null
-      const cost = (v.cost || '').trim() ? parseDollarsToCents(v.cost) : null
+      if (!['requested', 'quoted', 'failed'].includes(status)) errors.status = pt ? 'Selecione o resultado da cotação.' : 'Select a quote result.'
+      const retail = (v.retail || '').trim() ? parseDollarsToCents(v.retail, locale) : null
+      const cost = (v.cost || '').trim() ? parseDollarsToCents(v.cost, locale) : null
       const term = (v.term || '').trim() ? Number(v.term) : null
       if (status === 'quoted') {
-        if (retail == null) errors.retail = 'Enter the quoted retail price.'
-        if (cost == null) errors.cost = 'Enter the quoted dealer cost.'
-        if (!(v.reference || '').trim()) errors.reference = 'Enter the provider rate or quote reference.'
+        if (retail == null) errors.retail = pt ? 'Informe o preço de venda cotado.' : 'Enter the quoted retail price.'
+        if (cost == null) errors.cost = pt ? 'Informe o custo cotado para a loja.' : 'Enter the quoted dealer cost.'
+        if (!(v.reference || '').trim()) errors.reference = pt ? 'Informe a taxa ou o protocolo da cotação.' : 'Enter the provider rate or quote reference.'
       } else {
-        if ((v.retail || '').trim() && retail == null) errors.retail = 'Enter a dollar amount.'
-        if ((v.cost || '').trim() && cost == null) errors.cost = 'Enter a dollar amount.'
+        if ((v.retail || '').trim() && retail == null) errors.retail = pt ? 'Informe um valor em reais.' : 'Enter a dollar amount.'
+        if ((v.cost || '').trim() && cost == null) errors.cost = pt ? 'Informe um valor em reais.' : 'Enter a dollar amount.'
       }
-      if (term != null && (!Number.isInteger(term) || term < 1 || term > 240)) errors.term = 'Enter 1 to 240 months.'
-      if ((v.reference || '').length > 200) errors.reference = 'Use 200 characters or fewer.'
+      if (term != null && (!Number.isInteger(term) || term < 1 || term > 240)) errors.term = pt ? 'Informe um prazo entre 1 e 240 meses.' : 'Enter 1 to 240 months.'
+      if ((v.reference || '').length > 200) errors.reference = pt ? 'Use até 200 caracteres.' : 'Use 200 characters or fewer.'
       run = () => quoteFinanceProduct({
         dealId: deal.id, productId: dialog.product.id, status,
         retailPriceCents: retail, costCents: cost, termMonths: term,
         evidenceReference: (v.reference || '').trim(), idempotencyKey: dialog.idempotencyKey,
       })
-      message = `${dialog.product.code} quote recorded.`
+      message = pt ? `Cotação registrada para ${dialog.product.code}.` : `${dialog.product.code} quote recorded.`
     } else if (dialog.kind === 'present') {
       run = () => presentDealFinanceMenu({ dealId: deal.id, expectedUpdatedAt: deal.updatedAt, productCodes: dialog.picked, idempotencyKey: dialog.idempotencyKey })
-      message = dialog.picked.length ? `Menu presented with ${countLabel(dialog.picked.length, 'product')}.` : 'Menu presented with no products.'
+      message = pt ? (dialog.picked.length ? `Menu apresentado com ${countLabel(dialog.picked.length, 'produto', 'produtos')}.` : 'Menu apresentado sem produtos.') : dialog.picked.length ? `Menu presented with ${countLabel(dialog.picked.length, 'product')}.` : 'Menu presented with no products.'
     } else {
       const codes = Object.keys(dialog.choices)
-      for (const code of codes) if (!dialog.choices[code]) errors[`choice:${code}`] = 'Choose or decline.'
+      for (const code of codes) if (!dialog.choices[code]) errors[`choice:${code}`] = pt ? 'Escolha ou recuse este produto.' : 'Choose or decline.'
       const acknowledgment = (dialog.values.acknowledgment || '').trim()
-      if (!acknowledgment) errors.acknowledgment = 'Enter the disclosure acknowledgment.'
+      if (!acknowledgment) errors.acknowledgment = pt ? 'Informe a confirmação de ciência.' : 'Enter the disclosure acknowledgment.'
       const selected = codes.filter(code => dialog.choices[code] === 'chosen')
       run = () => decideDealFinanceMenu({
         dealId: deal.id, expectedUpdatedAt: deal.updatedAt, menuId: dialog.menu.id,
         selectedProductCodes: selected, declinedProductCodes: codes.filter(code => dialog.choices[code] === 'declined'),
         disclosureAcknowledgment: acknowledgment, idempotencyKey: dialog.idempotencyKey,
       })
-      message = selected.length ? `Menu accepted: ${selected.join(', ')}.` : 'Menu declined.'
+      message = pt ? (selected.length ? `Menu aceito: ${selected.join(', ')}.` : 'Menu recusado.') : selected.length ? `Menu accepted: ${selected.join(', ')}.` : 'Menu declined.'
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length || !run) return
     setBusy(true); setFormError(null)
     const response = await run()
     setBusy(false)
-    if (!response.success) { setFormError(response.error || 'Unable to save.'); return }
+    if (!response.success) { setFormError(response.error || (pt ? 'Não foi possível salvar.' : 'Unable to save.')); return }
     setDialog(null)
     await load()
     await onChanged(message)
   }
 
   const quoteFields: FinanceFormField[] = dialog?.kind === 'quote' ? [
-    { name: 'status', label: 'Result', type: 'select', options: [{ value: 'quoted', label: 'Quoted' }, { value: 'requested', label: 'Requested' }, { value: 'failed', label: 'Cannot quote' }] },
-    { name: 'term', label: 'Term (months)', type: 'number', placeholder: '60' },
-    { name: 'retail', label: 'Retail price', type: 'money' },
-    { name: 'cost', label: 'Dealer cost', type: 'money' },
-    { name: 'reference', label: dialog.values.status === 'quoted' ? 'Rate reference' : 'Reference (optional)', maxLength: 200, wide: true },
+    { name: 'status', label: pt ? 'Resultado' : 'Result', type: 'select', options: [{ value: 'quoted', label: pt ? 'Cotada' : 'Quoted' }, { value: 'requested', label: pt ? 'Solicitada' : 'Requested' }, { value: 'failed', label: pt ? 'Sem cotação' : 'Cannot quote' }] },
+    { name: 'term', label: pt ? 'Prazo (meses)' : 'Term (months)', type: 'number', placeholder: '60' },
+    { name: 'retail', label: pt ? 'Preço de venda' : 'Retail price', type: 'money' },
+    { name: 'cost', label: pt ? 'Custo da loja' : 'Dealer cost', type: 'money' },
+    { name: 'reference', label: dialog.values.status === 'quoted' ? (pt ? 'Protocolo da taxa' : 'Rate reference') : (pt ? 'Protocolo (opcional)' : 'Reference (optional)'), maxLength: 200, wide: true },
   ] : dialog?.kind === 'decide' ? [
-    { name: 'acknowledgment', label: 'Disclosure acknowledgment', type: 'textarea', maxLength: 1000 },
+    { name: 'acknowledgment', label: pt ? 'Confirmação de ciência do cliente' : 'Disclosure acknowledgment', type: 'textarea', maxLength: 1000 },
   ] : []
 
   const optionRow = (option: MenuOption, menu: MenuVersion) => {
     const chosen = (menu.selectedProductCodes || []).includes(option.code)
     const declined = (menu.declinedProductCodes || []).includes(option.code)
-    const state = chosen ? 'Chosen' : declined ? 'Declined' : menu.status === 'presented' ? 'Awaiting' : '-'
+    const state = chosen ? (pt ? 'Escolhido' : 'Chosen') : declined ? (pt ? 'Recusado' : 'Declined') : menu.status === 'presented' ? (pt ? 'Aguardando' : 'Awaiting') : '-'
     return (
       <li key={option.code} className="flex min-w-0 items-start justify-between gap-4 py-2">
         <div className="min-w-0">
           <TitleLine as="p" tone={chosen ? 'ok' : declined ? 'idle' : 'warn'} status={state}>{option.name || option.code}</TitleLine>
-          <p className="pl-4 text-xs text-muted-foreground"><Code>{option.code}</Code> · {state}{option.termMonths ? ` · ${option.termMonths} mo` : ''}</p>
+          <p className="pl-4 text-xs text-muted-foreground"><Code>{option.code}</Code> · {state}{option.termMonths ? ` · ${option.termMonths} ${pt ? 'meses' : 'mo'}` : ''}</p>
         </div>
-        <p className="shrink-0 text-xs tabular-nums">{formatCents(option.retailPriceCents ?? null)}</p>
+        <p className="shrink-0 text-xs tabular-nums">{money(option.retailPriceCents ?? null)}</p>
       </li>
     )
   }
 
-  const presentDisabledReason = inactiveReason || (currentMenu?.status === 'presented' ? 'Record the customer decision first' : null)
-  const decideDisabledReason = inactiveReason || (currentMenu?.status !== 'presented' ? decideStep?.blockedReason || 'Present the F&I menu first' : null)
+  const presentDisabledReason = inactiveReason || (currentMenu?.status === 'presented' ? (pt ? 'Registre primeiro a decisão do cliente' : 'Record the customer decision first') : null)
+  const decideDisabledReason = inactiveReason || (currentMenu?.status !== 'presented' ? (decideStep?.blockedReason ? financeLabel(locale, decideStep.blockedReason) : pt ? 'Apresente primeiro o menu de produtos financeiros' : 'Present the F&I menu first') : null)
   const chosenTotal = currentMenu ? (currentMenu.optionsSnapshot || []).filter(option => (currentMenu.selectedProductCodes || []).includes(option.code)).reduce((sum, option) => sum + (option.retailPriceCents || 0), 0) : 0
 
   return (
     <DeskSection
-      title="F&I menu"
+      title={pt ? 'Menu de produtos financeiros' : 'F&I menu'}
       count={activeProducts.length}
       actions={
         <Track>
           <Pill size="sm" variant={presentStep?.available ? 'primary' : 'raised'} disabled={busy || Boolean(presentDisabledReason) || !data} title={presentDisabledReason || undefined} onClick={openPresent}>
-            {currentMenu && currentMenu.status !== 'superseded' ? 'Present new menu' : 'Present menu'}
+            {currentMenu && currentMenu.status !== 'superseded' ? (pt ? 'Apresentar novo menu' : 'Present new menu') : (pt ? 'Apresentar menu' : 'Present menu')}
           </Pill>
           <Pill size="sm" variant={decideStep?.available ? 'primary' : 'raised'} disabled={busy || Boolean(decideDisabledReason)} title={decideDisabledReason || undefined} onClick={openDecide}>
-            Record decision
+            {pt ? 'Registrar decisão' : 'Record decision'}
           </Pill>
         </Track>
       }
@@ -228,29 +232,29 @@ export function DealMenuPanel({
           <Notice tone="bad">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span>{loadError}</span>
-              <Track><Pill size="sm" onClick={() => void load()}>Retry</Pill></Track>
+              <Track><Pill size="sm" onClick={() => void load()}>{pt ? 'Tentar novamente' : 'Retry'}</Pill></Track>
             </div>
           </Notice>
         )}
-        {!data && !loadError && <p className="py-3 text-sm text-muted-foreground" role="status">Loading products…</p>}
+        {!data && !loadError && <p className="py-3 text-sm text-muted-foreground" role="status">{pt ? 'Carregando produtos…' : 'Loading products…'}</p>}
         {(presentDisabledReason || decideDisabledReason) && data && (
           <p className="text-xs text-muted-foreground">
-            {[presentDisabledReason ? `Present: ${presentDisabledReason}` : null, decideDisabledReason && currentMenu?.status === 'presented' ? `Decision: ${decideDisabledReason}` : null].filter(Boolean).join(' · ')}
+            {[presentDisabledReason ? `${pt ? 'Apresentação' : 'Present'}: ${presentDisabledReason}` : null, decideDisabledReason && currentMenu?.status === 'presented' ? `${pt ? 'Decisão' : 'Decision'}: ${decideDisabledReason}` : null].filter(Boolean).join(' · ')}
           </p>
         )}
 
         {data && (
           activeProducts.length === 0 ? (
             <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm text-muted-foreground">
-              <span>No active products at this rooftop</span>
-              <Track><Pill size="sm" asChild><Link href={`${basePath}/platform/finance/products`}>F&I products</Link></Pill></Track>
+              <span>{pt ? 'Nenhum produto ativo nesta loja' : 'No active products at this rooftop'}</span>
+              <Track><Pill size="sm" asChild><Link href={`${basePath}/platform/finance/products`}>{pt ? 'Produtos financeiros' : 'F&I products'}</Link></Pill></Track>
             </div>
           ) : (
-            <ul className="divide-y text-sm" aria-label="Product quotes">
+            <ul className="divide-y text-sm" aria-label={pt ? 'Cotações de produtos' : 'Product quotes'}>
               {activeProducts.map(product => {
                 const quote = latestQuote.get(product.id)
                 const term = termOf(quote)
-                const status = quote?.status || 'not quoted'
+                const status = quote ? financeLabel(locale, quote.status) : (pt ? 'Sem cotação' : 'not quoted')
                 return (
                   <li key={product.id} className="flex min-w-0 flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
@@ -258,17 +262,17 @@ export function DealMenuPanel({
                         {product.name}
                       </TitleLine>
                       <p className="break-words pl-4 text-xs text-muted-foreground">
-                        <Code>{product.code}</Code> · {categoryLabels[product.category] || product.category} · {status === 'failed' ? 'cannot quote' : status}
+                        <Code>{product.code}</Code> · {financeLabel(locale, categoryLabels[product.category] || product.category)} · {quote?.status === 'failed' ? (pt ? 'sem cotação' : 'cannot quote') : status}
                         {quote?.evidenceReference ? ` · ${quote.evidenceReference}` : ''}
-                        {quote ? ` · ${formatDay(quote.completedAt || quote.requestedAt, timeZone)}` : ''}
+        {quote ? ` · ${formatDay(quote.completedAt || quote.requestedAt, timeZone, locale)}` : ''}
                       </p>
                       <p className="pl-4 text-xs tabular-nums text-muted-foreground">
-                        Price {formatCents(quote?.retailPriceCents ?? product.retailPriceCents)} · Cost {formatCents(quote ? quote.costCents : product.costCents, 'hidden')} · {term ? `${term} mo` : 'No term'}
+                        {pt ? 'Preço' : 'Price'} {money(quote?.retailPriceCents ?? product.retailPriceCents)} · {pt ? 'Custo' : 'Cost'} {money(quote ? quote.costCents : product.costCents, pt ? 'Oculto' : 'hidden')} · {term ? `${term} ${pt ? 'meses' : 'mo'}` : (pt ? 'Sem prazo' : 'No term')}
                       </p>
                     </div>
                     <Track className="shrink-0 self-start pl-4 sm:self-auto sm:pl-0">
                       <Pill size="sm" disabled={busy || Boolean(inactiveReason)} title={inactiveReason || undefined} onClick={() => openQuote(product)}>
-                        {quote ? 'Requote' : 'Quote'}
+                        {quote ? (pt ? 'Atualizar cotação' : 'Requote') : (pt ? 'Cotar' : 'Quote')}
                       </Pill>
                     </Track>
                   </li>
@@ -281,40 +285,40 @@ export function DealMenuPanel({
         {data && currentMenu && (
           <div className="space-y-1 rounded-md border px-3 py-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <TitleLine as="p" tone={stateTone(currentMenu.status)} status={currentMenu.status} className="text-sm font-medium">
-                Menu v{currentMenu.version} · {currentMenu.status}
+              <TitleLine as="p" tone={stateTone(currentMenu.status)} status={financeLabel(locale, currentMenu.status)} className="text-sm font-medium">
+                {pt ? 'Menu' : 'Menu'} v{currentMenu.version} · {financeLabel(locale, currentMenu.status)}
               </TitleLine>
               <p className="text-xs tabular-nums text-muted-foreground">
-                {formatDay(currentMenu.decidedAt || currentMenu.presentedAt, timeZone)}{currentMenu.status === 'accepted' ? ` · ${formatCents(chosenTotal)}` : ''}
+                {formatDay(currentMenu.decidedAt || currentMenu.presentedAt, timeZone, locale)}{currentMenu.status === 'accepted' ? ` · ${money(chosenTotal)}` : ''}
               </p>
             </div>
             {(currentMenu.optionsSnapshot || []).length === 0
-              ? <p className="pl-4 text-xs text-muted-foreground">No products on this menu</p>
+              ? <p className="pl-4 text-xs text-muted-foreground">{pt ? 'Nenhum produto neste menu' : 'No products on this menu'}</p>
               : <ul className="divide-y text-sm">{(currentMenu.optionsSnapshot || []).map(option => optionRow(option, currentMenu))}</ul>}
-            {currentMenu.disclosureAcknowledgment && <p className="pl-4 text-xs text-muted-foreground">Acknowledgment: {currentMenu.disclosureAcknowledgment}</p>}
-            {data.menus.length > 1 && <p className="pl-4 text-xs text-muted-foreground">{data.menus.length - 1} earlier versions superseded</p>}
+            {currentMenu.disclosureAcknowledgment && <p className="pl-4 text-xs text-muted-foreground">{pt ? 'Confirmação de ciência:' : 'Acknowledgment:'} {currentMenu.disclosureAcknowledgment}</p>}
+            {data.menus.length > 1 && <p className="pl-4 text-xs text-muted-foreground">{data.menus.length - 1} {pt ? 'versões anteriores substituídas' : 'earlier versions superseded'}</p>}
           </div>
         )}
-        {loading && data && <span className="sr-only" role="status">Refreshing menu</span>}
+        {loading && data && <span className="sr-only" role="status">{pt ? 'Atualizando menu' : 'Refreshing menu'}</span>}
       </div>
 
       <FinanceFormDialog
         open={Boolean(dialog)}
-        title={dialog?.kind === 'quote' ? `Quote ${dialog.product.code}` : dialog?.kind === 'present' ? 'Present F&I menu' : `Record decision · menu v${dialog?.kind === 'decide' ? dialog.menu.version : ''}`}
+        title={dialog?.kind === 'quote' ? `${pt ? 'Cotação' : 'Quote'} ${dialog.product.code}` : dialog?.kind === 'present' ? (pt ? 'Apresentar menu de produtos financeiros' : 'Present F&I menu') : `${pt ? 'Registrar decisão' : 'Record decision'} · ${pt ? 'menu' : 'menu'} v${dialog?.kind === 'decide' ? dialog.menu.version : ''}`}
         fields={quoteFields}
         values={dialog?.kind === 'quote' || dialog?.kind === 'decide' ? dialog.values : {}}
         errors={fieldErrors}
         error={formError}
         busy={busy}
-        submitLabel={dialog?.kind === 'present' ? 'Present' : 'Save'}
+        submitLabel={dialog?.kind === 'present' ? (pt ? 'Apresentar' : 'Present') : (pt ? 'Salvar' : 'Save')}
         onValuesChange={values => setDialog(current => current && (current.kind === 'quote' || current.kind === 'decide') ? { ...current, values } : current)}
         onSubmit={submit}
         onOpenChange={open => { if (!open) close() }}
       >
         {dialog?.kind === 'present' && (
           <fieldset className="space-y-2">
-            <legend className="text-[12px] font-medium text-muted-foreground">Quoted products</legend>
-            {quotedProducts.length === 0 && <p className="text-sm text-muted-foreground">No quoted products; the menu is presented empty</p>}
+            <legend className="text-[12px] font-medium text-muted-foreground">{pt ? 'Produtos cotados' : 'Quoted products'}</legend>
+            {quotedProducts.length === 0 && <p className="text-sm text-muted-foreground">{pt ? 'Nenhum produto cotado; o menu será apresentado vazio' : 'No quoted products; the menu is presented empty'}</p>}
             {quotedProducts.map(product => {
               const quote = latestQuote.get(product.id)
               const checked = dialog.picked.includes(product.code)
@@ -324,29 +328,29 @@ export function DealMenuPanel({
                     <input type="checkbox" className="size-4" checked={checked} onChange={event => setDialog(current => current?.kind === 'present' ? { ...current, picked: event.target.checked ? [...current.picked, product.code] : current.picked.filter(code => code !== product.code) } : current)} />
                     <span className="min-w-0 truncate">{product.name} <Code>{product.code}</Code></span>
                   </span>
-                  <span className="shrink-0 text-xs tabular-nums">{formatCents(quote?.retailPriceCents ?? null)}{termOf(quote) ? ` · ${termOf(quote)} mo` : ''}</span>
+                  <span className="shrink-0 text-xs tabular-nums">{money(quote?.retailPriceCents ?? null)}{termOf(quote) ? ` · ${termOf(quote)} ${pt ? 'meses' : 'mo'}` : ''}</span>
                 </label>
               )
             })}
-            {activeProducts.length > quotedProducts.length && <p className="text-xs text-muted-foreground">{activeProducts.length - quotedProducts.length} active products without a current quote</p>}
+            {activeProducts.length > quotedProducts.length && <p className="text-xs text-muted-foreground">{activeProducts.length - quotedProducts.length} {pt ? 'produtos ativos sem cotação atual' : 'active products without a current quote'}</p>}
           </fieldset>
         )}
         {dialog?.kind === 'decide' && (
           <fieldset className="space-y-2">
-            <legend className="text-[12px] font-medium text-muted-foreground">Customer choice</legend>
-            {(dialog.menu.optionsSnapshot || []).length === 0 && <p className="text-sm text-muted-foreground">No products on this menu; the decision records a decline</p>}
+            <legend className="text-[12px] font-medium text-muted-foreground">{pt ? 'Escolha do cliente' : 'Customer choice'}</legend>
+            {(dialog.menu.optionsSnapshot || []).length === 0 && <p className="text-sm text-muted-foreground">{pt ? 'Não há produtos neste menu; a decisão será registrada como recusa' : 'No products on this menu; the decision records a decline'}</p>}
             {(dialog.menu.optionsSnapshot || []).map(option => (
               <div key={option.code} className="flex min-w-0 flex-col gap-2 rounded-md bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 text-sm">
                   <p className="truncate">{option.name || option.code} <Code>{option.code}</Code></p>
-                  <p className="text-xs tabular-nums text-muted-foreground">{formatCents(option.retailPriceCents ?? null)}{option.termMonths ? ` · ${option.termMonths} mo` : ''}</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">{money(option.retailPriceCents ?? null)}{option.termMonths ? ` · ${option.termMonths} ${pt ? 'meses' : 'mo'}` : ''}</p>
                   {fieldErrors[`choice:${option.code}`] && <p className="text-xs text-red-600 dark:text-red-400">{fieldErrors[`choice:${option.code}`]}</p>}
                 </div>
                 <Segmented
-                  label={`${option.code} choice`}
+                  label={pt ? `Escolha para ${option.code}` : `${option.code} choice`}
                   value={dialog.choices[option.code] || ''}
                   onChange={value => setDialog(current => current?.kind === 'decide' ? { ...current, choices: { ...current.choices, [option.code]: value as 'chosen' | 'declined' } } : current)}
-                  options={[{ value: 'chosen', label: 'Choose', tone: 'ok' }, { value: 'declined', label: 'Decline', tone: 'idle' }]}
+                  options={[{ value: 'chosen', label: pt ? 'Escolher' : 'Choose', tone: 'ok' }, { value: 'declined', label: pt ? 'Recusar' : 'Decline', tone: 'idle' }]}
                 />
               </div>
             ))}

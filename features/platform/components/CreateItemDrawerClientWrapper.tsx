@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CreateItemDrawerClient } from './CreateItemDrawerClient'
 import { getListByPath } from '@/features/dashboard/actions/getListByPath'
 import { toast } from 'sonner'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface CreateItemDrawerClientWrapperProps {
   listKey: string
@@ -45,6 +46,8 @@ export function CreateItemDrawerClientWrapper({
   onClose,
   onCreate
 }: CreateItemDrawerClientWrapperProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [list, setList] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -60,21 +63,21 @@ export function CreateItemDrawerClientWrapper({
         // Fetch list metadata
         const listData = await getListByPath(listKey)
         if (!listData) {
-          setError(`List not found: ${listKey}`)
+          setError(pt ? `Lista não encontrada: ${listKey}` : `List not found: ${listKey}`)
           return
         }
         setList(listData)
       } catch (err) {
         console.error('Error fetching data:', err)
-        setError(err instanceof Error ? err.message : 'Unknown error')
-        toast.error('Failed to load list data')
+        setError(err instanceof Error ? err.message : (pt ? 'Erro desconhecido' : 'Unknown error'))
+        toast.error(pt ? 'Não foi possível carregar os dados da lista' : 'Failed to load list data')
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchData()
-  }, [listKey, open])
+  }, [listKey, open, pt])
 
   // If not open, render empty drawer
   if (!open) {
@@ -91,14 +94,14 @@ export function CreateItemDrawerClientWrapper({
         {isLoading ? (
           <>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Loading...</DrawerTitle>
+              <DrawerTitle>{pt ? 'Carregando…' : 'Loading…'}</DrawerTitle>
             </DrawerHeader>
             <LoadingSkeleton />
           </>
         ) : error ? (
           <>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
               <p className="text-destructive">{error}</p>
@@ -113,10 +116,10 @@ export function CreateItemDrawerClientWrapper({
         ) : (
           <>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
-              <p className="text-destructive">Failed to load data</p>
+              <p className="text-destructive">{pt ? 'Não foi possível carregar os dados' : 'Failed to load data'}</p>
             </div>
           </>
         )}

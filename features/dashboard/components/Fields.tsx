@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 // Exact copy from Keystone - testFilter function
 function applyFilter<T>(
@@ -60,6 +61,8 @@ interface FieldsProps {
 }
 
 export function Fields({ fields, value, onChange, forceValidation, invalidFields, isRequireds, view = 'itemView', groups = [] }: FieldsProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   // Create serialized data exactly like Keystone for testFilter
   const serialized = useMemo(() => {
     const result: Record<string, unknown> = {}
@@ -167,7 +170,7 @@ export function Fields({ fields, value, onChange, forceValidation, invalidFields
   return (
     <div className="grid w-full grid-cols-1 items-center gap-4">
       {rendered.length === 0 && value && Object.keys(value).length === 0
-        ? "There are no fields that you can read or edit"
+        ? (pt ? 'Não há campos disponíveis para consulta ou edição.' : "There are no fields that you can read or edit")
         : rendered}
     </div>
   )
@@ -179,6 +182,8 @@ function FieldGroup(props: {
   count: number
   children: ReactNode
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const descriptionId = useId()
   const labelId = useId()
 
@@ -227,7 +232,7 @@ function FieldGroup(props: {
                   {props.label}
                 </div>
                 <Badge className="text-[.7rem] py-0.5 uppercase tracking-wide font-medium">
-                  {actualFieldCount} FIELD{actualFieldCount !== 1 && "S"}
+                  {pt ? `${actualFieldCount} ${actualFieldCount === 1 ? 'CAMPO' : 'CAMPOS'}` : `${actualFieldCount} FIELD${actualFieldCount !== 1 ? "S" : ''}`}
                 </Badge>
               </div>
               {props.description !== null && props.description !== undefined && (

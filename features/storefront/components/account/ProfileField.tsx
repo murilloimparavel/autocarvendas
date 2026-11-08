@@ -3,6 +3,7 @@
 import { useActionState, type ReactNode } from 'react'
 
 import type { AccountState } from '../../actions/account'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export function ProfileField({
   title,
@@ -14,6 +15,7 @@ export function ProfileField({
   children: ReactNode
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null })
+  const { locale } = useLocale()
 
   return (
     <form
@@ -28,7 +30,7 @@ export function ProfileField({
         {!state.error && state.success && !pending && <div role="status" className="sf-notice" data-tone="ok">{state.success}</div>}
       </div>
       <button type="submit" disabled={pending} className="sf-btn sf-btn-ghost self-start md:mt-6">
-        {pending ? 'Saving…' : 'Save'}
+        {pending ? (locale === 'pt-BR' ? 'Salvando…' : 'Saving…') : (locale === 'pt-BR' ? 'Salvar' : 'Save')}
       </button>
     </form>
   )

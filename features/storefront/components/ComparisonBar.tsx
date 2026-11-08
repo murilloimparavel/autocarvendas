@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { clearComparison, getComparisonCount } from '@/features/storefront/lib/comparison'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export function ComparisonBar() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [count, setCount] = useState(0)
   const pathname = usePathname()
 
@@ -27,18 +30,18 @@ export function ComparisonBar() {
           className="sf-band pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[var(--sf-radius-md)] py-1.5 pl-4 pr-1.5"
           style={{ boxShadow: 'var(--sf-shadow-float)' }}
           role="region"
-          aria-label="Compare"
+          aria-label={pt ? 'Comparação de veículos' : 'Compare'}
         >
           <p className="min-w-0 flex-1 truncate text-[length:var(--sf-text-sm)]">
             <span className="sf-figure font-semibold">{count}</span>
-            <span style={{ color: 'var(--sf-on-dark-2)' }}> of 4 selected</span>
+            <span style={{ color: 'var(--sf-on-dark-2)' }}>{pt ? ' de 4 selecionados' : ' of 4 selected'}</span>
           </p>
           <div className="flex shrink-0 gap-1.5">
             <button type="button" onClick={() => clearComparison()} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">
-              Clear
+              {pt ? 'Limpar' : 'Clear'}
             </button>
             <Link href="/compare" className="sf-btn sf-btn-primary sf-btn-sm min-h-10">
-              Compare
+              {pt ? 'Comparar' : 'Compare'}
             </Link>
           </div>
         </div>

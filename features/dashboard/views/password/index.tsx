@@ -3,6 +3,8 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { localizeValidationMessage } from '@/features/i18n/validation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -120,15 +122,18 @@ export function Field({
   forceValidation,
   isRequired = false,
 }: PasswordFieldProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [secureTextEntry, setSecureTextEntry] = useState(true)
   const [touched, setTouched] = useState({ value: false, confirm: false })
   const triggerRef = useRef<HTMLButtonElement>(null)
 
   const isReadOnly = onChange == null
-  const validationMessage =
+  const rawValidationMessage =
     forceValidation || (touched.value && touched.confirm)
       ? validate(value, field.validation, isRequired, field.label)
       : undefined
+  const validationMessage = rawValidationMessage ? localizeValidationMessage(rawValidationMessage, locale) : undefined
 
   const cancelEditing = () => {
     onChange?.({ kind: 'initial', isSet: value.isSet })
@@ -217,7 +222,7 @@ export function Field({
           <Input
             id={`field-${field.path}`}
             autoFocus
-            placeholder="New password"
+            placeholder={pt ? 'Nova senha' : 'New password'}
             type={secureTextEntry ? 'password' : 'text'}
             value={value.value}
             required={isRequired}
@@ -230,7 +235,7 @@ export function Field({
         <div className="flex-1">
           <Input
             aria-label={`Confirm ${field.label.toLowerCase()}`}
-            placeholder="Confirm password"
+            placeholder={pt ? 'Confirme a senha' : 'Confirm password'}
             type={secureTextEntry ? 'password' : 'text'}
             value={value.confirm}
             className={validationMessage ? 'border-red-500 shadow-xs' : 'shadow-xs'}
@@ -246,7 +251,7 @@ export function Field({
             variant="outline"
             className="size-10.5"
             onClick={() => setSecureTextEntry(bool => !bool)}
-            title={secureTextEntry ? 'Show password' : 'Hide password'}
+            title={secureTextEntry ? (pt ? 'Mostrar senha' : 'Show password') : (pt ? 'Ocultar senha' : 'Hide password')}
           >
             {secureTextEntry ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
           </Button>
@@ -269,19 +274,21 @@ export function Field({
 }
 
 export function Cell({ item, field, value }: CellProps) {
+  const { locale } = useLocale()
   const fieldValue = value ?? item[field.path]?.isSet
   return fieldValue ? (
-    <div className="flex items-center" aria-label="is set">
+    <div className="flex items-center" aria-label={locale === 'pt-BR' ? 'definida' : 'is set'}>
       <Asterisk className="h-3 w-3" />
       <Asterisk className="h-3 w-3" />
       <Asterisk className="h-3 w-3" />
     </div>
   ) : (
-    <span className="sr-only">not set</span>
+    <span className="sr-only">{locale === 'pt-BR' ? 'não definida' : 'not set'}</span>
   )
 }
 
 export function CardValue({ item, field }: CellProps) {
+  const { locale } = useLocale()
   const value = item[field.path]?.isSet
   return (
     <div>
@@ -292,10 +299,10 @@ export function CardValue({ item, field }: CellProps) {
             <Asterisk className="h-3 w-3" />
             <Asterisk className="h-3 w-3" />
             <Asterisk className="h-3 w-3" />
-            <span className="ml-1">Set</span>
+            <span className="ml-1">{locale === 'pt-BR' ? 'Definida' : 'Set'}</span>
           </div>
         ) : (
-          'Not set'
+          locale === 'pt-BR' ? 'Não definida' : 'Not set'
         )}
       </div>
     </div>

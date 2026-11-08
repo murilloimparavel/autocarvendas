@@ -29,6 +29,7 @@ import {
 import { getDealDeskWorkspace, type DealDeskDeal } from '../actions'
 import { DEAL_STATUSES, labelForDeal, toneForDeal } from '../lib/dealStatus'
 import { formatUsd } from '../lib/formatMoney'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface Deal {
   id: string
@@ -65,12 +66,10 @@ function countByStatus(deals: Array<{ status: string }>): StatusCounts {
   return counts
 }
 
-const formatCurrency = (value: number | null | undefined) => formatUsd(value, { whole: true })
-
 // The dealership's zone, not the browser's, so the server and client render the same day.
-const formatDate = (date: string | null, timeZone: string) => {
+const formatDate = (date: string | null, timeZone: string, locale: 'pt-BR' | 'en-US') => {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone })
+  return new Date(date).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone })
 }
 
 function ageDays(createdAt: string, now: number) {
@@ -91,11 +90,16 @@ export function DealListPageClient({
   initialDeals,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialDeals: DealDeskDeal[] | null
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const formatCurrency = (value: number | null | undefined) => formatUsd(value, { whole: true, currencyCode, locale })
   const router = useRouter()
   const [deals, setDeals] = useState<Deal[]>(initialDeals ? toListDeals(initialDeals) : [])
   // The desk queue always reads from the unfiltered board so status tabs never empty it.
@@ -121,7 +125,7 @@ export function DealListPageClient({
       if (status === 'all') setBoardDeals(toListDeals(loaded))
       setStatusCounts(current => (status === 'all' ? countByStatus(loaded) : { ...current, [status]: loaded.length }))
     } else {
-      setError(response.error || 'Unable to load deals.')
+      setError(response.error || (pt ? 'Não foi possível carregar as vendas.' : 'Unable to load deals.'))
     }
     setLoading(false)
   }, [])
@@ -170,31 +174,31 @@ export function DealListPageClient({
   const dealHref = (deal: Deal) => `${basePath}/platform/deals/${deal.id}`
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Deals' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Vendas' : 'Deals' },
   ]
 
   const metaParts = [
-    deskQueue.length ? `${deskQueue.length} on the desk` : 'Desk clear',
-    staleCount ? `${staleCount} stale` : null,
-    `${statusCounts.all ?? boardDeals.length} ${(statusCounts.all ?? boardDeals.length) === 1 ? 'deal' : 'deals'}`,
+    deskQueue.length ? (pt ? `${deskQueue.length} aguardando atendimento` : `${deskQueue.length} on the desk`) : (pt ? 'Nenhuma venda pendente' : 'Desk clear'),
+    staleCount ? (pt ? `${staleCount} sem atualização` : `${staleCount} stale`) : null,
+    `${statusCounts.all ?? boardDeals.length} ${pt ? ((statusCounts.all ?? boardDeals.length) === 1 ? 'venda' : 'vendas') : ((statusCounts.all ?? boardDeals.length) === 1 ? 'deal' : 'deals')}`,
   ].filter(Boolean)
 
   const header = (
     <DeskHeader
-      title="Deals"
+      title={pt ? 'Vendas' : 'Deals'}
       meta={metaParts.join(' · ')}
       actions={
         <>
-          <Pill variant="plain" onClick={() => loadDeals(statusFilter)} disabled={loading} aria-label="Refresh deals">
+          <Pill variant="plain" onClick={() => loadDeals(statusFilter)} disabled={loading} aria-label={pt ? 'Atualizar vendas' : 'Refresh deals'}>
             <RefreshCw className={loading ? 'animate-spin' : undefined} />
-            Refresh
+            {pt ? 'Atualizar' : 'Refresh'}
           </Pill>
           <Pill asChild variant="primary">
             <Link href={`${basePath}/platform/deals/create`}>
               <Plus />
-              New deal
+              {pt ? 'Nova venda' : 'New deal'}
             </Link>
           </Pill>
         </>
@@ -203,16 +207,16 @@ export function DealListPageClient({
   )
 
   const boardOptions = [
-    { value: 'all', label: 'All', count: statusCounts.all },
-    ...DEAL_STATUSES.map(status => ({ value: status, label: labelForDeal(status), tone: toneForDeal(status), count: statusCounts[status] })),
+    { value: 'all', label: pt ? 'Todas' : 'All', count: statusCounts.all },
+    ...DEAL_STATUSES.map(status => ({ value: status, label: pt ? ({ pencil: 'Rascunho', submitted: 'Enviada para aprovação', approved: 'Aprovada', financed: 'Financiada', delivered: 'Entregue', cancelled: 'Cancelada' } as Record<string, string>)[status] || status : labelForDeal(status), tone: toneForDeal(status), count: statusCounts[status] })),
   ]
 
   return (
-    <PageContainer title="Deals" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Vendas' : 'Deals'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
         <DeskSection
           id="deal-desk-queue"
-          title="On the desk"
+          title={pt ? 'Aguardando atendimento' : 'On the desk'}
           count={deskQueue.length}
           actions={staleCount ? <Attention>{staleCount} waiting {DESK_STALE_DAYS}+ days</Attention> : undefined}
         >
@@ -259,52 +263,52 @@ export function DealListPageClient({
 
         <DeskSection
           id="deal-board"
-          title="All deals"
+          title={pt ? 'Todas as vendas' : 'All deals'}
           count={filteredDeals.length}
-          actions={loading ? <span role="status" className="text-xs text-muted-foreground">Loading deals</span> : undefined}
+          actions={loading ? <span role="status" className="text-xs text-muted-foreground">{pt ? 'Carregando vendas' : 'Loading deals'}</span> : undefined}
         >
           <div className="space-y-3">
-            <Segmented label="Filter by status" value={statusFilter} onChange={changeStatus} options={boardOptions} size="sm" className="w-full" />
+            <Segmented label={pt ? 'Filtrar por status' : 'Filter by status'} value={statusFilter} onChange={changeStatus} options={boardOptions} size="sm" className="w-full" />
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative min-w-0 flex-1 sm:max-w-sm">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Vehicle, customer or stock #"
-                  aria-label="Search deals"
+                  placeholder={pt ? 'Veículo, cliente ou código do estoque' : 'Vehicle, customer or stock #'}
+                  aria-label={pt ? 'Buscar vendas' : 'Search deals'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="h-10 rounded-[4px] pl-9 text-[13px] shadow-none"
                 />
               </div>
               <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger className="h-10 w-full rounded-[4px] text-[13px] sm:w-[180px]" aria-label="Sort deals">
+                <SelectTrigger className="h-10 w-full rounded-[4px] text-[13px] sm:w-[180px]" aria-label={pt ? 'Ordenar vendas' : 'Sort deals'}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="recent">Recently active</SelectItem>
-                  <SelectItem value="oldest">Oldest first</SelectItem>
-                  <SelectItem value="value-desc">Value high to low</SelectItem>
-                  <SelectItem value="value-asc">Value low to high</SelectItem>
+                  <SelectItem value="recent">{pt ? 'Atividade mais recente' : 'Recently active'}</SelectItem>
+                  <SelectItem value="oldest">{pt ? 'Mais antigas primeiro' : 'Oldest first'}</SelectItem>
+                  <SelectItem value="value-desc">{pt ? 'Maior valor primeiro' : 'Value high to low'}</SelectItem>
+                  <SelectItem value="value-asc">{pt ? 'Menor valor primeiro' : 'Value low to high'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {error ? (
               <Notice tone="bad">
-                <p className="font-medium">Unable to load deals</p>
+                <p className="font-medium">{pt ? 'Não foi possível carregar as vendas' : 'Unable to load deals'}</p>
                 <p className="mt-0.5 text-muted-foreground">{error}</p>
                 <Track className="mt-2">
-                  <Pill size="sm" onClick={() => loadDeals(statusFilter)}>Retry</Pill>
+                  <Pill size="sm" onClick={() => loadDeals(statusFilter)}>{pt ? 'Tentar novamente' : 'Retry'}</Pill>
                 </Track>
               </Notice>
             ) : loading && filteredDeals.length === 0 ? (
-              <p role="status" className="py-10 text-center text-sm text-muted-foreground">Loading deals</p>
+              <p role="status" className="py-10 text-center text-sm text-muted-foreground">{pt ? 'Carregando vendas' : 'Loading deals'}</p>
             ) : filteredDeals.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
-                <p>{isFiltered ? 'No matching deals' : 'No deals'}</p>
+                <p>{pt ? (isFiltered ? 'Nenhuma venda encontrada com esses filtros' : 'Nenhuma venda cadastrada') : (isFiltered ? 'No matching deals' : 'No deals')}</p>
                 {isFiltered && (
                   <Track>
-                    <Pill size="sm" onClick={resetFilters}>Reset filters</Pill>
+                    <Pill size="sm" onClick={resetFilters}>{pt ? 'Limpar filtros' : 'Reset filters'}</Pill>
                   </Track>
                 )}
               </div>
@@ -313,21 +317,21 @@ export function DealListPageClient({
                 <DeskTable>
                   <thead>
                     <tr>
-                      <Th>Status</Th>
-                      <Th>Vehicle</Th>
-                      <Th priority={2}>Stock #</Th>
-                      <Th priority={2}>Customer</Th>
-                      <Th priority={3}>Salesperson</Th>
-                      <Th align="right">Total</Th>
-                      <Th align="right" priority={3}>Price</Th>
-                      <Th align="right" priority={2}>Date</Th>
+                      <Th>{pt ? 'Situação' : 'Status'}</Th>
+                      <Th>{pt ? 'Veículo' : 'Vehicle'}</Th>
+                      <Th priority={2}>{pt ? 'Cód. estoque' : 'Stock #'}</Th>
+                      <Th priority={2}>{pt ? 'Cliente' : 'Customer'}</Th>
+                      <Th priority={3}>{pt ? 'Vendedor' : 'Salesperson'}</Th>
+                      <Th align="right">{pt ? 'Valor total' : 'Total'}</Th>
+                      <Th align="right" priority={3}>{pt ? 'Preço' : 'Price'}</Th>
+                      <Th align="right" priority={2}>{pt ? 'Data' : 'Date'}</Th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDeals.map(deal => (
                       <Tr key={deal.id} className="cursor-pointer" onClick={() => router.push(dealHref(deal))}>
                         <Td className="w-[1%]">
-                          <Status tone={toneForDeal(deal.status)}>{labelForDeal(deal.status)}</Status>
+                          <Status tone={toneForDeal(deal.status)}>{pt ? ({ pencil: 'Rascunho', submitted: 'Enviada para aprovação', approved: 'Aprovada', financed: 'Financiada', delivered: 'Entregue', cancelled: 'Cancelada' } as Record<string, string>)[deal.status] || deal.status : labelForDeal(deal.status)}</Status>
                         </Td>
                         <Td className="min-w-0 max-w-[16rem]">
                           <Link
@@ -341,12 +345,12 @@ export function DealListPageClient({
                         </Td>
                         <Td priority={2} className="whitespace-nowrap">{deal.vehicle ? <Code>#{deal.vehicle.stockNumber}</Code> : <span className="text-muted-foreground">-</span>}</Td>
                         <Td priority={2} className="max-w-[12rem] truncate">{customerLabel(deal)}</Td>
-                        <Td priority={3} className="max-w-[10rem] truncate text-muted-foreground">{deal.salesperson?.name || 'Unassigned'}</Td>
+                        <Td priority={3} className="max-w-[10rem] truncate text-muted-foreground">{deal.salesperson?.name || (pt ? 'Sem responsável' : 'Unassigned')}</Td>
                         <Td align="right" className="whitespace-nowrap">
                           <Figure size="sm">{formatCurrency(deal.totalPrice)}</Figure>
                         </Td>
                         <Td align="right" priority={3} className="whitespace-nowrap text-muted-foreground">{formatCurrency(deal.vehiclePrice)}</Td>
-                        <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDate(deal.saleDate || deal.createdAt, timeZone)}</Td>
+                        <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDate(deal.saleDate || deal.createdAt, timeZone, locale)}</Td>
                       </Tr>
                     ))}
                   </tbody>
@@ -358,9 +362,9 @@ export function DealListPageClient({
 
         {boardDeals.length > 0 && (
           <ReadoutStrip>
-            <Readout label="On the desk" value={deskQueue.length} />
-            <Readout label="Delivered" value={deliveredCount} />
-            <Readout label="Delivered revenue" value={formatCurrency(totalRevenue)} />
+            <Readout label={pt ? 'Aguardando atendimento' : 'On the desk'} value={deskQueue.length} />
+            <Readout label={pt ? 'Entregues' : 'Delivered'} value={deliveredCount} />
+            <Readout label={pt ? 'Faturamento das vendas concluídas' : 'Delivered revenue'} value={formatCurrency(totalRevenue)} />
           </ReadoutStrip>
         )}
       </div>

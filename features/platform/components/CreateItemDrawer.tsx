@@ -3,6 +3,8 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { getListByPath } from '@/features/dashboard/actions/getListByPath'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateItemDrawerClient } from './CreateItemDrawerClient'
+import { getRequestLocale } from '@/features/i18n/server'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface CreateItemDrawerProps {
   listKey: string
@@ -51,6 +53,9 @@ export async function CreateItemDrawer({
     )
   }
 
+  const locale = await getRequestLocale()
+  const pt = locale === 'pt-BR'
+
   try {
     // Fetch list metadata on server (same pattern as EditItemDrawer)
     const list = await getListByPath(listKey)
@@ -60,10 +65,10 @@ export async function CreateItemDrawer({
         <Drawer open={open} onOpenChange={onClose}>
           <DrawerContent>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
-              <p className="text-destructive">List not found: {listKey}</p>
+              <p className="text-destructive">{pt ? 'Cadastro não encontrado:' : 'List not found:'} {translateSchemaLabel(locale, listKey)}</p>
             </div>
           </DrawerContent>
         </Drawer>
@@ -88,11 +93,11 @@ export async function CreateItemDrawer({
       <Drawer open={open} onOpenChange={onClose}>
         <DrawerContent>
           <DrawerHeader className="flex-shrink-0">
-            <DrawerTitle>Error</DrawerTitle>
+            <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
           </DrawerHeader>
           <div className="p-6 text-center">
             <p className="text-destructive">
-              Error loading drawer: {error instanceof Error ? error.message : 'Unknown error'}
+              {pt ? 'Não foi possível carregar o formulário:' : 'Error loading drawer:'} {error instanceof Error ? error.message : (pt ? 'Erro desconhecido' : 'Unknown error')}
             </p>
           </div>
         </DrawerContent>

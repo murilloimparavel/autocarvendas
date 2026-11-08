@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export type ServiceFormField = {
   name: string
@@ -48,6 +49,8 @@ export function ServiceFormDialog({
   onSubmit: () => void
   onOpenChange: (open: boolean) => void
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const change = (name: string, value: string) => onValuesChange({ ...values, [name]: value })
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -75,7 +78,7 @@ export function ServiceFormDialog({
                     ) : field.type === 'select' ? (
                       <Select value={values[field.name] || ''} onValueChange={value => change(field.name, value)}>
                         <SelectTrigger id={id} className="h-11 rounded-[4px] px-3 text-[13px] sm:h-9" aria-label={field.label} aria-invalid={Boolean(error) || undefined} aria-describedby={describedBy}>
-                          <SelectValue placeholder={field.placeholder || 'Select'} />
+                          <SelectValue placeholder={field.placeholder || (pt ? 'Selecione' : 'Select')} />
                         </SelectTrigger>
                         <SelectContent>
                           {(field.options || []).map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
@@ -109,8 +112,8 @@ export function ServiceFormDialog({
           {formError && <Notice tone="bad">{formError}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" className="max-sm:h-11" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-              <Pill type="submit" variant={submitVariant} className="max-sm:h-11" disabled={busy}>{busy ? 'Saving…' : submitLabel}</Pill>
+              <Pill variant="plain" className="max-sm:h-11" disabled={busy} onClick={() => onOpenChange(false)}>{pt ? 'Cancelar' : 'Cancel'}</Pill>
+              <Pill type="submit" variant={submitVariant} className="max-sm:h-11" disabled={busy}>{busy ? (pt ? 'Salvando…' : 'Saving…') : submitLabel}</Pill>
             </Track>
           </DialogFooter>
         </form>

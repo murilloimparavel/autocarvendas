@@ -9,6 +9,7 @@ import { Attention, Code, DeskSection, DeskTable, Figure, Notice, Panel, Pill, S
 import { type CatalogRooftop, type CatalogRoutingRule, configureRoutingRule, deleteRoutingRule, getRoutingStaff } from '../actions'
 import { ConfirmDialog, EmptyRow, Field, FormDialog, TAP, TAP_INPUT, TAP_SM } from './formKit'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export const ROUTING_SOURCES = [
   { value: 'any', label: 'Any source' },
@@ -20,16 +21,26 @@ export const ROUTING_SOURCES = [
   { value: 'social', label: 'Social media' },
   { value: 'third-party', label: 'Third party' },
 ]
-const sourceLabel = (value: string) => ROUTING_SOURCES.find(source => source.value === value)?.label || value
+const sourceLabel = (value: string, pt: boolean) => {
+  if (!pt) return ROUTING_SOURCES.find(source => source.value === value)?.label || value
+  const labels: Record<string, string> = {
+    any: 'Qualquer origem', 'walk-in': 'Visita à loja', website: 'Site', phone: 'Telefone',
+    referral: 'Indicação', ad: 'Anúncio', social: 'Rede social', 'third-party': 'Terceiro',
+  }
+  return labels[value] || value
+}
 
 type StateFilter = 'active' | 'inactive' | 'all'
 type Draft = { ruleId?: string; rooftopId: string; name: string; source: string; assigneeId: string; priority: string; firstResponseMinutes: string; active: boolean }
 
-function formatMinutes(minutes: number) {
-  if (minutes < 60) return `${minutes} min`
-  if (minutes % 1440 === 0) return `${minutes / 1440} d`
-  if (minutes % 60 === 0) return `${minutes / 60} h`
-  return `${Math.floor(minutes / 60)} h ${minutes % 60} min`
+function formatMinutes(minutes: number, pt: boolean) {
+  const min = pt ? 'min' : 'min'
+  const hours = Math.floor(minutes / 60)
+  const days = minutes / 1440
+  if (minutes < 60) return `${minutes} ${min}`
+  if (minutes % 1440 === 0) return pt ? `${days} ${days === 1 ? 'dia' : 'dias'}` : `${days} d`
+  if (minutes % 60 === 0) return `${hours} h`
+  return `${hours} h ${minutes % 60} ${min}`
 }
 
 export function LeadRoutingPanel({
@@ -43,6 +54,8 @@ export function LeadRoutingPanel({
   error: string | null
   onReload: () => Promise<void>
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [stateFilter, setStateFilter] = useState<StateFilter>('all')
   const [sourceFilter, setSourceFilter] = useState('all')
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -96,19 +109,19 @@ export function LeadRoutingPanel({
     const name = draft.name.trim()
     const priority = Number(draft.priority)
     const minutes = Number(draft.firstResponseMinutes)
-    if (!draft.rooftopId) errors.rooftopId = 'Choose a rooftop'
-    if (!name) errors.name = 'Name is required'
-    else if (name.length > 200) errors.name = 'Name is too long'
-    if (!draft.assigneeId) errors.assigneeId = 'Choose who receives these leads'
-    if (!draft.priority.trim() || !Number.isInteger(priority) || priority < 0 || priority > 10000) errors.priority = 'Whole number from 0 to 10000'
-    if (!draft.firstResponseMinutes.trim() || !Number.isInteger(minutes) || minutes < 1 || minutes > 10080) errors.firstResponseMinutes = 'Whole number from 1 to 10080'
+    if (!draft.rooftopId) errors.rooftopId = pt ? 'Selecione uma loja' : 'Choose a rooftop'
+    if (!name) errors.name = pt ? 'Informe o nome' : 'Name is required'
+    else if (name.length > 200) errors.name = pt ? 'O nome deve ter até 200 caracteres' : 'Name is too long'
+    if (!draft.assigneeId) errors.assigneeId = pt ? 'Selecione quem receberá estes leads' : 'Choose who receives these leads'
+    if (!draft.priority.trim() || !Number.isInteger(priority) || priority < 0 || priority > 10000) errors.priority = pt ? 'Informe um número inteiro de 0 a 10.000' : 'Whole number from 0 to 10000'
+    if (!draft.firstResponseMinutes.trim() || !Number.isInteger(minutes) || minutes < 1 || minutes > 10080) errors.firstResponseMinutes = pt ? 'Informe um número inteiro de 1 a 10.080' : 'Whole number from 1 to 10080'
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
     setBusy(true); setFormError(null)
     const response = await configureRoutingRule({ ruleId: draft.ruleId, rooftopId: draft.rooftopId, name, source: draft.source, assigneeId: draft.assigneeId, priority, firstResponseMinutes: minutes, active: draft.active, idempotencyKey })
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice({ tone: 'ok', text: draft.ruleId ? `Saved ${name}` : `Added ${name}` })
+    setNotice({ tone: 'ok', text: pt ? `${draft.ruleId ? 'Regra salva' : 'Regra adicionada'}: ${name}` : draft.ruleId ? `Saved ${name}` : `Added ${name}` })
     setDraft(null)
     await onReload()
   }
@@ -129,7 +142,7 @@ export function LeadRoutingPanel({
     })
     setTogglingId(null)
     if (!response.success) { setNotice({ tone: 'bad', text: response.error }); return }
-    setNotice({ tone: 'ok', text: `${rule.name} ${rule.active ? 'deactivated' : 'activated'}` })
+    setNotice({ tone: 'ok', text: pt ? `${rule.name} ${rule.active ? 'desativada' : 'ativada'}` : `${rule.name} ${rule.active ? 'deactivated' : 'activated'}` })
     await onReload()
   }
 
@@ -139,7 +152,7 @@ export function LeadRoutingPanel({
     const response = await deleteRoutingRule(pending.id)
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice({ tone: 'ok', text: `Deleted ${pending.name}` })
+    setNotice({ tone: 'ok', text: pt ? `Regra excluída: ${pending.name}` : `Deleted ${pending.name}` })
     setPending(null)
     await onReload()
   }
@@ -154,47 +167,47 @@ export function LeadRoutingPanel({
       {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Segmented<StateFilter>
-          label="Filter rules"
+          label={pt ? 'Filtrar regras' : 'Filter rules'}
           value={stateFilter}
           onChange={setStateFilter}
           size="sm"
           options={[
-            { value: 'all', label: 'All', count: counts.all },
-            { value: 'active', label: 'Active', count: counts.active, tone: 'ok' },
-            { value: 'inactive', label: 'Inactive', count: counts.inactive, tone: 'idle' },
+            { value: 'all', label: pt ? 'Todas' : 'All', count: counts.all },
+            { value: 'active', label: pt ? 'Ativas' : 'Active', count: counts.active, tone: 'ok' },
+            { value: 'inactive', label: pt ? 'Inativas' : 'Inactive', count: counts.inactive, tone: 'idle' },
           ]}
         />
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className={`${TAP_INPUT} w-full sm:w-48`} aria-label="Lead source"><SelectValue /></SelectTrigger>
+          <SelectTrigger className={`${TAP_INPUT} w-full sm:w-48`} aria-label={pt ? 'Origem da oportunidade' : 'Lead source'}><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All sources</SelectItem>
-            {ROUTING_SOURCES.map(source => <SelectItem key={source.value} value={source.value}>{source.value === 'any' ? 'Any-source rules' : source.label}</SelectItem>)}
+            <SelectItem value="all">{pt ? 'Todas as origens' : 'All sources'}</SelectItem>
+            {ROUTING_SOURCES.map(source => <SelectItem key={source.value} value={source.value}>{source.value === 'any' ? (pt ? 'Qualquer origem' : 'Any-source rules') : (pt ? ({ 'walk-in': 'Visita à loja', website: 'Site', phone: 'Telefone', referral: 'Indicação', ad: 'Anúncio', social: 'Rede social', 'third-party': 'Terceiro' } as Record<string, string>)[source.value] || source.label : source.label)}</SelectItem>)}
           </SelectContent>
         </Select>
         <Track className="sm:ml-auto">
           <Pill variant="primary" className={TAP} disabled={rooftops.length === 0} onClick={() => open()}>
             <Plus />
-            Add rule
+            {pt ? 'Adicionar regra' : 'Add rule'}
           </Pill>
         </Track>
       </div>
 
       {groups.length === 0 ? (
-        <Panel><EmptyRow>{rules.length === 0 ? 'No routing rules yet' : 'No rules match'}</EmptyRow></Panel>
+        <Panel><EmptyRow>{rules.length === 0 ? (pt ? 'Nenhuma regra de distribuição cadastrada' : 'No routing rules yet') : (pt ? 'Nenhuma regra encontrada' : 'No rules match')}</EmptyRow></Panel>
       ) : groups.map(group => {
         let activeRank = 0
         return (
-          <DeskSection key={group.rooftop?.id || 'none'} title={rooftops.length > 1 ? group.rooftop?.name || 'No rooftop' : 'Evaluation order'} count={group.rules.length}>
-            <DeskTable aria-label={`Routing rules${group.rooftop?.name ? ` for ${group.rooftop.name}` : ''}`}>
+          <DeskSection key={group.rooftop?.id || 'none'} title={rooftops.length > 1 ? group.rooftop?.name || (pt ? 'Sem loja' : 'No rooftop') : (pt ? 'Ordem de avaliação' : 'Evaluation order')} count={group.rules.length}>
+            <DeskTable aria-label={pt ? `Regras de distribuição${group.rooftop?.name ? ` para ${group.rooftop.name}` : ''}` : `Routing rules${group.rooftop?.name ? ` for ${group.rooftop.name}` : ''}`}>
               <thead>
                 <tr>
-                  <Th align="right" className="w-10"><span className="sr-only">Order</span>#</Th>
-                  <Th>Rule</Th>
-                  <Th priority={2}>Assignee</Th>
-                  <Th>Status</Th>
-                  <Th align="right" priority={2}>First response</Th>
-                  <Th align="right" priority={3}>Priority</Th>
-                  <Th align="right"><span className="sr-only">Actions</span></Th>
+                  <Th align="right" className="w-10"><span className="sr-only">{pt ? 'Ordem' : 'Order'}</span>#</Th>
+                  <Th>{pt ? 'Regra' : 'Rule'}</Th>
+                  <Th priority={2}>{pt ? 'Responsável' : 'Assignee'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th align="right" priority={2}>{pt ? 'Primeira resposta' : 'First response'}</Th>
+                  <Th align="right" priority={3}>{pt ? 'Prioridade' : 'Priority'}</Th>
+                  <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -207,25 +220,25 @@ export function LeadRoutingPanel({
                       <Td className="max-w-0 min-w-[8rem]">
                         <span className="block truncate font-medium text-foreground">{rule.name}</span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {sourceLabel(rule.source)}
-                          <span className="md:hidden"> · {assignee || 'No assignee'} · {formatMinutes(rule.firstResponseMinutes)}</span>
+                          {sourceLabel(rule.source, pt)}
+                          <span className="md:hidden"> · {assignee || (pt ? 'Sem responsável' : 'No assignee')} · {formatMinutes(rule.firstResponseMinutes, pt)}</span>
                         </span>
                       </Td>
-                      <Td priority={2}>{assignee ? <span className="text-foreground">{assignee}</span> : <Attention>No assignee</Attention>}</Td>
-                      <Td>{rule.active ? <Status tone="ok">Active</Status> : <Status tone="idle">Inactive</Status>}</Td>
-                      <Td align="right" priority={2}><Figure size="sm">{formatMinutes(rule.firstResponseMinutes)}</Figure></Td>
+                      <Td priority={2}>{assignee ? <span className="text-foreground">{assignee}</span> : <Attention>{pt ? 'Sem responsável' : 'No assignee'}</Attention>}</Td>
+                      <Td>{rule.active ? <Status tone="ok">{pt ? 'Ativa' : 'Active'}</Status> : <Status tone="idle">{pt ? 'Inativa' : 'Inactive'}</Status>}</Td>
+                      <Td align="right" priority={2}><Figure size="sm">{formatMinutes(rule.firstResponseMinutes, pt)}</Figure></Td>
                       <Td align="right" priority={3}><Code>{rule.priority}</Code></Td>
                       <Td align="right" className="w-px whitespace-nowrap">
                         <div className="inline-flex flex-wrap justify-end gap-1">
-                          <Pill size="sm" className={TAP_SM} disabled={togglingId === rule.id || !rule.assignee?.id} title={!rule.assignee?.id ? 'Assign someone first' : undefined} onClick={() => toggle(rule)}>
+                          <Pill size="sm" className={TAP_SM} disabled={togglingId === rule.id || !rule.assignee?.id} title={!rule.assignee?.id ? (pt ? 'Atribua um responsável primeiro' : 'Assign someone first') : undefined} onClick={() => toggle(rule)}>
                             <Power />
-                            {togglingId === rule.id ? 'Saving…' : rule.active ? 'Deactivate' : 'Activate'}
+                            {togglingId === rule.id ? (pt ? 'Salvando…' : 'Saving…') : rule.active ? (pt ? 'Desativar' : 'Deactivate') : (pt ? 'Ativar' : 'Activate')}
                           </Pill>
                           <Pill size="sm" className={TAP_SM} onClick={() => open(rule)}>
                             <Pencil />
-                            Edit
+                            {pt ? 'Editar' : 'Edit'}
                           </Pill>
-                          <Pill size="sm" variant="plain" className={cn(TAP_SM, 'max-sm:w-11')} aria-label={`Delete ${rule.name}`} onClick={() => { setFormError(null); setPending(rule) }}>
+                          <Pill size="sm" variant="plain" className={cn(TAP_SM, 'max-sm:w-11')} aria-label={pt ? `Excluir ${rule.name}` : `Delete ${rule.name}`} onClick={() => { setFormError(null); setPending(rule) }}>
                             <Trash2 />
                           </Pill>
                         </div>
@@ -252,7 +265,7 @@ export function LeadRoutingPanel({
           {!draft?.ruleId && rooftops.length > 1 && (
             <Field id="rule-rooftop" label="Rooftop" error={fieldErrors.rooftopId} className="sm:col-span-2">
               <Select value={draft?.rooftopId || ''} onValueChange={value => { setDraft(current => current && { ...current, rooftopId: value, assigneeId: '' }); void loadStaff(value) }}>
-                <SelectTrigger id="rule-rooftop" className={TAP_INPUT}><SelectValue placeholder="Select rooftop" /></SelectTrigger>
+                <SelectTrigger id="rule-rooftop" className={TAP_INPUT}><SelectValue placeholder={pt ? 'Selecione uma loja' : 'Select rooftop'} /></SelectTrigger>
                 <SelectContent>{rooftops.map(rooftop => <SelectItem key={rooftop.id} value={rooftop.id}>{rooftop.name}</SelectItem>)}</SelectContent>
               </Select>
             </Field>

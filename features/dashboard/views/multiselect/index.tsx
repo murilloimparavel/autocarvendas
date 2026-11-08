@@ -2,7 +2,10 @@
  * Multi-select field view - Keystone implementation with ShadCN UI Multiple Selector
  */
 
+'use client'
+
 import React from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { FieldContainer } from '@/components/ui/field-container'
 import { FieldLabel } from '@/components/ui/field-label'
 import { FieldDescription } from '@/components/ui/field-description'
@@ -54,6 +57,8 @@ interface CellProps {
 }
 
 export function Field({ field, value, onChange, autoFocus }: MultiSelectFieldProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const isReadOnly = onChange == null
 
   // Convert Keystone options to MultipleSelector format
@@ -92,11 +97,11 @@ export function Field({ field, value, onChange, autoFocus }: MultiSelectFieldPro
         value={selectorValue}
         options={selectorOptions}
         onChange={handleChange}
-        placeholder="Select options..."
+        placeholder={pt ? 'Selecione as opções…' : 'Select options...'}
         disabled={isReadOnly}
         emptyIndicator={
           <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
-            No results found.
+            {pt ? 'Nenhum resultado encontrado.' : 'No results found.'}
           </p>
         }
         hideClearAllButton={false}

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowRight, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import {
   Attention,
@@ -33,6 +34,14 @@ type Period = '6' | '12' | 'all'
 
 /** Same threshold the inventory list uses for an aging unit. */
 const AGED_UNIT_DAYS = 60
+const ANALYTICS_PT: Record<string, string> = {
+  available: 'Disponível', pending: 'Pendente', hold: 'Reservado', service: 'Em serviço', sold: 'Vendido',
+  new: 'Novo', used: 'Usado', certified: 'Seminovo certificado',
+  scheduled: 'Agendada', 'checked-in': 'Recepcionada', 'checked in': 'Recepcionada', 'in-progress': 'Em andamento', 'in progress': 'Em andamento', 'waiting-parts': 'Aguardando peças', 'waiting parts': 'Aguardando peças',
+  completed: 'Concluída', cancelled: 'Cancelada', estimate: 'Orçamento', approved: 'Aprovada', invoiced: 'Faturada', paid: 'Paga',
+  maintenance: 'Manutenção', repair: 'Reparo', warranty: 'Garantia', recall: 'Recall', inspection: 'Inspeção', diagnostic: 'Diagnóstico', 'new vehicle': 'Novo', 'used vehicle': 'Usado',
+}
+const analyticsLabel = (locale: 'pt-BR' | 'en-US', value: string) => locale === 'pt-BR' ? ANALYTICS_PT[value.toLowerCase()] || value : value
 
 const AREA_OPTIONS = [
   { value: 'sales', label: 'Sales' },
@@ -83,6 +92,8 @@ function ShareTable({
   countHeading?: string
   extraHeading?: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   if (!rows.length) return <Empty>{empty}</Empty>
   const total = rows.reduce((sum, row) => sum + row.value, 0) || 1
   return (
@@ -92,7 +103,7 @@ function ShareTable({
           <Th>{labelHeading}</Th>
           <Th align="right">{countHeading}</Th>
           {extraHeading && <Th align="right" priority={2}>{extraHeading}</Th>}
-          <Th align="right" priority={2}>Share</Th>
+          <Th align="right" priority={2}>{pt ? 'Participação' : 'Share'}</Th>
         </tr>
       </thead>
       <tbody>
@@ -105,7 +116,7 @@ function ShareTable({
             {extraHeading && <Td align="right" priority={2} className="w-[1%] whitespace-nowrap text-muted-foreground">{row.extra}</Td>}
             <Td align="right" priority={2} className="w-[1%] whitespace-nowrap">
               <span className="inline-flex items-center gap-2 text-[12px] text-muted-foreground">
-                <Meter value={row.value / total} label="Share of total" />
+                <Meter value={row.value / total} label={pt ? 'Participação no total' : 'Share of total'} />
                 <span className="w-9 text-right tabular-nums">{Math.round((row.value / total) * 100)}%</span>
               </span>
             </Td>
@@ -118,6 +129,8 @@ function ShareTable({
 
 /** Month-to-date cell: the label, the windshield figure, and the prior month beside it. */
 export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initialData: AnalyticsData; timeZone: string }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [data, setData] = useState<AnalyticsData>(initialData)
   const [loading, setLoading] = useState(false)
   const [area, setArea] = useState<Area>('sales')
@@ -132,15 +145,15 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
   const { sales: salesMetrics, inventory: inventoryMetrics, service: serviceMetrics, operations, currencyCode, error } = data
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, maximumFractionDigits: 0 }).format(value)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: 0 }).format(value)
   }
-  const compactCurrency = new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, notation: 'compact', maximumFractionDigits: 0 })
+  const compactCurrency = new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, notation: 'compact', maximumFractionDigits: 0 })
   const platform = `${basePath}/platform`
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Analytics' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Indicadores' : 'Analytics' },
   ]
 
   const exceptions = operations?.exceptions?.total || 0
@@ -162,35 +175,35 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
     : null
   const mtd = deliveredByMonth.find(item => item.month === currentKey) || { month: currentKey || '', revenueCents: 0, grossCents: 0, count: 0 }
   const lastMonth = deliveredByMonth.find(item => item.month === previousKey) || null
-  const lastMonthName = previousKey ? monthLabel(previousKey) : 'Last month'
-  const grossChart = deliveredByMonth.map(item => ({ month: item.month, label: monthLabel(item.month), gross: item.grossCents / 100 }))
+  const lastMonthName = previousKey ? monthLabel(previousKey, locale) : locale === 'pt-BR' ? 'Mês anterior' : 'Last month'
+  const grossChart = deliveredByMonth.map(item => ({ month: item.month, label: monthLabel(item.month, locale), gross: item.grossCents / 100 }))
 
   const agedUnits = (inventoryMetrics?.agingBreakdown || []).filter(bucket => bucket.range === '61-90' || bucket.range === '90+').reduce((sum, bucket) => sum + bucket.count, 0)
   const lowStock = opMetrics?.parts?.lowStockCount ?? serviceMetrics?.lowStockParts.length ?? 0
   const watch = [
-    { key: 'aged', label: `Units over ${AGED_UNIT_DAYS} days in stock`, count: agedUnits, status: 'Aged', tone: 'warn' as DeskTone, href: `${platform}/vehicles`, place: 'Inventory' },
-    { key: 'parts', label: 'Parts at or below minimum', count: lowStock, status: 'Low stock', tone: 'warn' as DeskTone, href: `${platform}/parts`, place: 'Parts' },
-    { key: 'funding', label: 'Funding exceptions', count: operations?.exceptions?.funding || 0, status: 'Exception', tone: 'bad' as DeskTone, href: `${platform}/finance`, place: 'Finance' },
-    { key: 'payments', label: 'Payment exceptions', count: operations?.exceptions?.payments || 0, status: 'Exception', tone: 'bad' as DeskTone, href: `${platform}/payments`, place: 'Payments' },
-    { key: 'accounting', label: 'Accounting exceptions', count: operations?.exceptions?.accounting || 0, status: 'Exception', tone: 'bad' as DeskTone, href: `${platform}/accounting`, place: 'Accounting' },
+    { key: 'aged', label: pt ? `Veículos há mais de ${AGED_UNIT_DAYS} dias no estoque` : `Units over ${AGED_UNIT_DAYS} days in stock`, count: agedUnits, status: pt ? 'Estoque antigo' : 'Aged', tone: 'warn' as DeskTone, href: `${platform}/vehicles`, place: pt ? 'Estoque' : 'Inventory' },
+    { key: 'parts', label: pt ? 'Peças no limite mínimo ou abaixo' : 'Parts at or below minimum', count: lowStock, status: pt ? 'Estoque baixo' : 'Low stock', tone: 'warn' as DeskTone, href: `${platform}/parts`, place: pt ? 'Peças' : 'Parts' },
+    { key: 'funding', label: pt ? 'Pendências de liberação de crédito' : 'Funding exceptions', count: operations?.exceptions?.funding || 0, status: pt ? 'Pendência' : 'Exception', tone: 'bad' as DeskTone, href: `${platform}/finance`, place: pt ? 'Financeiro' : 'Finance' },
+    { key: 'payments', label: pt ? 'Pendências de pagamento' : 'Payment exceptions', count: operations?.exceptions?.payments || 0, status: pt ? 'Pendência' : 'Exception', tone: 'bad' as DeskTone, href: `${platform}/payments`, place: pt ? 'Pagamentos' : 'Payments' },
+    { key: 'accounting', label: pt ? 'Pendências contábeis' : 'Accounting exceptions', count: operations?.exceptions?.accounting || 0, status: pt ? 'Pendência' : 'Exception', tone: 'bad' as DeskTone, href: `${platform}/accounting`, place: pt ? 'Contabilidade' : 'Accounting' },
   ].filter(item => item.count > 0)
 
   const header = (
     <DeskHeader
-      title="Analytics"
+      title={pt ? 'Indicadores' : 'Analytics'}
       tone={error ? 'bad' : exceptions > 0 ? 'warn' : 'ok'}
       status={error ? 'Unavailable' : exceptions > 0 ? `${exceptions} open exceptions` : 'No open exceptions'}
       meta={
         error
           ? 'Unavailable'
           : operations?.generatedAt
-            ? `${currentKey ? `${monthLabel(currentKey)} to date` : 'Month to date'} · Updated ${new Date(operations.generatedAt).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
+            ? `${currentKey ? `${monthLabel(currentKey, locale)} ${locale === 'pt-BR' ? 'até agora' : 'to date'}` : locale === 'pt-BR' ? 'Mês até agora' : 'Month to date'} · ${locale === 'pt-BR' ? 'Atualizado' : 'Updated'} ${new Date(operations.generatedAt).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
             : undefined
       }
       actions={
-        <Pill variant="plain" className="h-10 sm:h-8" onClick={loadData} disabled={loading} aria-label="Refresh">
+        <Pill variant="plain" className="h-10 sm:h-8" onClick={loadData} disabled={loading} aria-label={pt ? 'Atualizar' : 'Refresh'}>
           <RefreshCw className={loading ? 'animate-spin' : undefined} />
-          {error ? 'Retry' : 'Refresh'}
+          {error ? (pt ? 'Tentar novamente' : 'Retry') : (pt ? 'Atualizar' : 'Refresh')}
         </Pill>
       }
     />
@@ -198,10 +211,10 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
 
   if (error) {
     return (
-      <PageContainer title="Analytics" header={header} breadcrumbs={breadcrumbs}>
+      <PageContainer title={pt ? 'Indicadores' : 'Analytics'} header={header} breadcrumbs={breadcrumbs}>
         <div className="px-4 pb-24 md:px-6">
           <Notice tone="bad">
-            <p className="font-medium">Unable to load analytics</p>
+            <p className="font-medium">{pt ? 'Não foi possível carregar os indicadores' : 'Unable to load analytics'}</p>
             <p className="mt-0.5 text-muted-foreground">{error}</p>
           </Notice>
         </div>
@@ -210,7 +223,7 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
   }
 
   const allMonths = salesMetrics?.salesByMonth || []
-  const months = (period === 'all' ? allMonths : allMonths.slice(-Number(period))).map(month => ({ ...month, label: monthLabel(month.month) }))
+  const months = (period === 'all' ? allMonths : allMonths.slice(-Number(period))).map(month => ({ ...month, label: monthLabel(month.month, locale) }))
   const periodGross = grossChart.filter(item => months.some(month => month.month === item.month))
   const periodUnits = months.reduce((sum, month) => sum + month.count, 0)
   const periodRevenue = months.reduce((sum, month) => sum + month.revenue, 0)
@@ -218,34 +231,34 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
   const isCurrent = (row: { month: string }) => row.month === currentKey
 
   return (
-    <PageContainer title="Analytics" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Indicadores' : 'Analytics'} header={header} breadcrumbs={breadcrumbs}>
     <div className="min-w-0 max-w-full space-y-8 overflow-x-hidden px-4 pb-24 md:px-6 [&_.recharts-responsive-container]:max-w-full">
 
       <section aria-labelledby="analytics-mtd" className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2 border-b border-foreground/15 pb-2">
           <h2 id="analytics-mtd" className="text-[15px] font-semibold text-foreground">
-            {currentKey ? `${monthLabel(currentKey)} to date` : 'Month to date'}
+            {currentKey ? `${monthLabel(currentKey, locale)} ${locale === 'pt-BR' ? 'até agora' : 'to date'}` : locale === 'pt-BR' ? 'Mês até agora' : 'Month to date'}
           </h2>
-          <span className="text-[12px] text-muted-foreground">Delivered deals by sale date</span>
+          <span className="text-[12px] text-muted-foreground">{pt ? 'Vendas concluídas por data da venda' : 'Delivered deals by sale date'}</span>
         </div>
         <ReadoutStrip className="mt-3">
           <Readout
-            label="Units delivered"
+            label={pt ? 'Veículos entregues' : 'Units delivered'}
             value={mtd.count}
-            sub={lastMonth ? `${lastMonthName}: ${lastMonth.count}` : `${lastMonthName}: none`}
+            sub={lastMonth ? `${lastMonthName}: ${lastMonth.count}` : `${lastMonthName}: ${pt ? 'nenhum' : 'none'}`}
           />
           <Readout
-            label="Gross"
+            label={pt ? 'Margem bruta' : 'Gross'}
             value={formatCurrency(mtd.grossCents / 100)}
-            sub={lastMonth ? `${lastMonthName}: ${formatCurrency(lastMonth.grossCents / 100)}` : `${lastMonthName}: none`}
+            sub={lastMonth ? `${lastMonthName}: ${formatCurrency(lastMonth.grossCents / 100)}` : `${lastMonthName}: ${pt ? 'nenhum' : 'none'}`}
           />
           <Readout
-            label="Gross per unit"
+            label={pt ? 'Margem bruta por veículo' : 'Gross per unit'}
             value={mtd.count ? formatCurrency(mtd.grossCents / 100 / mtd.count) : NO_DATA}
             sub={lastMonth?.count ? `${lastMonthName}: ${formatCurrency(lastMonth.grossCents / 100 / lastMonth.count)}` : undefined}
           />
           <Readout
-            label="Delivered revenue"
+            label={pt ? 'Faturamento das vendas concluídas' : 'Delivered revenue'}
             value={formatCurrency(mtd.revenueCents / 100)}
             sub={lastMonth ? `${lastMonthName}: ${formatCurrency(lastMonth.revenueCents / 100)}` : undefined}
           />
@@ -253,7 +266,7 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
       </section>
 
       {watch.length > 0 && (
-        <DeskSection id="analytics-watch" title="Needs attention" count={watch.length}>
+        <DeskSection id="analytics-watch" title={pt ? 'Pontos de atenção' : 'Needs attention'} count={watch.length}>
           <ul className="divide-y rounded-md border bg-card">
             {watch.map(item => (
               <li key={item.key}>
@@ -276,66 +289,66 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
       )}
 
       <ReadoutStrip>
-        <Readout label="F&I penetration" value={financePenetration} sub={financePenetration === NO_DATA ? 'No deliveries' : undefined} />
-        <Readout label="Effective labor rate" value={laborRate} sub={laborRate === NO_DATA ? 'No sold hours' : undefined} />
-        <Readout label="Parts fill rate" value={partsFillRate} sub={partsFillRate === NO_DATA ? 'No committed parts' : undefined} />
+        <Readout label={pt ? 'Adesão a produtos financeiros' : 'F&I penetration'} value={financePenetration} sub={financePenetration === NO_DATA ? (pt ? 'Nenhuma entrega' : 'No deliveries') : undefined} />
+        <Readout label={pt ? 'Valor efetivo da hora de mão de obra' : 'Effective labor rate'} value={laborRate} sub={laborRate === NO_DATA ? (pt ? 'Nenhuma hora vendida' : 'No sold hours') : undefined} />
+        <Readout label={pt ? 'Índice de atendimento de peças' : 'Parts fill rate'} value={partsFillRate} sub={partsFillRate === NO_DATA ? (pt ? 'Nenhuma peça reservada' : 'No committed parts') : undefined} />
         <Readout
-          label="Open exceptions"
+          label={pt ? 'Pendências em aberto' : 'Open exceptions'}
           value={exceptions}
-          sub={`${operations?.exceptions?.accounting || 0} accounting · ${operations?.exceptions?.payments || 0} payments · ${operations?.exceptions?.funding || 0} funding`}
+          sub={pt ? `${operations?.exceptions?.accounting || 0} contábeis · ${operations?.exceptions?.payments || 0} pagamentos · ${operations?.exceptions?.funding || 0} de crédito` : `${operations?.exceptions?.accounting || 0} accounting · ${operations?.exceptions?.payments || 0} payments · ${operations?.exceptions?.funding || 0} funding`}
         />
       </ReadoutStrip>
 
-      <Segmented label="Analytics area" value={area} onChange={setArea} options={AREA_OPTIONS} />
+      <Segmented label={pt ? 'Área dos indicadores' : 'Analytics area'} value={area} onChange={setArea} options={AREA_OPTIONS.map(option => ({ ...option, label: analyticsLabel(locale, option.label.toLowerCase()) }))} />
 
       {area === 'sales' && (
         <div className="space-y-8">
           <DeskSection
             id="analytics-by-month"
-            title="By month"
-            actions={<Segmented label="Period" size="sm" value={period} onChange={setPeriod} options={PERIOD_OPTIONS} />}
+            title={pt ? 'Por mês' : 'By month'}
+            actions={<Segmented label={pt ? 'Período' : 'Period'} size="sm" value={period} onChange={setPeriod} options={PERIOD_OPTIONS.map(option => ({ ...option, label: option.value === 'all' && pt ? 'Todo o período' : option.value !== 'all' && pt ? `${option.value} meses` : option.label }))} />}
           >
             <div className="space-y-4">
               <p className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-muted-foreground">
-                <span>Units <Figure size="sm" className="ml-1 text-foreground">{periodUnits}</Figure></span>
-                <span>Revenue <Figure size="sm" className="ml-1 text-foreground">{formatCurrency(periodRevenue)}</Figure></span>
-                <span>All-time delivered <Figure size="sm" className="ml-1 text-foreground">{salesMetrics?.totalSales || 0}</Figure></span>
-                <span>Avg deal gross <Figure size="sm" className="ml-1 text-foreground">{salesMetrics?.totalSales ? formatCurrency(salesMetrics.avgDealProfit || 0) : NO_DATA}</Figure></span>
+                <span>{pt ? 'Veículos' : 'Units'} <Figure size="sm" className="ml-1 text-foreground">{periodUnits}</Figure></span>
+                <span>{pt ? 'Faturamento' : 'Revenue'} <Figure size="sm" className="ml-1 text-foreground">{formatCurrency(periodRevenue)}</Figure></span>
+                <span>{pt ? 'Vendas concluídas no total' : 'All-time delivered'} <Figure size="sm" className="ml-1 text-foreground">{salesMetrics?.totalSales || 0}</Figure></span>
+                <span>{pt ? 'Margem média por venda' : 'Avg deal gross'} <Figure size="sm" className="ml-1 text-foreground">{salesMetrics?.totalSales ? formatCurrency(salesMetrics.avgDealProfit || 0) : NO_DATA}</Figure></span>
               </p>
               {months.length ? (
                 <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-3">
                   <div className="min-w-0">
-                    <p className="mb-1 text-[12px] font-medium text-muted-foreground">Units delivered</p>
-                    <HairlineChart data={months} xKey="label" yKey="count" label="Units" highlight={isCurrent} yWidth={28} />
+                    <p className="mb-1 text-[12px] font-medium text-muted-foreground">{pt ? 'Veículos entregues' : 'Units delivered'}</p>
+                    <HairlineChart data={months} xKey="label" yKey="count" label={pt ? 'Veículos' : 'Units'} highlight={isCurrent} yWidth={28} />
                   </div>
                   <div className="min-w-0">
-                    <p className="mb-1 text-[12px] font-medium text-muted-foreground">Gross</p>
+                    <p className="mb-1 text-[12px] font-medium text-muted-foreground">{pt ? 'Margem bruta' : 'Gross'}</p>
                     {periodGross.length ? (
-                      <HairlineChart data={periodGross} xKey="label" yKey="gross" label="Gross" highlight={isCurrent} yWidth={52} format={value => compactCurrency.format(value)} />
+                      <HairlineChart data={periodGross} xKey="label" yKey="gross" label={pt ? 'Margem bruta' : 'Gross'} highlight={isCurrent} yWidth={52} format={value => compactCurrency.format(value)} />
                     ) : (
-                      <Empty>No gross recorded</Empty>
+                      <Empty>{pt ? 'Nenhuma margem registrada' : 'No gross recorded'}</Empty>
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="mb-1 text-[12px] font-medium text-muted-foreground">Revenue</p>
-                    <HairlineChart data={months} xKey="label" yKey="revenue" label="Revenue" highlight={isCurrent} yWidth={52} format={value => compactCurrency.format(value)} />
+                    <p className="mb-1 text-[12px] font-medium text-muted-foreground">{pt ? 'Faturamento' : 'Revenue'}</p>
+                    <HairlineChart data={months} xKey="label" yKey="revenue" label={pt ? 'Faturamento' : 'Revenue'} highlight={isCurrent} yWidth={52} format={value => compactCurrency.format(value)} />
                   </div>
                 </div>
               ) : (
-                <Empty>No deliveries</Empty>
+                <Empty>{pt ? 'Nenhuma entrega registrada' : 'No deliveries'}</Empty>
               )}
             </div>
           </DeskSection>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <DeskSection id="analytics-reps" title="Sales reps" count={salesMetrics?.salesByRep.length || 0}>
+            <DeskSection id="analytics-reps" title={pt ? 'Vendas por vendedor' : 'Sales reps'} count={salesMetrics?.salesByRep.length || 0}>
               {salesMetrics?.salesByRep.length ? (
                 <DeskTable>
                   <thead>
                     <tr>
-                      <Th>Rep</Th>
-                      <Th align="right">Units</Th>
-                      <Th align="right">Revenue</Th>
+                      <Th>{pt ? 'Vendedor' : 'Rep'}</Th>
+                      <Th align="right">{pt ? 'Veículos' : 'Units'}</Th>
+                      <Th align="right">{pt ? 'Faturamento' : 'Revenue'}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -349,28 +362,28 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
                   </tbody>
                 </DeskTable>
               ) : (
-                <Empty>No delivered deals</Empty>
+                <Empty>{pt ? 'Nenhuma venda concluída' : 'No delivered deals'}</Empty>
               )}
             </DeskSection>
 
-            <DeskSection id="analytics-makes" title="Sales by make" count={salesMetrics?.vehiclesSold.length || 0}>
+            <DeskSection id="analytics-makes" title={pt ? 'Vendas por marca' : 'Sales by make'} count={salesMetrics?.vehiclesSold.length || 0}>
               <ShareTable
-                labelHeading="Make"
-                countHeading="Units"
-                empty="No delivered deals"
+                labelHeading={pt ? 'Marca' : 'Make'}
+                countHeading={pt ? 'Veículos' : 'Units'}
+                empty={pt ? 'Nenhuma venda concluída' : 'No delivered deals'}
                 rows={(salesMetrics?.vehiclesSold || []).slice(0, 10).map(item => ({ key: item.make, label: item.make, value: item.count }))}
               />
             </DeskSection>
           </div>
 
-          <DeskSection id="analytics-top-vehicles" title="Top selling vehicles" count={salesMetrics?.topVehicles?.length || 0}>
+          <DeskSection id="analytics-top-vehicles" title={pt ? 'Veículos mais vendidos' : 'Top selling vehicles'} count={salesMetrics?.topVehicles?.length || 0}>
             {salesMetrics?.topVehicles?.length ? (
               <DeskTable>
                 <thead>
                   <tr>
-                    <Th>Vehicle</Th>
-                    <Th align="right">Sold</Th>
-                    <Th align="right" priority={2}>Revenue</Th>
+                    <Th>{pt ? 'Veículo' : 'Vehicle'}</Th>
+                    <Th align="right">{pt ? 'Vendido' : 'Sold'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Faturamento' : 'Revenue'}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -384,7 +397,7 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
                 </tbody>
               </DeskTable>
             ) : (
-              <Empty>No sales</Empty>
+              <Empty>{pt ? 'Nenhuma venda registrada' : 'No sales'}</Empty>
             )}
           </DeskSection>
         </div>
@@ -394,26 +407,26 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
         <div className="space-y-8">
           <DeskSection
             id="analytics-slow"
-            title={`Over ${AGED_UNIT_DAYS} days in stock`}
+            title={pt ? `Há mais de ${AGED_UNIT_DAYS} dias no estoque` : `Over ${AGED_UNIT_DAYS} days in stock`}
             count={slowMoving.length}
-            actions={<SectionLink href={`${platform}/vehicles`}>Inventory</SectionLink>}
+            actions={<SectionLink href={`${platform}/vehicles`}>{pt ? 'Estoque' : 'Inventory'}</SectionLink>}
           >
             {slowMoving.length ? (
               <DeskTable>
                 <thead>
                   <tr>
-                    <Th>Status</Th>
-                    <Th>Vehicle</Th>
-                    <Th priority={2}>Stock #</Th>
-                    <Th align="right" priority={2}>Price</Th>
-                    <Th align="right">Days</Th>
+                    <Th>{pt ? 'Status' : 'Status'}</Th>
+                    <Th>{pt ? 'Veículo' : 'Vehicle'}</Th>
+                    <Th priority={2}>{pt ? 'Cód. estoque' : 'Stock #'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Preço' : 'Price'}</Th>
+                    <Th align="right">{pt ? 'Dias' : 'Days'}</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {slowMoving.map(vehicle => (
                     <Tr key={vehicle.id}>
                       <Td className="w-[1%]">
-                        <Status tone={vehicle.daysInStock > 90 ? 'bad' : 'warn'}>{vehicle.daysInStock > 90 ? '90+ days' : '61-90 days'}</Status>
+                        <Status tone={vehicle.daysInStock > 90 ? 'bad' : 'warn'}>{pt ? (vehicle.daysInStock > 90 ? 'Mais de 90 dias' : '61 a 90 dias') : (vehicle.daysInStock > 90 ? '90+ days' : '61-90 days')}</Status>
                       </Td>
                       <Td className="max-w-[16rem]">
                         <Link href={`${platform}/vehicles/${vehicle.id}`} className="block truncate font-medium text-foreground hover:underline">
@@ -429,34 +442,34 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
                 </tbody>
               </DeskTable>
             ) : (
-              <Empty>No units over {AGED_UNIT_DAYS} days</Empty>
+              <Empty>{pt ? `Nenhum veículo há mais de ${AGED_UNIT_DAYS} dias` : `No units over ${AGED_UNIT_DAYS} days`}</Empty>
             )}
           </DeskSection>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <DeskSection id="analytics-aging" title="Aging, available units">
+            <DeskSection id="analytics-aging" title={pt ? 'Tempo no estoque dos veículos disponíveis' : 'Aging, available units'}>
               {inventoryMetrics?.agingBreakdown?.length ? (
                 <HairlineChart
-                  data={inventoryMetrics.agingBreakdown.map(bucket => ({ ...bucket, label: `${bucket.range} days` }))}
+                  data={inventoryMetrics.agingBreakdown.map(bucket => ({ ...bucket, label: pt ? `${bucket.range} dias` : `${bucket.range} days` }))}
                   xKey="label"
                   yKey="count"
-                  label="Units"
+                  label={pt ? 'Veículos' : 'Units'}
                   yWidth={28}
                   highlight={bucket => bucket.range === '61-90' || bucket.range === '90+'}
                 />
               ) : (
-                <Empty>No vehicles</Empty>
+                <Empty>{pt ? 'Nenhum veículo' : 'No vehicles'}</Empty>
               )}
             </DeskSection>
 
-            <DeskSection id="analytics-status" title="By status" count={inventoryMetrics?.totalVehicles || 0}>
+            <DeskSection id="analytics-status" title={pt ? 'Por status' : 'By status'} count={inventoryMetrics?.totalVehicles || 0}>
               <ShareTable
                 labelHeading="Status"
-                countHeading="Units"
-                empty="No vehicles"
+                countHeading={pt ? 'Veículos' : 'Units'}
+                empty={pt ? 'Nenhum veículo' : 'No vehicles'}
                 rows={(inventoryMetrics?.vehiclesByStatus || []).map(item => ({
                   key: item.status,
-                  label: <Status tone={statusTone[item.status] || 'idle'}>{humanize(item.status)}</Status>,
+                  label: <Status tone={statusTone[item.status] || 'idle'}>{analyticsLabel(locale, humanize(item.status))}</Status>,
                   value: item.count,
                 }))}
               />
@@ -464,24 +477,24 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
           </div>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <DeskSection id="analytics-condition" title="By condition">
+            <DeskSection id="analytics-condition" title={pt ? 'Por condição' : 'By condition'}>
               <ShareTable
-                labelHeading="Condition"
-                countHeading="Units"
-                empty="No vehicles"
-                rows={(inventoryMetrics?.vehiclesByCondition || []).map(item => ({ key: item.condition, label: humanize(item.condition), value: item.count }))}
+                labelHeading={pt ? 'Condição' : 'Condition'}
+                countHeading={pt ? 'Veículos' : 'Units'}
+                empty={pt ? 'Nenhum veículo' : 'No vehicles'}
+                rows={(inventoryMetrics?.vehiclesByCondition || []).map(item => ({ key: item.condition, label: analyticsLabel(locale, humanize(item.condition)), value: item.count }))}
               />
             </DeskSection>
 
             <ReadoutStrip className="self-start">
-              <Readout label="Total vehicles" value={inventoryMetrics?.totalVehicles || 0} />
-              <Readout label="Inventory value" value={formatCurrency(inventoryMetrics?.totalValue || 0)} />
+              <Readout label={pt ? 'Total de veículos' : 'Total vehicles'} value={inventoryMetrics?.totalVehicles || 0} />
+              <Readout label={pt ? 'Valor do estoque' : 'Inventory value'} value={formatCurrency(inventoryMetrics?.totalValue || 0)} />
               <Readout
-                label="Avg days in stock"
+                label={pt ? 'Média de dias no estoque' : 'Avg days in stock'}
                 value={inventoryMetrics?.totalVehicles ? Math.round(inventoryMetrics.avgDaysInStock || 0) : NO_DATA}
-                sub={inventoryMetrics?.avgDaysInStock && inventoryMetrics.avgDaysInStock > AGED_UNIT_DAYS ? <Attention>Aged</Attention> : undefined}
+                sub={inventoryMetrics?.avgDaysInStock && inventoryMetrics.avgDaysInStock > AGED_UNIT_DAYS ? <Attention>{pt ? 'Estoque antigo' : 'Aged'}</Attention> : undefined}
               />
-              <Readout label="Available" value={inventoryMetrics?.vehiclesByStatus.find(s => s.status === 'available')?.count || 0} />
+              <Readout label={pt ? 'Disponíveis' : 'Available'} value={inventoryMetrics?.vehiclesByStatus.find(s => s.status === 'available')?.count || 0} />
             </ReadoutStrip>
           </div>
         </div>
@@ -490,26 +503,26 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
       {area === 'service' && (
         <div className="space-y-8">
           <ReadoutStrip>
-            <Readout label="Today's appointments" value={serviceMetrics?.todayAppointments || 0} />
-            <Readout label="Active ROs" value={serviceMetrics?.activeRepairOrders || 0} />
-            <Readout label="Settled RO revenue" value={formatCurrency(serviceMetrics?.serviceRevenue || 0)} />
-            <Readout label="Avg settled RO" value={serviceMetrics?.settledRepairOrders ? formatCurrency(serviceMetrics.avgRepairOrder || 0) : NO_DATA} />
+            <Readout label={pt ? 'Agendamentos de hoje' : "Today's appointments"} value={serviceMetrics?.todayAppointments || 0} />
+            <Readout label={pt ? 'Ordens de serviço em andamento' : 'Active ROs'} value={serviceMetrics?.activeRepairOrders || 0} />
+            <Readout label={pt ? 'Faturamento das ordens de serviço pagas' : 'Settled RO revenue'} value={formatCurrency(serviceMetrics?.serviceRevenue || 0)} />
+            <Readout label={pt ? 'Valor médio por ordem paga' : 'Avg settled RO'} value={serviceMetrics?.settledRepairOrders ? formatCurrency(serviceMetrics.avgRepairOrder || 0) : NO_DATA} />
           </ReadoutStrip>
 
           <DeskSection
             id="analytics-low-stock"
-            title="Low stock parts"
+            title={pt ? 'Peças com estoque baixo' : 'Low stock parts'}
             count={serviceMetrics?.lowStockParts?.length || 0}
-            actions={<SectionLink href={`${platform}/parts`}>Parts</SectionLink>}
+            actions={<SectionLink href={`${platform}/parts`}>{pt ? 'Peças' : 'Parts'}</SectionLink>}
           >
             {serviceMetrics?.lowStockParts?.length ? (
               <DeskTable>
                 <thead>
                   <tr>
-                    <Th>Part #</Th>
-                    <Th>Description</Th>
-                    <Th align="right">On hand</Th>
-                    <Th align="right" priority={2}>Minimum</Th>
+                    <Th>{pt ? 'Cód. da peça' : 'Part #'}</Th>
+                    <Th>{pt ? 'Descrição' : 'Description'}</Th>
+                    <Th align="right">{pt ? 'Em estoque' : 'On hand'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Mínimo' : 'Minimum'}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -526,36 +539,36 @@ export function AnalyticsDashboardPageClient({ initialData, timeZone }: { initia
                 </tbody>
               </DeskTable>
             ) : (
-              <Empty>No low-stock parts</Empty>
+              <Empty>{pt ? 'Nenhuma peça com estoque baixo' : 'No low-stock parts'}</Empty>
             )}
           </DeskSection>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <DeskSection id="analytics-ro-status" title="Repair orders by status">
+            <DeskSection id="analytics-ro-status" title={pt ? 'Ordens de serviço por status' : 'Repair orders by status'}>
               <ShareTable
                 labelHeading="Status"
-                countHeading="ROs"
-                extraHeading="Total"
-                empty="No repair orders"
-                rows={(serviceMetrics?.repairOrdersByStatus || []).map(item => ({ key: item.status, label: humanize(item.status), value: item.count, extra: formatCurrency(item.revenue) }))}
+                countHeading={pt ? 'Ordens' : 'ROs'}
+                extraHeading={pt ? 'Total' : 'Total'}
+                empty={pt ? 'Nenhuma ordem de serviço' : 'No repair orders'}
+                rows={(serviceMetrics?.repairOrdersByStatus || []).map(item => ({ key: item.status, label: analyticsLabel(locale, humanize(item.status)), value: item.count, extra: formatCurrency(item.revenue) }))}
               />
             </DeskSection>
 
-            <DeskSection id="analytics-appt-status" title="Appointments by status">
+            <DeskSection id="analytics-appt-status" title={pt ? 'Agendamentos por status' : 'Appointments by status'}>
               <ShareTable
                 labelHeading="Status"
-                empty="No appointments"
-                rows={(serviceMetrics?.appointmentsByStatus || []).map(item => ({ key: item.status, label: humanize(item.status), value: item.count }))}
+                empty={pt ? 'Nenhum agendamento' : 'No appointments'}
+                rows={(serviceMetrics?.appointmentsByStatus || []).map(item => ({ key: item.status, label: analyticsLabel(locale, humanize(item.status)), value: item.count }))}
               />
             </DeskSection>
           </div>
 
-          <DeskSection id="analytics-mix" title="Service mix">
+          <DeskSection id="analytics-mix" title={pt ? 'Serviços realizados' : 'Service mix'}>
             <ShareTable
-              labelHeading="Service type"
-              countHeading="Appointments"
-              empty="No appointments"
-              rows={(serviceMetrics?.serviceTypeBreakdown || []).map(item => ({ key: item.serviceType, label: humanize(item.serviceType), value: item.count }))}
+              labelHeading={pt ? 'Tipo de serviço' : 'Service type'}
+              countHeading={pt ? 'Agendamentos' : 'Appointments'}
+              empty={pt ? 'Nenhum agendamento' : 'No appointments'}
+              rows={(serviceMetrics?.serviceTypeBreakdown || []).map(item => ({ key: item.serviceType, label: analyticsLabel(locale, humanize(item.serviceType)), value: item.count }))}
             />
           </DeskSection>
         </div>

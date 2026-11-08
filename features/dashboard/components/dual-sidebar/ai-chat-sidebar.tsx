@@ -23,6 +23,7 @@ import { useChatMode } from "../DashboardLayout";
 import { useAiConfig } from "../../hooks/use-ai-config";
 import { ChatEmptyState } from "./chat-empty-state";
 import { safeErrorSummary } from "../../lib/security";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 function ChatMessage({
   isUser,
@@ -76,6 +77,8 @@ function responseHasCrudTool(messages: UIMessage[]) {
 }
 
 export function AiChatSidebar() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const { toggleSidebar } = useSidebarWithSide("right");
   const { user } = useChatMode();
   const { config: aiConfig } = useAiConfig();
@@ -106,7 +109,7 @@ export function AiChatSidebar() {
     try {
       if (aiConfig.keyMode === "local") {
         if (!aiConfig.localKeys?.apiKey || !aiConfig.localKeys?.model) {
-          throw new Error("Local API key and model are required. Please configure them in settings.");
+          throw new Error(pt ? "A chave de API e o modelo são obrigatórios. Configure-os nos ajustes." : "Local API key and model are required. Please configure them in settings.");
         }
 
         await sendMessage(
@@ -148,7 +151,7 @@ export function AiChatSidebar() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex h-16 shrink-0 items-center justify-between px-4 border-b">
-        <h3 className="font-medium text-muted-foreground">AI Assistant</h3>
+        <h3 className="font-medium text-muted-foreground">{pt ? 'Assistente de IA' : 'AI Assistant'}</h3>
         <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8">
           <X className="h-4 w-4" />
         </Button>
@@ -191,7 +194,7 @@ export function AiChatSidebar() {
                     </ReactMarkdown>
                   ) : (
                     <div className="flex items-center gap-1 text-muted-foreground">
-                      <span className="animate-pulse">Thinking...</span>
+                      <span className="animate-pulse">{pt ? 'Pensando…' : 'Thinking…'}</span>
                     </div>
                   )}
                 </ChatMessage>
@@ -200,7 +203,7 @@ export function AiChatSidebar() {
           )}
 
           {error && (
-            <div className="text-sm text-destructive px-1">Unable to complete the chat request. Please try again.</div>
+            <div className="text-sm text-destructive px-1">{pt ? 'Não foi possível concluir a solicitação. Tente novamente.' : 'Unable to complete the chat request. Please try again.'}</div>
           )}
 
           <ChatContainerScrollAnchor />
@@ -218,7 +221,7 @@ export function AiChatSidebar() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask me anything..."
+          placeholder={pt ? 'Pergunte o que quiser…' : 'Ask me anything…'}
           className="w-full text-base bg-transparent border-0 resize-none focus:outline-none placeholder:text-muted-foreground min-h-[40px] break-words"
           disabled={isLoading}
           rows={1}

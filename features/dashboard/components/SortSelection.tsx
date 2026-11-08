@@ -71,7 +71,7 @@ export function SortSelection({ listMeta, children }: SortSelectionProps) {
       className="flex gap-1.5 px-3 text-xs font-medium"
     >
       <ArrowUpDown className="h-3 w-3" />
-      SORT
+      {t('sort')}
     </Button>
   )
 

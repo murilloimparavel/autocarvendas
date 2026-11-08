@@ -44,7 +44,7 @@ import {
   VIN_PATTERN,
 } from '../lib/tradeInState'
 
-type DetailData = { tradeIn: TradeIn | null; acquisition: TradeInAcquisition | null; canSeeAcquisitions: boolean; timeline: TradeInTimelineEntry[] }
+type DetailData = { tradeIn: TradeIn | null; acquisition: TradeInAcquisition | null; canSeeAcquisitions: boolean; timeline: TradeInTimelineEntry[]; currencyCode: string }
 type DialogKind = 'edit' | 'appraise' | 'attach' | 'detach' | 'acquire' | null
 
 const fieldLabel = 'text-[12px] font-medium text-muted-foreground'
@@ -126,6 +126,7 @@ export function TradeInDetailPageClient({
     return Number.isFinite(parsed) ? (locale === 'pt-BR' ? parsed / 1.609344 : parsed) : null
   }
   const [data, setData] = useState<DetailData | null>(initialData)
+  const currencyCode = data?.currencyCode || initialData?.currencyCode || 'USD'
   const [error, setError] = useState<string | null>(initialError)
   const [loading, setLoading] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -325,7 +326,7 @@ export function TradeInDetailPageClient({
 
   const state = tradeInState(tradeIn, acquisition, locale)
   const title = tradeInVehicleLabel(tradeIn, locale)
-  const customer = tradeInCustomer(tradeIn)
+  const customer = tradeInCustomer(tradeIn, locale)
   const deal = tradeIn.deal
   const dealIsPencil = deal?.status === 'pencil'
   const estimate = preliminaryWholesaleEstimate(tradeIn.referenceValue || 0, tradeIn.condition, tradeIn.mileage)
@@ -436,18 +437,18 @@ export function TradeInDetailPageClient({
                 <div>
                   <p className="text-[12px] font-medium text-muted-foreground">{t('offer')}</p>
                   <p className="mt-1">
-                    {tradeIn.offerAmount != null ? <Figure size="lg">{formatWholeUsd(tradeIn.offerAmount, locale)}</Figure> : closed ? <span className="text-sm text-muted-foreground">{t('noOffer')}</span> : <Attention>{t('needsAppraisal')}</Attention>}
+                    {tradeIn.offerAmount != null ? <Figure size="lg">{formatWholeUsd(tradeIn.offerAmount, locale, currencyCode)}</Figure> : closed ? <span className="text-sm text-muted-foreground">{t('noOffer')}</span> : <Attention>{t('needsAppraisal')}</Attention>}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">{tradeIn.appraisedBy?.name ? t('appraisedBy').replace('{name}', tradeIn.appraisedBy.name) : t('notAppraised')}</p>
               </div>
               <div className="grid min-w-0 grid-cols-1 gap-x-8 md:grid-cols-2">
                 <Facts items={[
-                  { label: t('reference'), value: tradeIn.referenceValue != null ? formatWholeUsd(tradeIn.referenceValue, locale) : '-' },
-                  { label: t('estimate'), value: formatWholeUsd(estimate, locale) },
+                  { label: t('reference'), value: tradeIn.referenceValue != null ? formatWholeUsd(tradeIn.referenceValue, locale, currencyCode) : '-' },
+                  { label: t('estimate'), value: formatWholeUsd(estimate, locale, currencyCode) },
                 ]} />
                 <Facts items={[
-                  { label: t('spread'), value: spread != null ? <span className={spread < 0 ? 'text-red-700 dark:text-red-300' : undefined}>{formatWholeUsd(spread, locale)}{spread < 0 ? ` · ${t('offerAboveReference')}` : ''}</span> : '-' },
+                  { label: t('spread'), value: spread != null ? <span className={spread < 0 ? 'text-red-700 dark:text-red-300' : undefined}>{formatWholeUsd(spread, locale, currencyCode)}{spread < 0 ? ` · ${t('offerAboveReference')}` : ''}</span> : '-' },
                   { label: t('condition'), value: tradeIn.condition ? <Status tone={conditionTone[tradeIn.condition] ?? 'idle'}>{conditionLabel(tradeIn.condition, locale)}</Status> : t('notGraded') },
                 ]} />
               </div>
@@ -511,7 +512,7 @@ export function TradeInDetailPageClient({
                   <Facts items={[
                     { label: t('status'), value: schemaLabel(labelForDeal(deal.status || '')) },
                     deal.vehicle?.stockNumber ? { label: t('stockNumber'), value: <Code className="text-foreground">{deal.vehicle.stockNumber}</Code> } : null,
-                    { label: t('tradeCredit'), value: formatWholeUsd((deal.tradeInValueCents || 0) / 100, locale) },
+                    { label: t('tradeCredit'), value: formatWholeUsd((deal.tradeInValueCents || 0) / 100, locale, currencyCode) },
                   ]} />
                 </div>
               ) : (
@@ -548,14 +549,14 @@ export function TradeInDetailPageClient({
           </FieldRow>
         </div>
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">{t('estimate')} {formatWholeUsd(preliminaryWholesaleEstimate(referenceCents / 100, tradeIn.condition, tradeIn.mileage), locale)} · {t('spread')} {formatWholeUsd((referenceCents - offerCents) / 100, locale)}</span>
+          <span className="tabular-nums">{t('estimate')} {formatWholeUsd(preliminaryWholesaleEstimate(referenceCents / 100, tradeIn.condition, tradeIn.mileage), locale, currencyCode)} · {t('spread')} {formatWholeUsd((referenceCents - offerCents) / 100, locale, currencyCode)}</span>
           <Track>
             <Pill size="sm" disabled={busy || referenceCents <= 0} onClick={() => setOfferCents(preliminaryWholesaleEstimate(referenceCents / 100, tradeIn.condition, tradeIn.mileage) * 100)}>{t('useEstimate')}</Pill>
           </Track>
         </div>
       </ActionDialog>
 
-      <ActionDialog open={dialog === 'attach'} title={t('attachToDeal')} description={locale === 'pt-BR' ? `${t('offer')} ${formatWholeUsd(tradeIn.offerAmount, locale)} passa a compor o ${t('tradeCredit').toLowerCase()}.` : `Offer ${formatWholeUsd(tradeIn.offerAmount, locale)} becomes the trade credit.`} busy={busy} error={dialogError} submitLabel={t('attachToDeal')} onSubmit={submitAttach} onOpenChange={closeDialog} locale={locale}>
+      <ActionDialog open={dialog === 'attach'} title={t('attachToDeal')} description={locale === 'pt-BR' ? `${t('offer')} ${formatWholeUsd(tradeIn.offerAmount, locale, currencyCode)} passa a compor o ${t('tradeCredit').toLowerCase()}.` : `Offer ${formatWholeUsd(tradeIn.offerAmount, locale, currencyCode)} becomes the trade credit.`} busy={busy} error={dialogError} submitLabel={t('attachToDeal')} onSubmit={submitAttach} onOpenChange={closeDialog} locale={locale}>
         <FieldRow label={locale === 'pt-BR' ? 'Prévia de venda' : 'Pencil deal'} htmlFor="attach-deal" error={showErrors && !selectedDeal ? t('selectDeal') : null}>
           <Select value={dealId} onValueChange={setDealId} disabled={busy || pencilDeals === null || eligibleDeals.length === 0}>
             <SelectTrigger id="attach-deal" className="rounded-[4px]" aria-invalid={showErrors && !selectedDeal ? true : undefined}>
@@ -572,8 +573,8 @@ export function TradeInDetailPageClient({
         </FieldRow>
         {selectedDeal && (
           <Facts items={[
-            { label: t('currentTradeCredit'), value: formatWholeUsd((selectedDeal.tradeInValueCents || 0) / 100, locale) },
-            { label: t('newTradeCredit'), value: formatWholeUsd(tradeIn.offerAmount, locale) },
+            { label: t('currentTradeCredit'), value: formatWholeUsd((selectedDeal.tradeInValueCents || 0) / 100, locale, currencyCode) },
+            { label: t('newTradeCredit'), value: formatWholeUsd(tradeIn.offerAmount, locale, currencyCode) },
           ]} />
         )}
         <FieldRow label={t('noteOptional')} htmlFor="attach-reason">

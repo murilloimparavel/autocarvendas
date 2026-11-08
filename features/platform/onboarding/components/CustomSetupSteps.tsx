@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DataCard } from "./DataCard";
 import seedData from "@/features/platform/onboarding/lib/seed.json";
 import { SECTION_TYPES } from "../config/templates";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface CustomSetupStepsProps {
   currentJson?: any;
@@ -44,13 +45,13 @@ function getCompleteSetupJson() {
   return seedData;
 }
 
-const money = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 export function CustomSetupSteps({
   currentJson,
   onJsonUpdate = () => {},
   onBack,
 }: CustomSetupStepsProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [, copy] = useCopyToClipboard();
   const [copiedItems, setCopiedItems] = useState<Record<string, boolean>>({});
   const [customJson, setCustomJson] = useState("");
@@ -76,6 +77,36 @@ export function CustomSetupSteps({
   // Generate the AI prompt focused on dealership customization
   const generateAIPrompt = () => {
     const data = seedData;
+    const money = (cents: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: data.dealership.currencyCode || (pt ? 'BRL' : 'USD') }).format(cents / 100)
+    if (pt) return `Preciso de ajuda para personalizar a configuração da minha revenda de veículos. Colei abaixo a configuração atual.
+
+**Na primeira resposta, descreva o que esta configuração JSON contém:**
+
+**DADOS DA LOJA:**
+- Nome: ${data.dealership.name}
+- Endereço: ${data.dealership.addressLine1}, ${data.dealership.city}, ${data.dealership.state} ${data.dealership.postalCode}
+- Moeda cadastrada: ${data.dealership.currencyCode}
+
+**ESTOQUE:**
+- Marcas: ${data.vehicleMakes.map((make) => make.name).join(', ')}
+- Veículos: ${data.vehicles.length}, incluindo ${data.vehicles.slice(0, 3).map((vehicle) => `${vehicle.year} ${vehicle.make} ${vehicle.model}`).join(', ')}
+
+**OFICINA E PEÇAS:**
+- Pacotes de serviços: ${data.services.map((service) => `${service.name} (${money(service.priceCents)})`).join(', ')}
+- Peças cadastradas: ${data.parts.length}
+
+**FINANCEIRO E CONTABILIDADE:**
+- Produtos financeiros: ${data.financeProducts.map((product) => product.name).join(', ')}
+- Mapeamentos contábeis: ${data.accountingMappings.length}
+- Provedores de pagamento: ${data.paymentProviders.map((provider) => provider.name).join(', ')}
+
+**VENDAS:**
+- Regras de distribuição de leads: ${data.leadRoutingRules.map((rule) => rule.name).join(', ')}
+- Funções da equipe: ${data.staff.map((role) => role.role).join(', ')}
+
+Os preços são armazenados em centavos inteiros. Preserve os códigos e a estrutura exigidos pelo JSON.
+
+Depois, pergunte: “O que você gostaria de alterar nesta configuração?” À medida que eu solicitar mudanças, atualize o JSON completo. Quando eu disser que terminei, devolva a configuração integral para eu colar no AutoCarVendas.`
     return `I need help customizing my auto dealership configuration. I've pasted my current setup.
 
 **Your first response should be:**
@@ -127,7 +158,7 @@ After I tell you what to change, modify the JSON and provide the complete update
       });
 
       if (missingKeys.length > 0) {
-        setJsonError(`Missing required keys: ${missingKeys.join(", ")}`);
+        setJsonError(pt ? `Campos obrigatórios ausentes: ${missingKeys.join(', ')}` : `Missing required keys: ${missingKeys.join(", ")}`);
         return;
       }
 
@@ -135,18 +166,18 @@ After I tell you what to change, modify the JSON and provide the complete update
       setJsonApplied(true);
       setJsonError("");
     } catch (err) {
-      setJsonError("Invalid JSON format. Please check your syntax.");
+      setJsonError(pt ? 'Formato JSON inválido. Confira a sintaxe.' : "Invalid JSON format. Please check your syntax.");
     }
   };
 
   const steps = [
     {
       number: 1,
-      title: "Copy Base Configuration",
-      description: "Start with our complete dealership template JSON configuration",
+      title: pt ? 'Copiar configuração inicial' : "Copy Base Configuration",
+      description: pt ? 'Comece pelo modelo JSON completo para configurar sua loja.' : "Start with our complete dealership template JSON configuration",
       content: (
         <DataCard
-          title="Onboarding Data"
+          title={pt ? 'Dados de configuração' : 'Onboarding Data'}
           content={JSON.stringify(completeJson, null, 2)}
           onCopy={copyToClipboard}
           copied={copiedItems.json || false}
@@ -156,12 +187,11 @@ After I tell you what to change, modify the JSON and provide the complete update
     },
     {
       number: 2,
-      title: "Copy AI Customization Prompt",
-      description:
-        "Use this prompt with any AI assistant to get your custom configuration",
+      title: pt ? 'Copiar instruções para a IA' : "Copy AI Customization Prompt",
+      description: pt ? 'Use estas instruções em um assistente de IA para preparar uma configuração personalizada.' : "Use this prompt with any AI assistant to get your custom configuration",
       content: (
         <DataCard
-          title="AI Prompt"
+          title={pt ? 'Instruções para a IA' : 'AI Prompt'}
           content={generateAIPrompt()}
           onCopy={copyToClipboard}
           copied={copiedItems.prompt || false}
@@ -171,35 +201,34 @@ After I tell you what to change, modify the JSON and provide the complete update
     },
     {
       number: 3,
-      title: "Chat with AI",
-      description:
-        "The AI will ask you questions about your dealership, vehicles, and services",
+      title: pt ? 'Converse com a IA' : "Chat with AI",
+      description: pt ? 'A IA fará perguntas sobre a loja, os veículos e os serviços.' : "The AI will ask you questions about your dealership, vehicles, and services",
       content: (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            The AI will ask you questions about your business such as:
+            {pt ? 'A IA fará perguntas sobre a sua empresa, por exemplo:' : 'The AI will ask you questions about your business such as:'}
           </p>
           <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-            <li>• What vehicle makes and models do you sell?</li>
-            <li>• Which vehicles are on your lot?</li>
-            <li>• Which staff roles need access?</li>
-            <li>• What service offerings do you provide?</li>
+            <li>• {pt ? 'Quais marcas e modelos você vende?' : 'What vehicle makes and models do you sell?'}</li>
+            <li>• {pt ? 'Quais veículos estão no estoque?' : 'Which vehicles are on your lot?'}</li>
+            <li>• {pt ? 'Quais funções da equipe precisam de acesso?' : 'Which staff roles need access?'}</li>
+            <li>• {pt ? 'Quais serviços sua oficina oferece?' : 'What service offerings do you provide?'}</li>
           </ul>
           <p className="text-sm text-muted-foreground">
-            Answer the AI's questions to get your custom JSON configuration.
+            {pt ? 'Responda às perguntas da IA para montar sua configuração JSON personalizada.' : "Answer the AI's questions to get your custom JSON configuration."}
           </p>
         </div>
       ),
     },
     {
       number: 4,
-      title: "Paste Your Custom JSON",
-      description: "Paste the AI-generated configuration here",
+      title: pt ? 'Colar configuração JSON' : "Paste Your Custom JSON",
+      description: pt ? 'Cole aqui a configuração gerada pela IA.' : "Paste the AI-generated configuration here",
       content: (
         <div className="rounded-lg border overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 bg-muted border-b">
             <span className="text-sm font-medium text-muted-foreground">
-              Custom Onboarding Data
+              {pt ? 'Dados de configuração' : 'Custom Onboarding Data'}
             </span>
             <Button
               size="sm"
@@ -220,7 +249,7 @@ After I tell you what to change, modify the JSON and provide the complete update
           </div>
           <div className="bg-background">
             <Textarea
-              placeholder="Paste your customized JSON configuration here..."
+              placeholder={pt ? 'Cole aqui sua configuração JSON personalizada…' : 'Paste your customized JSON configuration here...'}
               value={customJson}
               onChange={(e) => {
                 setCustomJson(e.target.value);
@@ -242,7 +271,7 @@ After I tell you what to change, modify the JSON and provide the complete update
               onClick={validateAndApplyJson}
               disabled={!customJson.trim()}
             >
-              Apply Configuration
+              {pt ? 'Aplicar configuração' : 'Apply Configuration'}
             </Button>
           </div>
         </div>
@@ -264,18 +293,17 @@ After I tell you what to change, modify the JSON and provide the complete update
             className="h-8 px-2"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Custom Setup
+            {pt ? 'Voltar à configuração personalizada' : 'Back to Custom Setup'}
           </Button>
         </div>
       )}
 
       <div className="space-y-2">
         <Label className="text-sm font-medium">
-          Custom Setup Configuration
+          {pt ? 'Configuração personalizada da loja' : 'Custom Setup Configuration'}
         </Label>
         <p className="text-xs text-muted-foreground">
-          Follow these steps to create a personalized dealership setup using AI
-          assistance.
+          {pt ? 'Siga estas etapas para personalizar a configuração da loja com ajuda da IA.' : 'Follow these steps to create a personalized dealership setup using AI assistance.'}
         </p>
       </div>
 

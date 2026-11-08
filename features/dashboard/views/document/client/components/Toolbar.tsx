@@ -41,7 +41,7 @@ import {
 
 import { type DocumentFeatures } from '../../index'
 import { InlineDialog } from '../DocumentEditor/primitives/InlineDialog'
-import { linkButton } from '../DocumentEditor/link'
+import { LinkToolbarButton } from '../DocumentEditor/link'
 import {
   BlockComponentsButtons,
   ComponentBlockContext,
@@ -49,14 +49,15 @@ import {
 import { clearFormatting, modifierKeyText } from '../DocumentEditor/utils'
 import { LayoutsButton } from '../DocumentEditor/layouts'
 import { ListButton, unorderedListButton, orderedListButton } from '../DocumentEditor/lists'
-import { blockquoteButton } from '../DocumentEditor/blockquote'
+import { BlockquoteToolbarButton } from '../DocumentEditor/blockquote'
 import {
   DocumentFieldRelationshipsContext,
   RelationshipButton,
 } from '../DocumentEditor/relationship'
-import { codeButton } from '../DocumentEditor/code-block'
-import { dividerButton } from '../DocumentEditor/divider'
+import { CodeToolbarButton } from '../DocumentEditor/code-block'
+import { DividerToolbarButton } from '../DocumentEditor/divider'
 import { useToolbarState } from '../DocumentEditor/toolbar-state'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 // Add this near the top of the file
 const isMac =
@@ -285,14 +286,13 @@ export function DocumentToolbar({ documentFeatures, viewState }: {
             )}
 
             <div className="flex [&>*]:rounded-none [&>*:first-child]:rounded-l-md [&>*:last-child]:rounded-r-md [&>*]:border [&>*]:border-input [&>*:not(:first-child)]:-ml-px">
-              {documentFeatures.dividers && dividerButton}
-              {documentFeatures.links && linkButton}
-              {documentFeatures.formatting.blockTypes.blockquote &&
-                blockquoteButton}
+              {documentFeatures.dividers && <DividerToolbarButton />}
+              {documentFeatures.links && <LinkToolbarButton />}
+              {documentFeatures.formatting.blockTypes.blockquote && <BlockquoteToolbarButton />}
               {!!documentFeatures.layouts.length && (
                 <LayoutsButton layouts={documentFeatures.layouts} />
               )}
-              {documentFeatures.formatting.blockTypes.code && codeButton}
+              {documentFeatures.formatting.blockTypes.code && <CodeToolbarButton />}
               {!!hasBlockItems && <InsertBlockMenu />}
             </div>
           </div>
@@ -392,10 +392,12 @@ const HeadingIcon = ({ level }: { level: number }) => (
 )
 
 function HeadingMenu({ headingLevels }: { headingLevels: DocumentFeatures['formatting']['headingLevels'] }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [showMenu, setShowMenu] = useState(false)
   const { editor, textStyles } = useToolbarState()
   const selected = textStyles.selected
-  const buttonLabel = selected === 'normal' ? 'Paragraph' : `Heading ${selected}`
+  const buttonLabel = selected === 'normal' ? (pt ? 'Parágrafo' : 'Paragraph') : `${pt ? 'Título' : 'Heading'} ${selected}`
   const ButtonIcon = selected === 'normal' 
     ? <Pilcrow size={16} className="text-muted-foreground" />
     : <HeadingIcon level={selected as number} />
@@ -408,7 +410,7 @@ function HeadingMenu({ headingLevels }: { headingLevels: DocumentFeatures['forma
           isPressed={showMenu}
           isDisabled={isDisabled}
           className="w-auto min-w-[120px] px-2 flex items-center gap-2"
-          tooltip="Text style"
+          tooltip={pt ? 'Estilo do texto' : 'Text style'}
         >
           {ButtonIcon}
           <span className="flex-1 text-left text-sm">{buttonLabel}</span>
@@ -431,7 +433,7 @@ function HeadingMenu({ headingLevels }: { headingLevels: DocumentFeatures['forma
           >
             <span className="flex items-center gap-2">
               <Pilcrow size={16} className="text-muted-foreground" />
-              <span className="text-sm">Paragraph</span>
+              <span className="text-sm">{pt ? 'Parágrafo' : 'Paragraph'}</span>
             </span>
             {selected === 'normal' && <Check size={16} />}
           </ToolbarButton>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { useFilter } from '@react-aria/i18n'
 
 import { type FormField } from './api-shared'
@@ -16,6 +17,7 @@ export function makeIntegerFieldInput(opts: {
   validate: (value: number) => boolean
 }): FormField<number, unknown>['Input'] {
   return function IntegerFieldInput({ autoFocus, forceValidation, onChange, value }) {
+    const { locale } = useLocale()
     const [isDirty, setDirty] = useState(false)
     return (
       <div className="space-y-1">
@@ -34,7 +36,7 @@ export function makeIntegerFieldInput(opts: {
           className={((forceValidation || isDirty) && !opts.validate(value)) ? "border-red-500" : ""}
         />
         {((forceValidation || isDirty) && !opts.validate(value)) && (
-          <p className="text-sm text-red-500">Invalid integer</p>
+          <p className="text-sm text-red-500">{locale === 'pt-BR' ? 'Número inteiro inválido' : 'Invalid integer'}</p>
         )}
       </div>
     )
@@ -46,6 +48,7 @@ export function makeUrlFieldInput(opts: {
   validate: (value: string) => boolean
 }): FormField<string, unknown>['Input'] {
   return function UrlFieldInput({ autoFocus, forceValidation, onChange, value }) {
+    const { locale } = useLocale()
     const [isDirty, setDirty] = useState(false)
     return (
       <div className="space-y-1">
@@ -60,7 +63,7 @@ export function makeUrlFieldInput(opts: {
           className={((forceValidation || isDirty) && !opts.validate(value)) ? "border-red-500" : ""}
         />
         {((forceValidation || isDirty) && !opts.validate(value)) && (
-          <p className="text-sm text-red-500">Invalid URL</p>
+          <p className="text-sm text-red-500">{locale === 'pt-BR' ? 'Endereço inválido' : 'Invalid URL'}</p>
         )}
       </div>
     )
@@ -75,6 +78,7 @@ export function makeSelectFieldInput({
   options: readonly { label: string; value: string }[]
 }): FormField<string, unknown>['Input'] {
   return function SelectFieldInput({ autoFocus, onChange, value }) {
+    const { locale } = useLocale()
     return (
       <div className="space-y-1">
         <Label>{label}</Label>
@@ -84,7 +88,7 @@ export function makeSelectFieldInput({
           // autoFocus prop might not be directly available, handle focus manually if needed
         >
           <SelectTrigger autoFocus={autoFocus}>
-            <SelectValue placeholder={`Select ${label}`} />
+            <SelectValue placeholder={locale === 'pt-BR' ? `Selecione ${label}` : `Select ${label}`} />
           </SelectTrigger>
           <SelectContent>
             {options.map(item => (
@@ -107,6 +111,7 @@ export function makeMultiselectFieldInput({
   options: readonly { label: string; value: string }[]
 }): FormField<string[], unknown>['Input'] {
   return function ComboFieldInput({ autoFocus, forceValidation, onChange, value }) {
+    const { locale } = useLocale()
     const [filterText, setFilterText] = useState('')
     const { contains } = useFilter({ sensitivity: 'base' })
     const items = options.filter(option => !value.some(x => x === option.value))
@@ -119,14 +124,14 @@ export function makeMultiselectFieldInput({
         <Label>{label}</Label>
         <Command className="rounded-lg border shadow-md">
           <CommandInput
-            placeholder={`Search ${label}...`}
+            placeholder={locale === 'pt-BR' ? `Buscar ${label}...` : `Search ${label}...`}
             value={filterText}
             onValueChange={setFilterText}
             autoFocus={autoFocus}
           />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Suggestions">
+            <CommandEmpty>{locale === 'pt-BR' ? 'Nenhum resultado encontrado.' : 'No results found.'}</CommandEmpty>
+            <CommandGroup heading={locale === 'pt-BR' ? 'Sugestões' : 'Suggestions'}>
               {filteredItems.map(item => (
                 <CommandItem
                   key={item.value}
@@ -163,7 +168,7 @@ export function makeMultiselectFieldInput({
             )
           })}
           {value.length === 0 && (
-            <p className="text-sm text-neutral-500">No items…</p>
+            <p className="text-sm text-neutral-500">{locale === 'pt-BR' ? 'Nenhum item…' : 'No items…'}</p>
           )}
         </div>
       </div>

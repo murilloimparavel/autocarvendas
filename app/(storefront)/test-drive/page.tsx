@@ -6,7 +6,10 @@ import { TestDrivePage } from '@/features/storefront/screens/TestDrivePage'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = { title: 'Test drive' }
+export async function generateMetadata(): Promise<Metadata> {
+  const { getRequestLocale } = await import('@/features/i18n/server')
+  return { title: (await getRequestLocale()) === 'pt-BR' ? 'Agendar test-drive' : 'Test drive' }
+}
 
 export default function Page() {
   return <Suspense fallback={<PageFallback />}><TestDrivePage /></Suspense>

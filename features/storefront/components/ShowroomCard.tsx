@@ -16,7 +16,7 @@ export function ShowroomCard({ vehicle, currencyCode, priority = false }: { vehi
   const { locale, t } = useLocale()
   const image = vehicleImageUrl(primaryVehicleImage(vehicle.images))
   const name = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ')
-  const condition = vehicle.condition === 'new' ? t('newArrival') : translateNavigation(locale, vehicleConditionLabel(vehicle.condition))
+  const condition = vehicle.condition === 'new' ? t('newArrival') : translateNavigation(locale, vehicleConditionLabel(vehicle.condition, locale))
 
   return (
     <Link href={`/inventory/${vehicle.id}`} className="sf-showroom-card group">

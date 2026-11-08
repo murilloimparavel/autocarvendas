@@ -19,6 +19,7 @@ import { AiConfigProvider } from '../hooks/use-ai-config'
 import { QueryProvider } from '../providers/QueryProvider'
 import OnboardingDialog from '@/features/platform/onboarding/components/OnboardingDialog'
 import { LanguageSwitcher } from '@/features/i18n/LanguageSwitcher'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 // Shared Message type
 interface Message {
@@ -135,8 +136,9 @@ function ChatModeProvider({ children, user }: { children: React.ReactNode; user?
 }
 
 export function DashboardLayout({ children, adminMeta, authenticatedItem }: DashboardLayoutProps) {
+  const { locale } = useLocale()
   return (
-    <ErrorBoundary>
+    <ErrorBoundary locale={locale}>
       <QueryProvider>
         <DashboardProvider>
           <AdminMetaProvider initialData={adminMeta}>

@@ -14,6 +14,7 @@ interface SectionRendererProps {
   error: string | null;
   step: 'template' | 'progress' | 'done';
   currentJsonData?: any;
+  locale?: 'pt-BR' | 'en-US';
 }
 
 export const SectionRenderer: React.FC<SectionRendererProps> = ({
@@ -26,6 +27,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
   error,
   step,
   currentJsonData,
+  locale = 'en-US',
 }) => {
   return (
     <div className="space-y-0">
@@ -46,7 +48,12 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                 {section.id}
               </div>
               <Label className="text-sm font-medium text-foreground">
-                {section.label}
+                {locale === 'pt-BR' ? ({
+                  'Dealership Information': 'Dados da loja', 'Vehicle Makes': 'Marcas de veículos', 'Vehicle Models': 'Modelos de veículos',
+                  'Vehicle Inventory': 'Estoque de veículos', 'Service Packages': 'Pacotes de serviços', 'Parts Inventory': 'Estoque de peças',
+                  'Finance Products': 'Produtos financeiros', 'Lead Routing': 'Distribuição de leads', 'Accounting Mappings': 'Mapeamentos contábeis',
+                  'Payment Providers': 'Provedores de pagamento', 'Staff Roles': 'Funções da equipe',
+                } as Record<string, string>)[section.label] || section.label : section.label}
               </Label>
             </div>
 
@@ -89,6 +96,7 @@ export const SectionRenderer: React.FC<SectionRendererProps> = ({
                       status={status}
                       errorMessage={errorMessage}
                       step={step}
+                      locale={locale}
                     />
                   );
                 })}

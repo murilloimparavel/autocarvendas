@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog as ShadDialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog'
 import { TooltipProvider, Tooltip as ShadTooltip, TooltipTrigger as ShadTooltipTrigger, TooltipContent as ShadTooltipContent } from '@/components/ui/tooltip'
 import { Trash2 } from 'lucide-react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 import {
   type PreviewPropsForToolbar,
@@ -133,11 +134,12 @@ function DefaultToolbarWithChrome({
   props: any
   isValid: boolean
 }) {
+  const { locale } = useLocale()
   return (
     <NotEditable>
       <div className="flex flex-col gap-3"> {/* Replaced Flex */}
         <div className="flex items-center gap-2 select-none"> {/* Replaced Flex */}
-          <Button variant="outline" size="sm" onClick={() => onShowEditMode()}>Edit</Button>
+          <Button variant="outline" size="sm" onClick={() => onShowEditMode()}>{locale === 'pt-BR' ? 'Editar' : 'Edit'}</Button>
           <TooltipProvider>
             <ShadTooltip>
               <ShadTooltipTrigger asChild>
@@ -146,13 +148,13 @@ function DefaultToolbarWithChrome({
                 </Button>
               </ShadTooltipTrigger>
               <ShadTooltipContent side="bottom">
-                <p>Delete</p>
+                <p>{locale === 'pt-BR' ? 'Excluir' : 'Delete'}</p>
               </ShadTooltipContent>
             </ShadTooltip>
           </TooltipProvider>
         </div>
         {/* Replaced FieldMessage */}
-        {!isValid && <p className="text-sm text-red-600">Contains invalid fields. Please edit.</p>}
+        {!isValid && <p className="text-sm text-red-600">{locale === 'pt-BR' ? 'Há campos inválidos. Edite o conteúdo.' : 'Contains invalid fields. Please edit.'}</p>}
       </div>
     </NotEditable>
   )
@@ -165,6 +167,7 @@ function FormValue({
   props: GenericPreviewProps<ComponentSchema, unknown>
   onClose(): void
 }) {
+  const { locale } = useLocale()
   const formId = useId()
   const [forceValidation, setForceValidation] = useState(false)
   const [state, setState] = useState(() => previewPropsToValue(props))
@@ -193,9 +196,9 @@ function FormValue({
         <FormValueContentFromPreviewProps {...previewProps} forceValidation={forceValidation} />
       </form>
       <DialogFooter> {/* Replaced ButtonGroup */}
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="outline" onClick={onClose}>{locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}</Button>
         <Button form={formId} type="submit">
-          Done
+          {locale === 'pt-BR' ? 'Concluído' : 'Done'}
         </Button>
       </DialogFooter>
     </>

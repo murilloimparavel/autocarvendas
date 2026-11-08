@@ -8,6 +8,7 @@ import { cache } from 'react'
 import { keystoneClient, type KeystoneResponse } from '../lib/keystoneClient'
 import { getGraphQLNames } from '../lib/getGqlNames'
 import { getRequestLocale } from '@/features/i18n/server'
+import { publicRequestError } from '@/features/dashboard/lib/security'
 import { translateAdminSchema } from '@/features/i18n/messages'
 
 // Cache the admin meta fetching to avoid repeated GraphQL calls
@@ -90,7 +91,7 @@ const getCachedAdminMeta = cache(async (): Promise<KeystoneResponse<any>> => {
   if (!adminMeta) {
     return {
       success: false,
-      error: 'Admin meta not found in response'
+      error: await publicRequestError(await getRequestLocale())
     }
   }
 
@@ -135,7 +136,7 @@ export async function getAdminMetaAction(listKey?: string): Promise<KeystoneResp
       if (!list) {
         return {
           success: false,
-          error: `List ${listKey} not found in admin meta`
+          error: locale === 'pt-BR' ? 'A lista solicitada não foi encontrada.' : `List ${listKey} not found in admin meta`
         }
       }
 
@@ -162,7 +163,7 @@ export async function getAdminMetaAction(listKey?: string): Promise<KeystoneResp
     console.error("Dashboard operation failed (details redacted).")
     return {
       success: false,
-      error: "Unknown error"
+      error: publicRequestError(await getRequestLocale())
     }
   }
 }

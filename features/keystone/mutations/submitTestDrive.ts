@@ -3,7 +3,7 @@ import { requestingAccountId } from './customerAccount'
 import { resolveCustomerInTransaction } from './customerIdentity'
 import { runPublicSubmission } from './publicSubmissionPolicy'
 import { deliverRequestReceipt } from '../lib/requestReceiptEmail'
-import { localeFromCookieHeader } from '@/features/i18n/server'
+import { localeFromCookieHeader } from '../../i18n/server'
 import {
   optionalText,
   parseScheduledTime,

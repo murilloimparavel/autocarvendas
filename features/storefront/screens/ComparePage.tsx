@@ -35,7 +35,7 @@ const COMPARISON_FIELDS: {
   { label: 'Model', key: 'model', format: (v) => v.model, highlight: false },
   { label: 'Trim', key: 'trim', format: (v) => v.trim || '—', highlight: false },
   { label: 'Mileage', key: 'mileage', format: (v, _currencyCode, locale) => formatMileage(v.mileage, locale), highlight: true, mono: true },
-  { label: 'Condition', key: 'condition', format: (v) => (v.condition ? vehicleConditionLabel(v.condition) : '—'), highlight: false },
+  { label: 'Condition', key: 'condition', format: (v, _currencyCode, locale) => (v.condition ? vehicleConditionLabel(v.condition, locale) : '—'), highlight: false },
   { label: 'Color', key: 'color', format: (v) => v.color || '—', highlight: false },
   { label: 'MPG city', key: 'mpgCity', format: (v) => String(v.features?.mpgCity ?? '—'), highlight: true, mono: true },
   { label: 'MPG highway', key: 'mpgHighway', format: (v) => String(v.features?.mpgHighway ?? '—'), highlight: true, mono: true },
@@ -116,7 +116,7 @@ export function ComparePage() {
 
   const browseTrack = (
     <div className="flex flex-wrap gap-2">
-      <Link href="/inventory" className="sf-btn sf-btn-primary">Browse inventory</Link>
+      <Link href="/inventory" className="sf-btn sf-btn-primary">{locale === 'pt-BR' ? 'Ver estoque' : 'Browse inventory'}</Link>
     </div>
   )
 
@@ -126,11 +126,11 @@ export function ComparePage() {
         <li key={id} className="flex items-center justify-between gap-4 py-2" style={{ borderColor: 'var(--sf-rule)' }}>
           <span className="sf-title-line min-w-0">
             <span className="sf-dot" aria-hidden="true" />
-            <span className="truncate">Vehicle no longer available</span>
+          <span className="truncate">{locale === 'pt-BR' ? 'Veículo não está mais disponível' : 'Vehicle no longer available'}</span>
           </span>
           <button type="button" onClick={() => removeFromComparison(id)} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10 shrink-0">
             <X className="size-4" aria-hidden="true" />
-            Remove
+            {locale === 'pt-BR' ? 'Remover' : 'Remove'}
           </button>
         </li>
       ))}
@@ -140,9 +140,9 @@ export function ComparePage() {
   if (loading) {
     return (
       <>
-        <PageHeader title="Compare vehicles" />
+        <PageHeader title={locale === 'pt-BR' ? 'Compare veículos' : 'Compare vehicles'} />
         <Container className="py-[var(--sf-space-xl)]">
-          <div className="flex gap-4 overflow-hidden" aria-busy="true" aria-label="Loading comparison">
+          <div className="flex gap-4 overflow-hidden" aria-busy="true" aria-label={locale === 'pt-BR' ? 'Carregando comparação' : 'Loading comparison'}>
             <div className="hidden w-32 shrink-0 space-y-3 sm:block">
               <div className="sf-skeleton h-56" />
               {Array.from({ length: 6 }).map((_, i) => <div key={i} className="sf-skeleton h-6" />)}
@@ -164,18 +164,18 @@ export function ComparePage() {
   if (loadError) {
     return (
       <>
-        <PageHeader title="Compare vehicles" />
+        <PageHeader title={locale === 'pt-BR' ? 'Compare veículos' : 'Compare vehicles'} />
         <Container className="py-[var(--sf-space-xl)]">
           <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <p role="alert" className="sf-title-line font-semibold">
               <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-              These vehicles couldn&apos;t be loaded.
+              {locale === 'pt-BR' ? 'Não foi possível carregar estes veículos.' : <>These vehicles couldn&apos;t be loaded.</>}
             </p>
             <div className="flex shrink-0 flex-wrap gap-2">
               <button type="button" onClick={() => void loadComparisonVehicles()} className="sf-btn sf-btn-primary">
-                Retry
+                {locale === 'pt-BR' ? 'Tentar novamente' : 'Retry'}
               </button>
-              <Link href="/inventory" className="sf-btn sf-btn-ghost">Browse inventory</Link>
+              <Link href="/inventory" className="sf-btn sf-btn-ghost">{locale === 'pt-BR' ? 'Ver estoque' : 'Browse inventory'}</Link>
             </div>
           </div>
         </Container>
@@ -186,12 +186,12 @@ export function ComparePage() {
   if (savedIds.length === 0) {
     return (
       <>
-        <PageHeader title="No vehicles to compare" />
+        <PageHeader title={locale === 'pt-BR' ? 'Nenhum veículo para comparar' : 'No vehicles to compare'} />
         <Container className="py-[var(--sf-space-xl)]">
           <div className="sf-well flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="sf-title-line font-semibold">
               <span className="sf-dot" aria-hidden="true" />
-              No vehicles added
+              {locale === 'pt-BR' ? 'Nenhum veículo adicionado' : 'No vehicles added'}
             </p>
             {browseTrack}
           </div>
@@ -203,12 +203,12 @@ export function ComparePage() {
   if (vehicles.length === 0) {
     return (
       <>
-        <PageHeader title="Vehicles no longer available" />
+        <PageHeader title={locale === 'pt-BR' ? 'Veículos indisponíveis' : 'Vehicles no longer available'} />
         <Container className="py-[var(--sf-space-xl)]">
           <div className="sf-well p-6">
             <p className="sf-title-line font-semibold">
               <span className="sf-dot" data-tone="warn" aria-hidden="true" />
-              These vehicles are no longer available.
+              {locale === 'pt-BR' ? 'Estes veículos não estão mais disponíveis.' : 'These vehicles are no longer available.'}
             </p>
             {unavailableList}
           </div>
@@ -224,16 +224,16 @@ export function ComparePage() {
   return (
     <>
       <PageHeader
-        title="Compare vehicles"
-        description={`${vehicles.length} of 4 ${vehicles.length === 1 ? 'vehicle' : 'vehicles'}`}
+        title={locale === 'pt-BR' ? 'Compare veículos' : 'Compare vehicles'}
+        description={locale === 'pt-BR' ? `${vehicles.length} de 4 ${vehicles.length === 1 ? 'veículo' : 'veículos'}` : `${vehicles.length} of 4 ${vehicles.length === 1 ? 'vehicle' : 'vehicles'}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/inventory" className="sf-btn sf-btn-primary">
               <Plus className="size-4" aria-hidden="true" />
-              Add vehicles
+              {locale === 'pt-BR' ? 'Adicionar veículos' : 'Add vehicles'}
             </Link>
             <button type="button" onClick={handleClearAll} className="sf-btn sf-btn-ghost">
-              Clear all
+              {locale === 'pt-BR' ? 'Limpar tudo' : 'Clear all'}
             </button>
           </div>
         }
@@ -242,20 +242,20 @@ export function ComparePage() {
       <Container className="py-[var(--sf-space-lg)] md:py-[var(--sf-space-xl)]">
         {unavailableIds.length > 0 && (
           <div className="sf-notice mb-6" data-tone="warn" role="status">
-            <p className="font-semibold">Some vehicles are no longer available.</p>
+            <p className="font-semibold">{locale === 'pt-BR' ? 'Alguns veículos não estão mais disponíveis.' : 'Some vehicles are no longer available.'}</p>
             {unavailableList}
           </div>
         )}
 
         <div className="mb-3 flex items-center justify-end gap-2">
-          <span className="sf-chip sf-best">Best value</span>
+          <span className="sf-chip sf-best">{locale === 'pt-BR' ? 'Melhor custo-benefício' : 'Best value'}</span>
         </div>
 
         <div
           className="sf-panel overflow-x-auto overscroll-x-contain"
           style={{ borderColor: 'var(--sf-rule)' }}
           role="region"
-          aria-label="Comparison table"
+          aria-label={locale === 'pt-BR' ? 'Tabela de comparação' : 'Comparison table'}
           tabIndex={0}
         >
           <table className="w-full border-collapse text-[length:var(--sf-text-sm)]">
@@ -266,7 +266,7 @@ export function ComparePage() {
                 </th>
                 {vehicles.map((vehicle) => {
                   const imageUrl = vehicleImageUrl(primaryVehicleImage(vehicle.images))
-                  const status = vehicleStatus(vehicle.status)
+                  const status = vehicleStatus(vehicle.status, locale)
                   return (
                     <th key={vehicle.id} scope="col" className="min-w-[13rem] p-3 text-left align-top font-normal sm:min-w-[15rem] sm:p-4">
                       <Link href={`/inventory/${vehicle.id}`} className="sf-photo block aspect-[4/3]" tabIndex={-1} aria-hidden="true">
@@ -308,7 +308,7 @@ export function ComparePage() {
               {COMPARISON_FIELDS.map((field) => (
                 <tr key={field.key} className="border-t" style={{ borderColor: 'var(--sf-rule)' }}>
                   <th scope="row" className={`${stickyCell} py-3 align-middle`} style={stickyStyle}>
-                    <span className="sf-eyebrow">{field.label}</span>
+                    <span className="sf-eyebrow">{locale === 'pt-BR' ? ({ Price: 'Preço', Year: 'Ano', Make: 'Marca', Model: 'Modelo', Trim: 'Versão', Mileage: 'Quilometragem', Condition: 'Condição', Color: 'Cor', 'MPG city': 'Consumo na cidade', 'MPG highway': 'Consumo na estrada', VIN: 'Chassi (VIN)', 'Stock #': 'Código do estoque' } as Record<string, string>)[field.label] : field.label}</span>
                   </th>
                   {vehicles.map((vehicle) => {
                     const best = bestValueClass(field, vehicle, vehicles)
@@ -318,7 +318,7 @@ export function ComparePage() {
                         className={`px-3 py-3 sm:px-4 ${field.mono ? 'sf-figure' : ''} ${field.key === 'vin' ? 'break-all text-[length:var(--sf-text-xs)]' : ''} ${best}`}
                       >
                         {field.format(vehicle, currencyCode, locale)}
-                        {best && <span className="sr-only"> (best)</span>}
+                        {best && <span className="sr-only"> ({locale === 'pt-BR' ? 'melhor valor' : 'best'})</span>}
                       </td>
                     )
                   })}
@@ -327,27 +327,27 @@ export function ComparePage() {
 
               <tr className="border-t" style={{ borderColor: 'var(--sf-rule)' }}>
                 <th scope="row" className={`${stickyCell} py-3`} style={stickyStyle}>
-                  <span className="sf-eyebrow">Description</span>
+                  <span className="sf-eyebrow">{locale === 'pt-BR' ? 'Descrição' : 'Description'}</span>
                 </th>
                 {vehicles.map((vehicle) => (
                   <td key={vehicle.id} className="sf-muted px-3 py-3 align-top leading-relaxed sm:px-4">
-                    {vehicle.description || 'Not listed'}
+                    {vehicle.description || (locale === 'pt-BR' ? 'Não informada' : 'Not listed')}
                   </td>
                 ))}
               </tr>
 
               <tr className="border-t" style={{ borderColor: 'var(--sf-rule)' }}>
                 <th scope="row" className={`${stickyCell} py-4`} style={stickyStyle}>
-                  <span className="sf-eyebrow">Actions</span>
+                  <span className="sf-eyebrow">{locale === 'pt-BR' ? 'Ações' : 'Actions'}</span>
                 </th>
                 {vehicles.map((vehicle) => (
                   <td key={vehicle.id} className="px-3 py-4 sm:px-4">
                     <div className="flex flex-wrap gap-2">
                       <Link href={`/inventory/${vehicle.id}`} className="sf-btn sf-btn-primary sf-btn-sm min-h-10">
-                        View
+                        {locale === 'pt-BR' ? 'Ver veículo' : 'View'}
                       </Link>
                       <Link href={`/test-drive?vehicleId=${vehicle.id}`} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">
-                        Test drive
+                        {locale === 'pt-BR' ? 'Agendar test-drive' : 'Test drive'}
                       </Link>
                     </div>
                   </td>

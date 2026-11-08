@@ -107,7 +107,7 @@ export function FilterAdd({ list, children }: FilterAddProps) {
               )}
               <div className="text-sm font-medium">
                 {state.kind === "selecting-field"
-                  ? "Filter"
+                  ? t('filter')
                   : state.fieldPath ? enhancedFields[state.fieldPath]?.label : ""}
               </div>
             </div>
@@ -158,7 +158,7 @@ export function FilterAdd({ list, children }: FilterAddProps) {
                   >
                     <SelectTrigger className="mb-2">
                       <SelectValue>
-                        {state.filterType ? filterableFields[state.fieldPath].controller.filter.types[state.filterType].label : 'Select filter type'}
+                        {state.filterType ? filterableFields[state.fieldPath].controller.filter.types[state.filterType].label : t('selectFilterType')}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>

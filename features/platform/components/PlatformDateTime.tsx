@@ -6,7 +6,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { PlatformSelect } from "./PlatformSelect";
-import { dateKey, formatDateKey, parseDateKey, splitLocalDateTime, timeOptions } from "../lib/date-fields";
+import { dateKey, parseDateKey, splitLocalDateTime, timeOptions } from "../lib/date-fields";
+import { useLocale } from "@/features/i18n/LocaleProvider";
+import { enUS, ptBR } from "date-fns/locale";
 
 type Aria = { "aria-invalid"?: boolean; "aria-describedby"?: string; "aria-label"?: string };
 
@@ -41,7 +43,7 @@ export function PlatformDateInput({
   required = false,
   min,
   max,
-  placeholder = "Pick a date",
+  placeholder,
   clearable = !required,
   className,
   ...aria
@@ -59,6 +61,9 @@ export function PlatformDateInput({
   clearable?: boolean;
   className?: string;
 } & Aria) {
+  const { locale } = useLocale();
+  const pt = locale === 'pt-BR';
+  const datePlaceholder = placeholder ?? (pt ? 'Selecione uma data' : 'Pick a date');
   const [inner, setInner] = React.useState(defaultValue);
   const current = value ?? inner;
   const [open, setOpen] = React.useState(false);
@@ -92,11 +97,12 @@ export function PlatformDateInput({
             )}
           >
             <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span className={cn("min-w-0 truncate tabular-nums", !selected && "text-muted-foreground")}>{selected ? formatDateKey(current) : placeholder}</span>
+            <span className={cn("min-w-0 truncate tabular-nums", !selected && "text-muted-foreground")}>{selected ? selected.toLocaleDateString(locale) : datePlaceholder}</span>
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" sideOffset={4} collisionPadding={12} className="w-auto rounded-[6px] p-2">
           <Calendar
+            locale={locale === 'pt-BR' ? ptBR : enUS}
             mode="single"
             selected={selected ?? undefined}
             defaultMonth={selected ?? minDate ?? maxDate ?? undefined}
@@ -106,7 +112,7 @@ export function PlatformDateInput({
           />
           {clearable && current ? (
             <div className="flex justify-end border-t px-1 pt-2">
-              <button type="button" className="min-h-9 rounded-[6px] px-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => { set(""); setOpen(false); }}>Clear</button>
+              <button type="button" className="min-h-9 rounded-[6px] px-2.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => { set(""); setOpen(false); }}>{pt ? 'Limpar' : 'Clear'}</button>
             </div>
           ) : null}
         </PopoverContent>
@@ -124,7 +130,7 @@ export function PlatformTimeInput({
   disabled = false,
   required = false,
   step = 15,
-  placeholder = "Time",
+  placeholder,
   className,
   ...aria
 }: {
@@ -138,8 +144,10 @@ export function PlatformTimeInput({
   placeholder?: string;
   className?: string;
 } & Aria) {
+  const { locale } = useLocale();
+  const timePlaceholder = placeholder ?? (locale === 'pt-BR' ? 'Horário' : 'Time');
   const options = React.useMemo(() => timeOptions(step, value), [step, value]);
-  return <PlatformSelect id={id} name={name} required={required} options={options} value={value} onValueChange={onChange} disabled={disabled} placeholder={placeholder} searchable className={className} {...aria} />;
+  return <PlatformSelect id={id} name={name} required={required} options={options} value={value} onValueChange={onChange} disabled={disabled} placeholder={timePlaceholder} searchable className={className} {...aria} />;
 }
 
 /**
@@ -171,6 +179,8 @@ export function PlatformDateTimeInput({
   defaultTime?: string;
   className?: string;
 } & Aria) {
+  const { locale } = useLocale();
+  const pt = locale === 'pt-BR';
   const { date, time } = splitLocalDateTime(value);
   return (
     <div className={cn("relative grid min-w-0 grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-2", className)}>
@@ -183,7 +193,7 @@ export function PlatformDateTimeInput({
         min={min?.slice(0, 10)}
         max={max?.slice(0, 10)}
         onChange={(nextDate) => onChange(nextDate ? `${nextDate}T${time || defaultTime}` : "")}
-        aria-label={aria["aria-label"] ? `${aria["aria-label"]} date` : undefined}
+        aria-label={aria["aria-label"] ? `${aria["aria-label"]} ${pt ? 'data' : 'date'}` : undefined}
         aria-invalid={aria["aria-invalid"]}
         aria-describedby={aria["aria-describedby"]}
       />
@@ -192,7 +202,7 @@ export function PlatformDateTimeInput({
         disabled={disabled || !date}
         required={required}
         onChange={(nextTime) => onChange(date ? `${date}T${nextTime}` : "")}
-        aria-label={aria["aria-label"] ? `${aria["aria-label"]} time` : "Time"}
+        aria-label={aria["aria-label"] ? `${aria["aria-label"]} ${pt ? 'horário' : 'time'}` : (pt ? 'Horário' : 'Time')}
         aria-invalid={aria["aria-invalid"]}
       />
     </div>

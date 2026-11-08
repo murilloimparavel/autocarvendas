@@ -5,9 +5,11 @@ import { getCustomerServiceHistory } from '../actions/customerRecords'
 import { AccountEmpty, AccountError, AccountHeader, AccountSection } from '../components/account/AccountStates'
 import { customerRequestReference, customerRequestStatusLabel } from '../lib/customerRequests'
 import { customerRequestPath, formatCents, formatDateTime, serviceOrderStatusLabel, statusLabel, statusTone } from '../lib/accountRecords'
+import { getRequestLocale } from '../../i18n/server'
 
 export async function AccountServicePage() {
-  const visits = await getCustomerServiceHistory()
+  const [visits, locale] = await Promise.all([getCustomerServiceHistory(), getRequestLocale()])
+  const pt = locale === 'pt-BR'
   const now = Date.now()
   const upcoming = visits?.filter((visit) => ['scheduled', 'checked-in', 'in-progress', 'waiting-parts'].includes(visit.status) && (visit.status !== 'scheduled' || new Date(visit.appointmentDate).getTime() >= now)) ?? []
   const past = visits?.filter((visit) => !upcoming.includes(visit)) ?? []
@@ -26,16 +28,16 @@ export async function AccountServicePage() {
                 <h3 className="sf-title-line flex-wrap">
                   <span className="sf-dot" data-tone={statusTone(visit.status)} aria-hidden="true" />
                   <span className="sf-heading text-[length:var(--sf-text-lg)]">
-                    {visit.servicePackage?.name || (visit.serviceType ? statusLabel(visit.serviceType) : 'Service')}
+                    {visit.servicePackage?.name || (visit.serviceType ? statusLabel(visit.serviceType, locale) : (pt ? 'Oficina' : 'Service'))}
                   </span>
-                  <span className="sf-muted text-[length:var(--sf-text-sm)]">{customerRequestStatusLabel('service', visit.status)}</span>
+                  <span className="sf-muted text-[length:var(--sf-text-sm)]">{customerRequestStatusLabel('service', visit.status, locale)}</span>
                 </h3>
                 {visit.vehicleDescription && <p className="mt-1 pl-4 text-[length:var(--sf-text-sm)]">{visit.vehicleDescription}</p>}
                 <p className="sf-muted mt-1 pl-4 text-[length:var(--sf-text-sm)]">
-                  <time dateTime={visit.appointmentDate} className="sf-figure text-[var(--sf-ink)]">{formatDateTime(visit.appointmentDate, visit.timezone)}</time>
+                  <time dateTime={visit.appointmentDate} className="sf-figure text-[var(--sf-ink)]">{formatDateTime(visit.appointmentDate, visit.timezone, locale)}</time>
                   {order && (
-                    <> · {order.invoiceNumber ? `Invoice ${order.invoiceNumber}` : 'Repair order'} {serviceOrderStatusLabel(order.status)}
-                      {order.grandTotalCents != null && <> · <span className="sf-figure text-[var(--sf-ink)]">{formatCents(order.grandTotalCents)}</span></>}
+                    <> · {order.invoiceNumber ? `${pt ? 'Nota fiscal' : 'Invoice'} ${order.invoiceNumber}` : (pt ? 'Ordem de serviço' : 'Repair order')} {serviceOrderStatusLabel(order.status, locale)}
+                      {order.grandTotalCents != null && <> · <span className="sf-figure text-[var(--sf-ink)]">{formatCents(order.grandTotalCents, null, locale)}</span></>}
                     </>
                   )}
                 </p>
@@ -53,21 +55,21 @@ export async function AccountServicePage() {
 
   return (
     <section className="pb-24">
-      <AccountHeader title="Service" />
+      <AccountHeader title={pt ? 'Oficina' : 'Service'} />
       {visits === null ? (
         <div className="mt-[var(--sf-space-lg)]">
-          <AccountError title="Service history couldn't be loaded." retryHref="/account/service" />
+          <AccountError title={pt ? 'Não foi possível carregar o histórico da oficina.' : "Service history couldn't be loaded."} retryHref="/account/service" />
         </div>
       ) : (
         <>
           <AccountSection
-            title="Upcoming"
-            action={<Link href="/service" className="sf-btn sf-btn-primary sf-btn-sm min-h-10 self-start">Book service</Link>}
+            title={pt ? 'Próximos agendamentos' : 'Upcoming'}
+            action={<Link href="/service" className="sf-btn sf-btn-primary sf-btn-sm min-h-10 self-start">{pt ? 'Agendar serviço' : 'Book service'}</Link>}
           >
-            {upcoming.length === 0 ? <AccountEmpty>No upcoming appointments.</AccountEmpty> : list(upcoming)}
+            {upcoming.length === 0 ? <AccountEmpty>{pt ? 'Nenhum agendamento próximo.' : 'No upcoming appointments.'}</AccountEmpty> : list(upcoming)}
           </AccountSection>
-          <AccountSection title="History">
-            {past.length === 0 ? <AccountEmpty>No past visits.</AccountEmpty> : list(past)}
+          <AccountSection title={pt ? 'Histórico' : 'History'}>
+            {past.length === 0 ? <AccountEmpty>{pt ? 'Nenhum atendimento anterior.' : 'No past visits.'}</AccountEmpty> : list(past)}
           </AccountSection>
         </>
       )}

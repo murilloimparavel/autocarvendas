@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, DeskHeader, DeskSection, Pill, Segmented, Status, type DeskTone } from '@/features/platform/components/desk'
 import { TAP } from '@/features/platform/catalog/components/formKit'
@@ -30,6 +31,8 @@ type QueueItem = {
 }
 
 export function ReportsPageClient({ initialData, initialTab, timeZone }: { initialData: ReportsData; initialTab: ReportsTab; timeZone: string }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [data, setData] = useState(initialData)
   const [tab, setTab] = useState<ReportsTab>(initialTab)
   const [runReportFilter, setRunReportFilter] = useState('all')
@@ -71,21 +74,21 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
       .filter(run => effectiveRunStatus(run) === 'failed')
       .map(run => ({
         key: `failed-${run.id}`,
-        status: 'Failed',
+        status: pt ? 'Falhou' : 'Failed',
         tone: 'bad' as DeskTone,
-        title: run.savedReport?.name || 'Deleted report',
-        detail: [run.errorCode, `Last run ${formatDateTime(run.completedAt || run.createdAt, timeZone)}`].filter(Boolean).join(' · '),
-        action: 'View runs',
+        title: run.savedReport?.name || (pt ? 'Relatório excluído' : 'Deleted report'),
+        detail: [run.errorCode, `${locale === 'pt-BR' ? 'Última execução' : 'Last run'} ${formatDateTime(run.completedAt || run.createdAt, timeZone, locale)}`].filter(Boolean).join(' · '),
+        action: pt ? 'Ver execuções' : 'View runs',
         reportId: run.savedReport?.id || 'all',
         runStatus: 'failed' as RunStatusFilter,
       })),
     ...queuedRuns.map(run => ({
       key: `queued-${run.id}`,
-      status: 'Queued',
+      status: pt ? 'Na fila' : 'Queued',
       tone: 'info' as DeskTone,
-      title: run.savedReport?.name || 'Deleted report',
-      detail: `Queued ${formatDateTime(run.createdAt, timeZone)}`,
-      action: 'Process',
+      title: run.savedReport?.name || (pt ? 'Relatório excluído' : 'Deleted report'),
+      detail: `${locale === 'pt-BR' ? 'Na fila' : 'Queued'} ${formatDateTime(run.createdAt, timeZone, locale)}`,
+      action: pt ? 'Processar' : 'Process',
       reportId: run.savedReport?.id || 'all',
       runStatus: 'queued' as RunStatusFilter,
     })),
@@ -93,38 +96,38 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
       .filter(report => report.active && report.schedule !== 'manual' && report.nextRunAt && new Date(report.nextRunAt).getTime() <= now && !queuedReportIds.has(report.id))
       .map(report => ({
         key: `due-${report.id}`,
-        status: 'Due',
+        status: pt ? 'Vencido' : 'Due',
         tone: 'warn' as DeskTone,
         title: report.name,
-        detail: `${reportTypeLabel(report.reportType)} · due ${formatDateTime(report.nextRunAt, timeZone)}`,
-        attention: 'Overdue',
-        action: 'Queue',
+        detail: `${reportTypeLabel(report.reportType, locale)} · ${locale === 'pt-BR' ? 'previsto para' : 'due'} ${formatDateTime(report.nextRunAt, timeZone, locale)}`,
+        attention: pt ? 'Atrasado' : 'Overdue',
+        action: pt ? 'Adicionar à fila' : 'Queue',
         reportId: 'all',
         runStatus: 'all' as RunStatusFilter,
       })),
   ]
 
   const stateWords = error
-    ? 'Unavailable'
+    ? (pt ? 'Indisponível' : 'Unavailable')
     : queue.length
-      ? `${queue.length} need${queue.length === 1 ? 's' : ''} you`
-      : 'Up to date'
+      ? (pt ? `${queue.length} pendência(s)` : `${queue.length} need${queue.length === 1 ? 's' : ''} you`)
+      : (pt ? 'Tudo em dia' : 'Up to date')
 
   const header = (
     <DeskHeader
-      title="Reports"
+      title={pt ? 'Relatórios' : 'Reports'}
       tone={error ? 'bad' : failedRuns ? 'bad' : queuedRuns.length ? 'info' : 'idle'}
       status={stateWords}
       meta={
         <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="font-medium text-foreground">{stateWords}</span>
-          <span>{countLabel(activeReports, 'active saved report')} · {countLabel(data.runs.data.length, 'run')} · {queuedRuns.length} queued</span>
+          <span>{pt ? `${activeReports} relatórios ativos` : countLabel(activeReports, 'active saved report')} · {pt ? `${data.runs.data.length} execuções` : countLabel(data.runs.data.length, 'run')} · {pt ? `${queuedRuns.length} na fila` : `${queuedRuns.length} queued`}</span>
         </span>
       }
       actions={
         <Pill variant="plain" className={TAP} onClick={reload} disabled={loading}>
           <RefreshCw className={loading ? 'animate-spin' : undefined} />
-          Refresh
+          {pt ? 'Atualizar' : 'Refresh'}
         </Pill>
       }
     />
@@ -132,17 +135,17 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
 
   return (
     <PageContainer
-      title="Reports"
+      title={pt ? 'Relatórios' : 'Reports'}
       header={header}
       breadcrumbs={[
-        { type: 'link', label: 'Dashboard', href: basePath },
-        { type: 'page', label: 'Platform' },
-        { type: 'page', label: 'Reports' },
+        { type: 'link', label: pt ? 'Painel' : 'Dashboard', href: basePath },
+        { type: 'page', label: pt ? 'Plataforma' : 'Platform' },
+        { type: 'page', label: pt ? 'Relatórios' : 'Reports' },
       ]}
     >
       <div className="min-w-0 max-w-full space-y-6 px-4 pb-24 md:px-6">
         {queue.length > 0 && (
-          <DeskSection id="reports-needs-you" title="Needs you" count={queue.length}>
+          <DeskSection id="reports-needs-you" title={pt ? 'Pendências' : 'Needs you'} count={queue.length}>
             <ul className="divide-y rounded-md border bg-card">
               {queue.map(item => (
                 <li key={item.key}>
@@ -173,14 +176,14 @@ export function ReportsPageClient({ initialData, initialTab, timeZone }: { initi
 
         <div className="space-y-4">
           <Segmented<ReportsTab>
-            label="Reports section"
+            label={pt ? 'Seção de relatórios' : 'Reports section'}
             value={tab}
             onChange={changeTab}
             options={[
-              { value: 'saved', label: 'Saved reports', count: data.savedReports.data.length },
-              { value: 'runs', label: 'Runs', count: data.runs.data.length, tone: failedRuns ? 'bad' : queuedRuns.length ? 'info' : undefined },
-              { value: 'audit', label: 'Audit' },
-              { value: 'outbox', label: 'Outbox' },
+              { value: 'saved', label: pt ? 'Relatórios salvos' : 'Saved reports', count: data.savedReports.data.length },
+              { value: 'runs', label: pt ? 'Execuções' : 'Runs', count: data.runs.data.length, tone: failedRuns ? 'bad' : queuedRuns.length ? 'info' : undefined },
+              { value: 'audit', label: pt ? 'Auditoria' : 'Audit' },
+              { value: 'outbox', label: pt ? 'Fila de envio' : 'Outbox' },
             ]}
           />
           {tab === 'saved' && (

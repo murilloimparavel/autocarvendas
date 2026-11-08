@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
@@ -18,8 +19,9 @@ import {
   STOCK_LABEL,
   STOCK_TONE,
   available,
-  formatCents,
-  formatDateTime,
+  formatCents as formatCentsBase,
+  formatDateTime as formatDateTimeBase,
+  partsLabel,
   poLines,
   stockState,
   type MovementType,
@@ -97,6 +99,7 @@ export function PartDetailPageClient({
   initialPurchaseOrders,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   id: string
   initialPart: Part | null
@@ -105,7 +108,12 @@ export function PartDetailPageClient({
   initialPurchaseOrders: PurchaseOrder[]
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string) => formatDateTimeBase(value, zone, locale)
   const [part, setPart] = useState(initialPart)
   const [movements, setMovements] = useState(initialMovements)
   const [repairOrders, setRepairOrders] = useState(initialRepairOrders)
@@ -127,7 +135,7 @@ export function PartDetailPageClient({
       setPurchaseOrders(response.data.purchaseOrders || [])
       setError(null)
     } else {
-      setError(response.success ? 'Part not found' : response.error)
+      setError(response.success ? (pt ? 'Peça não encontrada' : 'Part not found') : response.error)
     }
     setLoading(false)
   }
@@ -143,21 +151,21 @@ export function PartDetailPageClient({
   const visibleMovements = ledgerFilter === 'all' ? movements : movements.filter(movement => LEDGER_GROUP[movement.movementType] === ledgerFilter)
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'link' as const, label: 'Parts', href: `${basePath}/platform/parts` },
-    { type: 'page' as const, label: part?.partNumber || 'Part' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'link' as const, label: pt ? 'Peças' : 'Parts', href: `${basePath}/platform/parts` },
+    { type: 'page' as const, label: part?.partNumber || (pt ? 'Peça' : 'Part') },
   ]
 
   if (!part) {
     return (
-      <PageContainer title="Part" breadcrumbs={breadcrumbs} header={<DeskHeader title="Part" tone="bad" status="Unavailable" />}>
+      <PageContainer title={pt ? 'Peça' : 'Part'} breadcrumbs={breadcrumbs} header={<DeskHeader title={pt ? 'Peça' : 'Part'} tone="bad" status={pt ? 'Indisponível' : 'Unavailable'} />}>
         <div className="min-w-0 max-w-full space-y-4 px-4 pb-24 md:px-6">
           <Notice tone="bad">
-            <p className="font-medium">Part unavailable</p>
-            <p className="mt-0.5 text-muted-foreground">{error || 'Part not found'}</p>
+            <p className="font-medium">{pt ? 'Peça indisponível' : 'Part unavailable'}</p>
+            <p className="mt-0.5 text-muted-foreground">{error || (pt ? 'Peça não encontrada' : 'Part not found')}</p>
             <Track className="mt-2">
-              <Pill size="sm" className="max-sm:h-10" onClick={load} disabled={loading}>Retry</Pill>
-              <Pill size="sm" className="max-sm:h-10" asChild><Link href={`${basePath}/platform/parts`}>Back to parts</Link></Pill>
+              <Pill size="sm" className="max-sm:h-10" onClick={load} disabled={loading}>{pt ? 'Tentar novamente' : 'Retry'}</Pill>
+              <Pill size="sm" className="max-sm:h-10" asChild><Link href={`${basePath}/platform/parts`}>{pt ? 'Voltar para peças' : 'Back to parts'}</Link></Pill>
             </Track>
           </Notice>
         </div>
@@ -176,11 +184,11 @@ export function PartDetailPageClient({
     <DeskHeader
       title={<><span className="font-mono">{part.partNumber}</span> <span className="font-normal">{part.description}</span></>}
       tone={STOCK_TONE[state]}
-      status={STOCK_LABEL[state]}
+      status={partsLabel(locale, STOCK_LABEL[state])}
       meta={
         <span className="flex flex-wrap items-baseline gap-x-2">
-          <Status tone={STOCK_TONE[state]}>{STOCK_LABEL[state]}</Status>
-          <span>· {part.binLocation ? <>Bin <Code>{part.binLocation}</Code></> : 'No bin'}</span>
+          <Status tone={STOCK_TONE[state]}>{partsLabel(locale, STOCK_LABEL[state])}</Status>
+          <span>· {part.binLocation ? <>{pt ? 'Endereço' : 'Bin'} <Code>{part.binLocation}</Code></> : (pt ? 'Sem endereço' : 'No bin')}</span>
           {part.supplier && <span>· {part.supplier}</span>}
           {part.rooftop?.name && <span>· {part.rooftop.name}</span>}
         </span>
@@ -188,15 +196,15 @@ export function PartDetailPageClient({
       actions={
         <>
           <Pill variant="plain" asChild className="h-11 sm:h-8">
-            <Link href={`${basePath}/platform/parts`}><ArrowLeft />Parts</Link>
+            <Link href={`${basePath}/platform/parts`}><ArrowLeft />{pt ? 'Peças' : 'Parts'}</Link>
           </Pill>
           <Pill variant="plain" onClick={load} disabled={loading} className="h-11 sm:h-8">
             <RefreshCw className={loading ? 'animate-spin' : undefined} />
-            Refresh
+            {pt ? 'Atualizar' : 'Refresh'}
           </Pill>
           <Pill onClick={() => setEditing(true)} className="h-11 sm:h-8">
             <Pencil />
-            Edit
+            {pt ? 'Editar' : 'Edit'}
           </Pill>
           {receive && (
             <Pill
@@ -223,7 +231,7 @@ export function PartDetailPageClient({
               <Notice tone="ok">
                 <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
                   <p className="min-w-0">{notice}</p>
-                  <Pill size="sm" variant="plain" className="max-sm:h-10" onClick={() => setNotice(null)}>Dismiss</Pill>
+                  <Pill size="sm" variant="plain" className="max-sm:h-10" onClick={() => setNotice(null)}>{pt ? 'Fechar' : 'Dismiss'}</Pill>
                 </div>
               </Notice>
             )}
@@ -231,16 +239,16 @@ export function PartDetailPageClient({
           </div>
         )}
 
-        <DeskSection title="Stock">
+        <DeskSection title={pt ? 'Estoque' : 'Stock'}>
           <div className="space-y-3">
             <ReadoutStrip>
-              <Readout label="Available" value={available(part)} tone={STOCK_TONE[state]} sub={STOCK_LABEL[state]} />
-              <Readout label="On hand" value={part.quantity ?? 0} />
-              <Readout label="Committed" value={part.committedQuantity ?? 0} />
-              <Readout label="On order" value={part.onOrderQuantity ?? 0} />
-              <Readout label="Reorder point" value={part.minimumQuantity || '-'} />
+              <Readout label={pt ? 'Disponível' : 'Available'} value={available(part)} tone={STOCK_TONE[state]} sub={partsLabel(locale, STOCK_LABEL[state])} />
+              <Readout label={pt ? 'Em estoque' : 'On hand'} value={part.quantity ?? 0} />
+              <Readout label={pt ? 'Reservadas' : 'Committed'} value={part.committedQuantity ?? 0} />
+              <Readout label={pt ? 'Em pedido' : 'On order'} value={part.onOrderQuantity ?? 0} />
+              <Readout label={pt ? 'Ponto de reposição' : 'Reorder point'} value={part.minimumQuantity || '-'} />
             </ReadoutStrip>
-            <Track className="flex-wrap" aria-label="Record stock movement">
+            <Track className="flex-wrap" aria-label={pt ? 'Registrar movimentação de estoque' : 'Record stock movement'}>
               {secondary.map(action => (
                 <Pill
                   key={action.type}
@@ -262,9 +270,9 @@ export function PartDetailPageClient({
         </DeskSection>
 
         <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-          <DeskSection title="Ledger" count={movements.length} id="part-ledger">
+          <DeskSection title={pt ? 'Movimentações' : 'Ledger'} count={movements.length} id="part-ledger">
             <Segmented<LedgerFilter>
-              label="Filter ledger"
+              label={pt ? 'Filtrar movimentações' : 'Filter ledger'}
               value={ledgerFilter}
               onChange={setLedgerFilter}
               size="sm"
@@ -277,18 +285,18 @@ export function PartDetailPageClient({
               ]}
             />
             {visibleMovements.length === 0 ? (
-              <Panel className="border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">No movements</Panel>
+              <Panel className="border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">{pt ? 'Nenhuma movimentação' : 'No movements'}</Panel>
             ) : (
               <DeskTable aria-labelledby="part-ledger">
                 <thead>
                   <tr>
-                    <Th priority={2}>When</Th>
-                    <Th>Movement</Th>
-                    <Th priority={3}>Reference</Th>
-                    <Th align="right">Qty</Th>
-                    <Th align="right" priority={2}>On hand</Th>
-                    <Th align="right" priority={3}>Committed</Th>
-                    <Th align="right" priority={3}>On order</Th>
+                    <Th priority={2}>{pt ? 'Data' : 'When'}</Th>
+                    <Th>{pt ? 'Movimentação' : 'Movement'}</Th>
+                    <Th priority={3}>{pt ? 'Referência' : 'Reference'}</Th>
+                    <Th align="right">{pt ? 'Qtd.' : 'Qty'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Em estoque' : 'On hand'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Reservadas' : 'Committed'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Em pedido' : 'On order'}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -316,9 +324,9 @@ export function PartDetailPageClient({
           </DeskSection>
 
           <div className="min-w-0 space-y-8">
-            <DeskSection title="Open purchase orders" count={openPos.length}>
+            <DeskSection title={pt ? 'Pedidos de compra em aberto' : 'Open purchase orders'} count={openPos.length}>
               {openPos.length === 0 ? (
-                <p className="text-[13px] text-muted-foreground">None</p>
+                <p className="text-[13px] text-muted-foreground">{pt ? 'Nenhum' : 'None'}</p>
               ) : (
                 <Panel className="divide-y">
                   {openPos.map(order => {
@@ -330,7 +338,7 @@ export function PartDetailPageClient({
                           <span className="block truncate text-xs text-muted-foreground">{order.supplier}</span>
                         </span>
                         <span className="flex shrink-0 flex-col items-end gap-0.5">
-                          <Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status>
+                          <Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status>
                           {line && <span className="text-xs tabular-nums text-muted-foreground">{line.receivedQuantity} of {line.quantity} received</span>}
                         </span>
                       </Link>
@@ -339,7 +347,7 @@ export function PartDetailPageClient({
                 </Panel>
               )}
             </DeskSection>
-            <DeskSection title="Details">
+            <DeskSection title={pt ? 'Detalhes' : 'Details'}>
               <Facts
                 items={[
                   { label: 'Bin', value: part.binLocation || '-', mono: true },
@@ -363,7 +371,7 @@ export function PartDetailPageClient({
           repairOrders={rooftopRos}
           onOpenChange={open => { if (!open) setMovementType(null) }}
           onSaved={async () => {
-            setNotice(`${MOVEMENT_LABEL[movementType || ''] || 'Movement'} recorded`)
+            setNotice(pt ? `${MOVEMENT_LABEL[movementType || ''] || 'Movimentação'} registrada` : `${MOVEMENT_LABEL[movementType || ''] || 'Movement'} recorded`)
             setMovementType(null)
             await load()
           }}
@@ -372,9 +380,10 @@ export function PartDetailPageClient({
           open={editing}
           part={part}
           rooftops={part.rooftop ? [part.rooftop] : []}
+          currencyCode={currencyCode}
           onOpenChange={setEditing}
           onSaved={async () => {
-            setNotice('Part saved')
+            setNotice(pt ? 'Peça salva' : 'Part saved')
             setEditing(false)
             await load()
           }}

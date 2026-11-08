@@ -19,8 +19,17 @@ export function statusTone(status: string | null | undefined): Tone {
   return 'warn'
 }
 
-export function statusLabel(status: string | null | undefined) {
+export function statusLabel(status: string | null | undefined, locale: 'pt-BR' | 'en-US' = 'en-US') {
   const label = String(status || '').trim().replaceAll('-', ' ').replaceAll('_', ' ')
+  if (locale === 'pt-BR') {
+    const normalized = label.toLowerCase()
+    const labels: Record<string, string> = {
+      completed: 'Concluído', appraised: 'Avaliado', approved: 'Aprovado', funded: 'Financiado', won: 'Ganho', 'closed won': 'Ganho', sold: 'Vendido', delivered: 'Entregue', captured: 'Pago', fulfilled: 'Concluído', paid: 'Pago', invoiced: 'Faturado', financed: 'Financiado',
+      cancelled: 'Cancelado', canceled: 'Cancelado', declined: 'Recusado', rejected: 'Rejeitado', lost: 'Perdido', 'closed lost': 'Perdido', 'no show': 'Não compareceu', expired: 'Expirado', failed: 'Falhou', refunded: 'Reembolsado', closed: 'Encerrado',
+      'checked in': 'Recebido na oficina', 'in progress': 'Em andamento', 'waiting parts': 'Aguardando peças', contacted: 'Contatado', qualified: 'Qualificado', 'in review': 'Em análise', 'under review': 'Em análise', reviewing: 'Em análise', 'submitted to lender': 'Enviado à financeira', conditional: 'Aprovado com condições', arrived: 'Chegou', ready: 'Pronto', pending: 'Pendente', authorized: 'Autorizado', 'partially refunded': 'Parcialmente reembolsado', submitted: 'Enviado', negotiating: 'Em negociação', 'test drive scheduled': 'Test-drive agendado', estimate: 'Orçamento',
+    }
+    return labels[normalized] || (label ? label.charAt(0).toUpperCase() + label.slice(1) : 'Status indisponível')
+  }
   return label ? label.charAt(0).toUpperCase() + label.slice(1) : 'Status unavailable'
 }
 
@@ -51,34 +60,34 @@ export function parseCustomerRequestRef(ref: string): { kind: CustomerRequestKin
   return { kind, id }
 }
 
-export function formatDateTime(value: string | null | undefined, timeZone?: string | null) {
+export function formatDateTime(value: string | null | undefined, timeZone?: string | null, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
   // dateStyle/timeStyle can't be combined with timeZoneName (Intl throws), so spell the fields out.
   const fields: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }
   try {
-    return date.toLocaleString('en-US', { ...fields, timeZone: timeZone || undefined })
+    return date.toLocaleString(locale, { ...fields, timeZone: timeZone || undefined })
   } catch {
     // An unknown stored time zone falls back to the server's zone rather than failing the page.
-    return date.toLocaleString('en-US', fields)
+    return date.toLocaleString(locale, fields)
   }
 }
 
-export function formatDate(value: string | null | undefined, timeZone?: string | null) {
+export function formatDate(value: string | null | undefined, timeZone?: string | null, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return null
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return null
   try {
-    return date.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: timeZone || undefined })
+    return date.toLocaleDateString(locale, { dateStyle: 'medium', timeZone: timeZone || undefined })
   } catch {
-    return date.toLocaleDateString('en-US', { dateStyle: 'medium' })
+    return date.toLocaleDateString(locale, { dateStyle: 'medium' })
   }
 }
 
-export function formatCents(cents: number | null | undefined, currencyCode?: string | null) {
+export function formatCents(cents: number | null | undefined, currencyCode?: string | null, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (cents === null || cents === undefined || !Number.isFinite(Number(cents))) return null
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: storefrontCurrency(currencyCode) }).format(Number(cents) / 100)
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: storefrontCurrency(currencyCode) }).format(Number(cents) / 100)
 }
 
 export type CustomerRequestRow = {
@@ -180,8 +189,9 @@ export type CustomerServiceOrder = {
 export type CustomerEmailLink = { email: string; linkedCustomerCount: number; newlyLinkedCount?: number | null; verified: boolean }
 
 // RO statuses read as the customer sees them; "paid" means settled outside the app.
-export function serviceOrderStatusLabel(status: string) {
+export function serviceOrderStatusLabel(status: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
+  if (locale === 'pt-BR') return status === 'estimate' ? 'Orçamento' : statusLabel(status, locale)
   if (status === 'estimate') return 'Estimate'
   if (status === 'paid') return 'Paid'
-  return statusLabel(status)
+  return statusLabel(status, locale)
 }

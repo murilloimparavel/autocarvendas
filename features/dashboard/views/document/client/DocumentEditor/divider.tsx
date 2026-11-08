@@ -1,3 +1,4 @@
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import React, { Fragment, useMemo } from "react"
 import { Minus } from "lucide-react"
 import {
@@ -28,16 +29,19 @@ function DividerButton() {
   )
 }
 
-export const dividerButton = (
+export function DividerToolbarButton() {
+  const { locale } = useLocale()
+  return (
   <Tooltip>
     <TooltipTrigger asChild>
       <DividerButton />
     </TooltipTrigger>
     <TooltipContent side="bottom">
       <span className="flex items-center gap-2">
-        <span>Divider</span>
+        <span>{locale === 'pt-BR' ? 'Divisor' : 'Divider'}</span>
         <KeyboardInTooltip>---</KeyboardInTooltip>
       </span>
     </TooltipContent>
   </Tooltip>
-)
+  )
+}

@@ -5,6 +5,8 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { localizeValidationMessage } from '@/features/i18n/validation'
 import { Input } from '@/components/ui/input'
 import { FieldContainer } from '@/components/ui/field-container'
 import { FieldLabel } from '@/components/ui/field-label'
@@ -96,6 +98,8 @@ export function Field({
   forceValidation,
   isRequired = false,
 }: DecimalFieldProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isDirty, setDirty] = useState(false)
   const isReadOnly = !onChange
 
@@ -103,7 +107,8 @@ export function Field({
     return validate_(value, field.validation, isRequired, field.label)
   }
 
-  const errorMessage = (forceValidation || isDirty) && validate(value)
+  const rawErrorMessage = (forceValidation || isDirty) && validate(value)
+  const errorMessage = rawErrorMessage ? localizeValidationMessage(rawErrorMessage, locale) : undefined
 
   return (
     <FieldContainer>
@@ -127,7 +132,7 @@ export function Field({
         }}
         value={value.value ?? ''}
         className={errorMessage ? 'border-red-500 shadow-xs' : 'shadow-xs'}
-        placeholder="Enter decimal number..."
+        placeholder={pt ? 'Digite um número decimal…' : 'Enter decimal number...'}
       />
       {errorMessage && (
         <p className="text-sm text-red-600" role="alert">{errorMessage}</p>
@@ -187,6 +192,7 @@ export function controller(
     validate: (value, opts) => validate(value, opts) === undefined,
     filter: {
       Filter: ({ value, onChange, type, autoFocus }: any) => {
+        const { locale } = useLocale()
         if (type === 'empty' || type === 'not_empty') return null
 
         return (
@@ -200,7 +206,7 @@ export function controller(
               const inputValue = e.target.value === '' ? null : e.target.value
               onChange(inputValue)
             }}
-            placeholder="Enter decimal number..."
+            placeholder={locale === 'pt-BR' ? 'Digite um número decimal…' : 'Enter decimal number...'}
           />
         )
       },

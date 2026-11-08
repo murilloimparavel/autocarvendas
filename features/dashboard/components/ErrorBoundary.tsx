@@ -19,6 +19,7 @@ function isNextRouterError(error: unknown): boolean {
 
 interface Props {
   children: ReactNode
+  locale?: 'pt-BR' | 'en-US'
 }
 
 interface State {
@@ -53,9 +54,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full">
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Something went wrong</AlertTitle>
+              <AlertTitle>{this.props.locale === 'pt-BR' ? 'Algo deu errado' : 'Something went wrong'}</AlertTitle>
               <AlertDescription className="mt-2">
-                An unexpected error occurred in the dashboard. Please try refreshing the page.
+                {this.props.locale === 'pt-BR' ? 'Ocorreu um erro inesperado no painel. Atualize a página e tente novamente.' : 'An unexpected error occurred in the dashboard. Please try refreshing the page.'}
               </AlertDescription>
             </Alert>
             
@@ -64,13 +65,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={() => window.location.reload()}
                 variant="outline"
               >
-                Refresh Page
+                {this.props.locale === 'pt-BR' ? 'Atualizar página' : 'Refresh Page'}
               </Button>
               <Button 
                 onClick={() => this.setState({ hasError: false, error: undefined })}
                 variant="default"
               >
-                Try Again
+                {this.props.locale === 'pt-BR' ? 'Tentar novamente' : 'Try Again'}
               </Button>
             </div>
             

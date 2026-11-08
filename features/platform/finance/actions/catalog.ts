@@ -12,6 +12,7 @@ export async function getFinanceProductCatalog() {
     financeProducts: CatalogProduct[]
     rooftops: CatalogRooftop[]
     authenticatedItem: { id: string; rooftopMemberships?: Array<{ rooftop: { id: string } | null }> } | null
+    storefrontProfile: { currencyCode: string | null } | null
   }>(`
     query FinanceProductCatalog {
       financeProducts(orderBy: [{ name: asc }], take: 500) {
@@ -22,13 +23,14 @@ export async function getFinanceProductCatalog() {
       authenticatedItem {
         ... on User { id rooftopMemberships(where: { status: { equals: "active" } }, take: 1) { rooftop { id } } }
       }
+      storefrontProfile { currencyCode }
     }
   `, {}, { cache: 'no-store' })
   if (!response.success) return response
   const { financeProducts, rooftops, authenticatedItem } = response.data
   const memberRooftop = authenticatedItem?.rooftopMemberships?.[0]?.rooftop?.id
   const sessionRooftopId = rooftops.find(rooftop => rooftop.id === memberRooftop)?.id ?? rooftops[0]?.id ?? null
-  return { success: true as const, data: { products: financeProducts, rooftops, sessionRooftopId } }
+  return { success: true as const, data: { products: financeProducts, rooftops, sessionRooftopId, currencyCode: response.data.storefrontProfile?.currencyCode || 'USD' } }
 }
 
 export async function saveFinanceProduct(data: {

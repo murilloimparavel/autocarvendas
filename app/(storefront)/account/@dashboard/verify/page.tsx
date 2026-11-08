@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 
 import { AccountVerifyEmailPage } from '@/features/storefront/screens/AccountVerifyEmailPage'
 
-export const metadata: Metadata = { title: 'Verify email' }
+export async function generateMetadata(): Promise<Metadata> {
+  const { getRequestLocale } = await import('@/features/i18n/server')
+  return { title: (await getRequestLocale()) === 'pt-BR' ? 'Confirmar e-mail' : 'Verify email' }
+}
 
 type Props = { searchParams: Promise<{ token?: string | string[] }> }
 

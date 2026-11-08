@@ -6,6 +6,7 @@ import { getAuthHeaders } from '@/features/dashboard/lib/cookies';
 import { GraphQLClient } from 'graphql-request';
 import { PUBLIC_REQUEST_ERROR, publicGraphQLErrorMessage, safeErrorSummary } from './security';
 import { getServerGraphQLTarget } from '@/features/dashboard/lib/getBaseUrl';
+import { getRequestLocale } from '@/features/i18n/server'
 
 // Define response type for keystoneClient
 export type KeystoneResponse<T = any> =
@@ -40,13 +41,15 @@ export async function keystoneClient<T = any>(
   // Allow passing standard RequestInit options, including 'cache'
   requestOptions?: RequestInit
 ): Promise<KeystoneResponse<T>> {
+  let locale: Awaited<ReturnType<typeof getRequestLocale>> = 'en-US'
   try {
+    locale = await getRequestLocale()
     // Check if we have any file uploads in the variables
     const hasUploads = checkForFileUploads(variables);
 
     if (hasUploads) {
       // If we found files, use the multipart implementation
-      return await _fetchGraphQLWithFiles(query, variables);
+      return await _fetchGraphQLWithFiles(query, variables, locale);
     }
 
     // Create GraphQL client with auth headers
@@ -62,7 +65,7 @@ export async function keystoneClient<T = any>(
 
   } catch (error) {
     console.error("Error fetching GraphQL data:", safeErrorSummary(error));
-    return { success: false, error: publicGraphQLErrorMessage(error) };
+    return { success: false, error: publicGraphQLErrorMessage(error, locale) };
   }
 }
 
@@ -72,7 +75,8 @@ export async function keystoneClient<T = any>(
  */
 async function _fetchGraphQLWithFiles(
   query: string,
-  variables: Record<string, unknown> = {}
+  variables: Record<string, unknown> = {},
+  locale: Awaited<ReturnType<typeof getRequestLocale>> = 'en-US'
 ): Promise<any> {
   try {
     const { endpoint, fetch: internalFetch } = await getServerGraphQLTarget();
@@ -127,7 +131,7 @@ async function _fetchGraphQLWithFiles(
     if (!response.ok) {
       return {
         success: false,
-        error: PUBLIC_REQUEST_ERROR
+        error: locale === 'pt-BR' ? 'Não foi possível concluir a solicitação. Tente novamente.' : PUBLIC_REQUEST_ERROR
       };
     }
 
@@ -135,7 +139,7 @@ async function _fetchGraphQLWithFiles(
 
     if (json.errors) {
       console.error("GraphQL Errors:", safeErrorSummary({ response: { errors: json.errors } }));
-      return { success: false, error: publicGraphQLErrorMessage({ response: { errors: json.errors } }) };
+      return { success: false, error: publicGraphQLErrorMessage({ response: { errors: json.errors } }, locale) };
     }
 
     return {
@@ -144,7 +148,7 @@ async function _fetchGraphQLWithFiles(
     };
   } catch (error) {
     console.error("Error uploading files:", safeErrorSummary(error));
-    return { success: false, error: PUBLIC_REQUEST_ERROR };
+    return { success: false, error: locale === 'pt-BR' ? 'Não foi possível concluir a solicitação. Tente novamente.' : PUBLIC_REQUEST_ERROR };
   }
 }
 

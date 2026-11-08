@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { signOut } from "@/features/dashboard/actions/auth";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface User {
   id: string;
@@ -44,6 +45,8 @@ interface UserProfileClientProps {
 
 export function UserProfileClient({ user }: UserProfileClientProps) {
   const { isMobile } = useSidebar();
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
 
   const initials = user.name
     ? user.name
@@ -69,7 +72,7 @@ export function UserProfileClient({ user }: UserProfileClientProps) {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-semibold">
-                  {user.name || "User"}
+                  {user.name || (pt ? "Usuário" : "User")}
                 </span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
@@ -97,7 +100,7 @@ export function UserProfileClient({ user }: UserProfileClientProps) {
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {user.name || "User"}
+                    {user.name || (pt ? "Usuário" : "User")}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
                     {user.email}
@@ -126,7 +129,7 @@ export function UserProfileClient({ user }: UserProfileClientProps) {
               >
                 <div className="flex items-center gap-3">
                   <Palette className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Theme</span>
+                <span className="text-sm">{pt ? 'Tema' : 'Theme'}</span>
                 </div>
                 <ThemeSwitcher className="h-6" />
               </DropdownMenuItem>
@@ -135,7 +138,7 @@ export function UserProfileClient({ user }: UserProfileClientProps) {
             <form action={signOut}>
               <button type="submit" className="flex items-center gap-3 w-full px-2 py-1.5 text-sm hover:bg-accent rounded-sm">
                 <LogOut className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Log out</span>
+                <span className="text-sm">{pt ? 'Sair' : 'Log out'}</span>
               </button>
             </form>
           </DropdownMenuContent>

@@ -2,6 +2,26 @@ import { SERVICE_APPOINTMENT_TRANSITIONS } from '@/features/keystone/lifecycle/s
 import type { DeskTone } from '@/features/platform/components/desk'
 import { recordReference } from '@/features/platform/lib/format'
 
+const serviceTermsPt: Record<string, string> = {
+  Scheduled: 'Agendado', 'Checked in': 'Recepcionado', 'In progress': 'Em andamento',
+  'Waiting parts': 'Aguardando peças', Completed: 'Concluído', Cancelled: 'Cancelado',
+  'Check in': 'Recepcionar', 'Start work': 'Iniciar serviço', 'Complete': 'Concluir', Cancel: 'Cancelar',
+  Estimate: 'Orçamento', Approved: 'Aprovado', Invoiced: 'Faturado', Paid: 'Pago',
+  'Approve repair': 'Aprovar serviço', 'Start repair': 'Iniciar serviço',
+  'Complete repair': 'Concluir serviço', Invoice: 'Faturar', 'Mark paid': 'Marcar como pago',
+  Open: 'Aberto', Dispatched: 'Designado', Paused: 'Pausado', Dispatch: 'Designar', Start: 'Iniciar',
+  Labor: 'Mão de obra', Part: 'Peça', Sublet: 'Serviço terceirizado', Maintenance: 'Manutenção',
+  Repair: 'Reparo', Warranty: 'Garantia', Recall: 'Recall', Inspection: 'Inspeção',
+  Diagnostic: 'Diagnóstico', None: 'Nenhum', Waiter: 'Aguardar na loja', Shuttle: 'Transporte',
+  Loaner: 'Veículo cortesia', Rental: 'Locação', 'Drop-off': 'Deixar o veículo',
+  Customer: 'Cliente', Internal: 'Interno', Pending: 'Pendente', Authorized: 'Autorizado', Declined: 'Recusado',
+}
+
+/** Translate only known interface enum labels; never pass customer or staff authored text here. */
+export function serviceLabel(locale: 'pt-BR' | 'en-US', label: string) {
+  return locale === 'pt-BR' ? serviceTermsPt[label] || label : label
+}
+
 export const APPOINTMENT_STATUSES = ['scheduled', 'checked-in', 'in-progress', 'waiting-parts', 'completed', 'cancelled']
 
 export const APPOINTMENT_STATUS_LABELS: Record<string, string> = {

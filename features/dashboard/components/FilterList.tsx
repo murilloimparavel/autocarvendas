@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { enhanceFields } from '../utils/enhanceFields'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface FilterListProps {
   list: any
@@ -40,6 +41,7 @@ interface FilterWrapperProps {
 
 export function FilterList({ list }: FilterListProps) {
   const searchParams = useSearchParams()
+  const { locale } = useLocale()
   
   // Get enhanced fields using dashboard's pattern
   const enhancedFields = useMemo(() => {
@@ -106,7 +108,8 @@ export function FilterList({ list }: FilterListProps) {
             return field.controller.filter.Label({
               label: field.label,
               type,
-              value
+              value,
+              locale,
             })
           }
           return `${field.label} ${type} ${value}`
@@ -145,6 +148,7 @@ export function FilterList({ list }: FilterListProps) {
 }
 
 function FilterPill({ filter, field }: FilterPillProps) {
+  const { locale } = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -157,11 +161,12 @@ function FilterPill({ filter, field }: FilterPillProps) {
       return field.controller.filter.Label({
         label: filterTypeLabel,
         type: filter.type,
-        value: filter.value
+        value: filter.value,
+        locale,
       })
     }
     return `${field.label} ${filter.type} ${filter.value}`
-  }, [field, filter])
+  }, [field, filter, locale])
 
   const onRemove = () => {
     const newSearchParams = new URLSearchParams(searchParams?.toString() ?? '')
@@ -227,6 +232,8 @@ function FilterWrapper({ field, operator, value, onChange }: FilterWrapperProps)
 }
 
 function EditDialog({ filter, field, onClose }: EditDialogProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -267,10 +274,10 @@ function EditDialog({ filter, field, onClose }: EditDialogProps) {
       <Separator />
       <div className="flex justify-between gap-2 px-2 pb-2">
         <Button variant="outline" size="sm" onClick={onClose}>
-          Cancel
+          {pt ? 'Cancelar' : 'Cancel'}
         </Button>
         <Button size="sm" type="submit">
-          Save
+          {pt ? 'Salvar' : 'Save'}
         </Button>
       </div>
     </form>

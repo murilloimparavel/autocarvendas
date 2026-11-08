@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createInitialUser, signIn } from "@/features/dashboard/actions";
 import { Logo } from "@/features/dashboard/components/Logo";
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { LanguageSwitcher } from '@/features/i18n/LanguageSwitcher'
 
 type ActionState = {
   message: string | null;
@@ -24,6 +26,7 @@ type ActionState = {
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { t } = useLocale()
 
   return (
     <Button
@@ -34,7 +37,7 @@ function SubmitButton() {
       {pending ? (
         <RiLoader2Fill className="size-4 shrink-0 animate-spin" />
       ) : (
-        "Create account"
+        t('createAccount')
       )}
     </Button>
   );
@@ -50,6 +53,7 @@ const initialState: ActionState = {
 };
 
 export function InitPage() {
+  const { t, locale } = useLocale()
   const [showPassword, setShowPassword] = useState(false);
   const [state, formAction] = useActionState(
     async (prevState: ActionState, formData: FormData) => {
@@ -93,11 +97,12 @@ export function InitPage() {
         <div className="flex items-center space-x-1.5">
           <Logo aria-hidden="true" />
         </div>
+        <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
         <h1 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
-          Create admin account
+          {t('adminAccountTitle')}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground">
-          Set up your admin account to get started.
+          {t('adminAccountDescription')}
         </p>
 
         <form action={formAction} className="mt-8 space-y-4">
@@ -106,14 +111,14 @@ export function InitPage() {
               htmlFor="name"
               className="text-sm font-medium text-foreground dark:text-foreground"
             >
-              Name
+              {t('fullName')}
             </Label>
             <Input
               type="text"
               id="name"
               name="name"
               autoComplete="name"
-              placeholder="Enter your name"
+              placeholder={t('enterYourName')}
               className="mt-2 bg-muted/40"
               defaultValue={state.formData.name}
               required
@@ -124,14 +129,14 @@ export function InitPage() {
               htmlFor="email"
               className="text-sm font-medium text-foreground dark:text-foreground"
             >
-              Email
+              {t('email')}
             </Label>
             <Input
               type="email"
               id="email"
               name="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={locale === 'pt-BR' ? 'voce@exemplo.com.br' : 'you@example.com'}
               className="mt-2 bg-muted/40"
               defaultValue={state.formData.email}
               required
@@ -142,7 +147,7 @@ export function InitPage() {
               htmlFor="password"
               className="text-sm font-medium text-foreground dark:text-foreground"
             >
-              Password
+              {t('password')}
             </Label>
             <div className="relative mt-2">
               <Input
@@ -165,6 +170,7 @@ export function InitPage() {
                 ) : (
                   <Eye className="h-4 w-4" aria-hidden="true" />
                 )}
+                <span className="sr-only">{showPassword ? t('hidePassword') : t('showPassword')}</span>
               </button>
             </div>
           </div>
@@ -178,7 +184,7 @@ export function InitPage() {
           >
             <div className="flex flex-col gap-1">
               <h2 className="uppercase tracking-wider font-semibold text-sm">
-                Error
+                {t('error')}
               </h2>
               <span className="break-all text-sm opacity-75 font-normal">
                 {state.message}

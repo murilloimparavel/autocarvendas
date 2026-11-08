@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Code, Notice, Panel, Pill, Track } from '@/features/platform/components/desk'
 import { EmptyRow, Field, TAP, TAP_INPUT } from '@/features/platform/catalog/components/formKit'
@@ -24,6 +25,8 @@ function JsonBlock({ label, value }: { label: string; value: unknown }) {
 }
 
 export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; timeZone: string }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [filters, setFilters] = useState<Filters>(EMPTY)
   const [events, setEvents] = useState<AuditEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,9 +40,9 @@ export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; 
     const errors: Record<string, string> = {}
     const since = next.from ? zonedDayStart(next.from, timeZone) : null
     const until = next.to ? zonedDayStart(next.to, timeZone, 1) : null
-    if (next.from && !since) errors.from = 'Date is invalid'
-    if (next.to && !until) errors.to = 'Date is invalid'
-    if (since && until && since >= until) errors.to = 'To must be on or after From'
+    if (next.from && !since) errors.from = pt ? 'Informe uma data válida.' : 'Date is invalid'
+    if (next.to && !until) errors.to = pt ? 'Informe uma data válida.' : 'Date is invalid'
+    if (since && until && since >= until) errors.to = pt ? 'A data final deve ser igual ou posterior à inicial.' : 'To must be on or after From'
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
     setLoading(true); setError(null)
@@ -79,28 +82,28 @@ export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; 
     <div className="space-y-4">
       <form noValidate onSubmit={event => { event.preventDefault(); void run(filters) }} className="space-y-3">
         <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Field id="audit-type" label="Record type">
-            <Input id="audit-type" className={TAP_INPUT} list="audit-type-options" maxLength={100} placeholder="Deal" value={filters.aggregateType} onChange={event => set('aggregateType', event.target.value)} />
+          <Field id="audit-type" label={pt ? 'Tipo de registro' : 'Record type'}>
+            <Input id="audit-type" className={TAP_INPUT} list="audit-type-options" maxLength={100} placeholder={pt ? 'Negociação' : 'Deal'} value={filters.aggregateType} onChange={event => set('aggregateType', event.target.value)} />
             <datalist id="audit-type-options">{knownTypes.map(type => <option key={type} value={type} />)}</datalist>
           </Field>
-          <Field id="audit-id" label="Record ID">
+          <Field id="audit-id" label={pt ? 'ID do registro' : 'Record ID'}>
             <Input id="audit-id" className={TAP_INPUT} maxLength={100} value={filters.aggregateId} onChange={event => set('aggregateId', event.target.value)} />
           </Field>
-          <Field id="audit-action" label="Action contains">
+          <Field id="audit-action" label={pt ? 'Ação contém' : 'Action contains'}>
             <Input id="audit-action" className={TAP_INPUT} maxLength={100} placeholder="submitted" value={filters.action} onChange={event => set('action', event.target.value)} />
           </Field>
-          <Field id="audit-from" label="From" error={fieldErrors.from}>
+          <Field id="audit-from" label={pt ? 'De' : 'From'} error={fieldErrors.from}>
             <Input id="audit-from" type="date" className={TAP_INPUT} value={filters.from} aria-invalid={Boolean(fieldErrors.from)} onChange={event => set('from', event.target.value)} />
           </Field>
-          <Field id="audit-to" label="To" error={fieldErrors.to}>
+          <Field id="audit-to" label={pt ? 'Até' : 'To'} error={fieldErrors.to}>
             <Input id="audit-to" type="date" className={TAP_INPUT} value={filters.to} aria-invalid={Boolean(fieldErrors.to)} onChange={event => set('to', event.target.value)} />
           </Field>
           {rooftops.length > 1 && (
-            <Field id="audit-rooftop" label="Rooftop">
+            <Field id="audit-rooftop" label={pt ? 'Loja' : 'Rooftop'}>
               <Select value={filters.rooftopId} onValueChange={value => set('rooftopId', value)}>
                 <SelectTrigger id="audit-rooftop" className={TAP_INPUT}><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All rooftops</SelectItem>
+                  <SelectItem value="all">{pt ? 'Todas as lojas' : 'All rooftops'}</SelectItem>
                   {rooftops.map(rooftop => <SelectItem key={rooftop.id} value={rooftop.id}>{rooftop.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -111,28 +114,28 @@ export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; 
           {applied && (
             <Pill className={TAP} disabled={loading} onClick={() => { setFilters(EMPTY); void run(EMPTY) }}>
               <X />
-              Clear
+              {pt ? 'Limpar' : 'Clear'}
             </Pill>
           )}
           <Pill type="submit" variant="primary" className={TAP} disabled={loading}>
             <Search />
-            {loading ? 'Searching…' : 'Search'}
+            {loading ? (pt ? 'Buscando…' : 'Searching…') : (pt ? 'Buscar' : 'Search')}
           </Pill>
         </Track>
       </form>
 
       {error && <Notice tone="bad">{error}</Notice>}
       <div className="flex items-baseline justify-between gap-2 border-b pb-2">
-        <h2 className="text-[15px] font-semibold">Events <span className="text-[13px] font-normal tabular-nums text-muted-foreground">{events.length}{events.length === LIMIT ? '+' : ''}</span></h2>
-        <span className="text-[12px] text-muted-foreground">Newest first</span>
+        <h2 className="text-[15px] font-semibold">{pt ? 'Eventos' : 'Events'} <span className="text-[13px] font-normal tabular-nums text-muted-foreground">{events.length}{events.length === LIMIT ? '+' : ''}</span></h2>
+        <span className="text-[12px] text-muted-foreground">{pt ? 'Mais recentes primeiro' : 'Newest first'}</span>
       </div>
-      {events.length === LIMIT && <Notice tone="warn">Newest {LIMIT} shown</Notice>}
+      {events.length === LIMIT && <Notice tone="warn">{pt ? `Exibindo os ${LIMIT} mais recentes` : `Newest ${LIMIT} shown`}</Notice>}
 
       <Panel className="overflow-hidden">
         {loading && events.length === 0 ? (
-          <EmptyRow>Loading…</EmptyRow>
+          <EmptyRow>{pt ? 'Carregando…' : 'Loading…'}</EmptyRow>
         ) : events.length === 0 ? (
-          <EmptyRow>No audit events match</EmptyRow>
+          <EmptyRow>{pt ? 'Nenhum evento de auditoria corresponde aos filtros' : 'No audit events match'}</EmptyRow>
         ) : (
           <ul className="divide-y">
             {events.map(event => {
@@ -149,7 +152,7 @@ export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; 
                     <div className="min-w-0 flex-1">
                       <p className="break-words text-sm font-medium">{event.aggregateType} <span className="text-muted-foreground">·</span> {event.action}</p>
                       <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                        {[formatDateTime(event.occurredAt, timeZone), event.actor?.name || event.actor?.email || 'System', rooftops.length > 1 ? event.rooftop?.name : null].filter(Boolean).join(' · ')}
+                        {[formatDateTime(event.occurredAt, timeZone, locale), event.actor?.name || event.actor?.email || (locale === 'pt-BR' ? 'Sistema' : 'System'), rooftops.length > 1 ? event.rooftop?.name : null].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                     <Code className="hidden shrink-0 sm:inline">{event.aggregateId.slice(-10)}</Code>
@@ -158,16 +161,16 @@ export function AuditPanel({ rooftops, timeZone }: { rooftops: ReportRooftop[]; 
                     <div className="space-y-3 border-t bg-muted/20 px-4 py-3">
                       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                         <p className="min-w-0 break-all text-xs">
-                          <span className="text-muted-foreground">Record </span><Code>{event.aggregateId}</Code>
+                          <span className="text-muted-foreground">{pt ? 'Registro ' : 'Record '}</span><Code>{event.aggregateId}</Code>
                         </p>
                         <Track>
-                          <Pill size="sm" className="h-11 sm:h-7" onClick={() => drill(event)}>All events for this record</Pill>
+                          <Pill size="sm" className="h-11 sm:h-7" onClick={() => drill(event)}>{pt ? 'Todos os eventos deste registro' : 'All events for this record'}</Pill>
                         </Track>
                       </div>
-                      <p className="break-all text-xs"><span className="text-muted-foreground">Event key </span><Code>{event.eventKey}</Code></p>
-                      <JsonBlock label="Before" value={event.beforeSnapshot} />
-                      <JsonBlock label="After" value={event.afterSnapshot} />
-                      <JsonBlock label="Metadata" value={event.metadata} />
+                      <p className="break-all text-xs"><span className="text-muted-foreground">{pt ? 'Chave do evento ' : 'Event key '}</span><Code>{event.eventKey}</Code></p>
+                      <JsonBlock label={pt ? 'Antes' : 'Before'} value={event.beforeSnapshot} />
+                      <JsonBlock label={pt ? 'Depois' : 'After'} value={event.afterSnapshot} />
+                      <JsonBlock label={pt ? 'Metadados' : 'Metadata'} value={event.metadata} />
                     </div>
                   )}
                 </li>

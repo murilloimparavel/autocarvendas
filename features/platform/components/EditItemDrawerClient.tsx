@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface EditItemDrawerClientProps {
   list: any
@@ -80,6 +82,9 @@ export function EditItemDrawerClient({
   onClose,
   onSave
 }: EditItemDrawerClientProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const itemName = translateSchemaLabel(list.singular, locale)
   const router = useRouter()
   const queryClient = useQueryClient()
   // Create enhanced fields exactly like ItemPageClient does
@@ -157,14 +162,14 @@ export function EditItemDrawerClient({
       // Handle errors exactly like ItemPageClient
       const error = errors?.find(x => x.path === undefined || x.path?.length === 1)
       if (error) {
-        toast.error('Unable to save item', {
-          description: error.message
+        toast.error(pt ? 'Não foi possível salvar o registro' : 'Unable to save item', {
+          description: pt ? 'Revise os dados e tente novamente.' : error.message
         })
         setSaveState('idle')
         return
       }
       
-      toast.success(`Saved changes to ${list.singular.toLowerCase()}`)
+      toast.success(pt ? `Alterações em ${itemName.toLocaleLowerCase('pt-BR')} salvas` : `Saved changes to ${itemName.toLowerCase()}`)
       setSaveState('saved')
       
       // Reset validation state after successful save
@@ -183,8 +188,8 @@ export function EditItemDrawerClient({
       
     } catch (error: any) {
       console.error('Save error:', error)
-      toast.error('Unable to save item', {
-        description: error.message
+      toast.error(pt ? 'Não foi possível salvar o registro' : 'Unable to save item', {
+        description: pt ? 'Ocorreu um erro ao salvar. Tente novamente.' : error.message
       })
       setSaveState('idle')
     }
@@ -200,9 +205,9 @@ export function EditItemDrawerClient({
       await navigator.clipboard.writeText(itemId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      toast.success('ID copied to clipboard')
+      toast.success(pt ? 'ID copiado para a área de transferência' : 'ID copied to clipboard')
     } catch (err) {
-      toast.error('Failed to copy to clipboard')
+      toast.error(pt ? 'Não foi possível copiar para a área de transferência' : 'Failed to copy to clipboard')
     }
   })
 
@@ -219,16 +224,16 @@ export function EditItemDrawerClient({
 
       const error = errors?.find(x => x.path === undefined || x.path?.length === 1)
       if (error) {
-        toast.error('Unable to delete item.', {
+        toast.error(pt ? 'Não foi possível excluir o registro.' : 'Unable to delete item.', {
           action: {
-            label: 'Details',
+            label: pt ? 'Detalhes' : 'Details',
             onClick: () => console.error('Delete error:', error.message)
           }
         })
         return
       }
 
-      toast.success(`${list.singular} deleted successfully.`)
+      toast.success(pt ? `${itemName} excluído com sucesso.` : `${itemName} deleted successfully.`)
 
       // Invalidate React Query cache to refetch items
       await queryClient.invalidateQueries({
@@ -241,9 +246,9 @@ export function EditItemDrawerClient({
       // Don't redirect automatically - let the parent handle navigation
       // The drawer is used in platform context, not Keystone admin context
     } catch (err: any) {
-      toast.error("Unable to delete item.", {
+      toast.error(pt ? 'Não foi possível excluir o registro.' : "Unable to delete item.", {
         action: {
-          label: "Details",
+          label: pt ? 'Detalhes' : "Details",
           onClick: () => console.error('Delete error:', err.message)
         }
       })
@@ -253,7 +258,7 @@ export function EditItemDrawerClient({
   return (
     <>
       <DrawerHeader className="flex-shrink-0">
-        <DrawerTitle>Edit {list.singular}</DrawerTitle>
+        <DrawerTitle>{pt ? `Editar ${itemName}` : `Edit ${itemName}`}</DrawerTitle>
         <div className="mt-2">
           <div className="relative border rounded-md bg-muted/40 transition-all">
             <div className="p-1 flex items-center gap-3">
@@ -290,7 +295,7 @@ export function EditItemDrawerClient({
                 >
                   <Copy className="size-3" />
                 </div>
-                <span className="sr-only">{copied ? "Copied" : "Copy ID"}</span>
+                <span className="sr-only">{copied ? (pt ? 'Copiado' : "Copied") : (pt ? 'Copiar ID' : "Copy ID")}</span>
               </Button>
             </div>
           </div>
@@ -326,15 +331,15 @@ export function EditItemDrawerClient({
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Reset changes</AlertDialogTitle>
+                      <AlertDialogTitle>{pt ? 'Descartar alterações' : 'Reset changes'}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure? Lost changes cannot be recovered.
+                        {pt ? 'Deseja descartar as alterações? Elas não poderão ser recuperadas.' : 'Are you sure? Lost changes cannot be recovered.'}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{pt ? 'Cancelar' : 'Cancel'}</AlertDialogCancel>
                       <AlertDialogAction onClick={handleReset}>
-                        Yes, reset
+                        {pt ? 'Sim, descartar' : 'Yes, reset'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -351,20 +356,20 @@ export function EditItemDrawerClient({
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete item</AlertDialogTitle>
+                      <AlertDialogTitle>{pt ? 'Excluir registro' : 'Delete item'}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete{' '}
+                        {pt ? 'Tem certeza de que deseja excluir ' : 'Are you sure you want to delete '}
                         <strong>
-                          {list.singular}
+                          {itemName}
                           {!list.isSingleton && ` ${itemId}`}
                         </strong>
-                        ? This action cannot be undone.
+                        {pt ? '? Esta ação não pode ser desfeita.' : '? This action cannot be undone.'}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>{pt ? 'Cancelar' : 'Cancel'}</AlertDialogCancel>
                       <AlertDialogAction onClick={handleDelete}>
-                        Yes, delete
+                        {pt ? 'Sim, excluir' : 'Yes, delete'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -375,7 +380,7 @@ export function EditItemDrawerClient({
             {/* Save and Cancel buttons on the right */}
             <div className="flex gap-3 ml-auto">
               <Button type="button" variant="outline" onClick={handleCancel}>
-                Cancel
+                {pt ? 'Cancelar' : 'Cancel'}
               </Button>
               <Button 
                 type="submit" 
@@ -385,15 +390,15 @@ export function EditItemDrawerClient({
                 {saveState === 'saving' ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Saving...
+                    {pt ? 'Salvando…' : 'Saving…'}
                   </>
                 ) : saveState === 'saved' ? (
                   <>
                     <Check className="h-4 w-4 mr-2" />
-                    Saved
+                    {pt ? 'Salvo' : 'Saved'}
                   </>
                 ) : (
-                  'Save Changes'
+                  (pt ? 'Salvar alterações' : 'Save Changes')
                 )}
               </Button>
             </div>

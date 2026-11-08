@@ -57,16 +57,19 @@ export function readDeskFinanceEvidence(value: unknown): DeskFinanceEvidence | n
 }
 
 /** "899", "1,299.50", "$1,299" -> cents. Throws a staff-facing message otherwise. */
-export function parseDollarsToCents(raw: string, label: string) {
-  const value = raw.trim().replace(/^\$/, '').replace(/,/g, '')
-  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) throw new Error(`${label} must be a dollar amount, for example 1,299.50.`)
+export function parseDollarsToCents(raw: string, label: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
+  const input = raw.trim().replace(locale === 'pt-BR' ? /^R\$\s?/ : /^\$\s?/, '').replace(/[^\d.,]/g, '')
+  const value = locale === 'pt-BR'
+    ? input.includes(',') ? input.replaceAll('.', '').replace(',', '.') : /^\d{1,3}(?:\.\d{3})+$/.test(input) ? input.replaceAll('.', '') : input
+    : input.replaceAll(',', '')
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) throw new Error(locale === 'pt-BR' ? `${label} deve ser um valor em reais, por exemplo 1.299,50.` : `${label} must be a dollar amount, for example 1,299.50.`)
   const [whole, fraction = ''] = value.split('.')
   const result = Number(whole) * 100 + Number(fraction.padEnd(2, '0'))
-  if (!Number.isSafeInteger(result) || result > 2_147_483_647) throw new Error(`${label} is outside the supported range.`)
+  if (!Number.isSafeInteger(result) || result > 2_147_483_647) throw new Error(locale === 'pt-BR' ? `${label} está fora do limite permitido.` : `${label} is outside the supported range.`)
   return result
 }
 
 /** Cents -> "1,299.50" for prefilled dollar inputs. */
-export function centsToDollarInput(value: number) {
-  return (value / 100).toLocaleString('en-US', { minimumFractionDigits: value % 100 ? 2 : 0, maximumFractionDigits: 2 })
+export function centsToDollarInput(value: number, locale: 'pt-BR' | 'en-US' = 'en-US') {
+  return (value / 100).toLocaleString(locale, { minimumFractionDigits: value % 100 ? 2 : 0, maximumFractionDigits: 2 })
 }

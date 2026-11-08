@@ -6,6 +6,8 @@
 'use server'
 
 import { keystoneClient } from '../lib/keystoneClient'
+import { getRequestLocale } from '@/features/i18n/server'
+import { publicRequestError } from '../lib/security'
 
 export async function getListCounts(
   lists: Array<{
@@ -46,8 +48,6 @@ export async function getListCounts(
     return response
   } catch (error: unknown) {
     console.error("Dashboard operation failed (details redacted).")
-    const errorMessage =
-      "Unknown error fetching list counts"
-    return { success: false, error: errorMessage }
+    return { success: false, error: publicRequestError(await getRequestLocale()) }
   }
 }

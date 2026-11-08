@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 
 import type { Tone } from '../../lib/accountRecords'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export function AccountBack({ href, label }: { href: string; label: string }) {
   return (
@@ -29,13 +30,14 @@ export function AccountHeader({ reference, title, tone, status, meta }: { refere
 }
 
 export function AccountError({ title, retryHref }: { title: string; retryHref: string }) {
+  const { locale } = useLocale()
   return (
     <div role="alert" className="sf-well space-y-4 p-5">
       <p className="sf-title-line">
         <span className="sf-dot" data-tone="bad" aria-hidden="true" />
         <span className="sf-heading text-[length:var(--sf-text-md)]">{title}</span>
       </p>
-      <Link href={retryHref} prefetch={false} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">Retry</Link>
+      <Link href={retryHref} prefetch={false} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">{locale === 'pt-BR' ? 'Tentar novamente' : 'Retry'}</Link>
     </div>
   )
 }

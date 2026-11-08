@@ -4,6 +4,8 @@ import { getListByPath } from '@/features/dashboard/actions/getListByPath'
 import { getItemAction } from '@/features/dashboard/actions/getItemAction'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EditItemDrawerClient } from './EditItemDrawerClient'
+import { getRequestLocale } from '@/features/i18n/server'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface EditItemDrawerProps {
   listKey: string
@@ -54,6 +56,9 @@ export async function EditItemDrawer({
     )
   }
 
+  const locale = await getRequestLocale()
+  const pt = locale === 'pt-BR'
+
   try {
     // Fetch list metadata and item data on server
     const list = await getListByPath(listKey)
@@ -63,10 +68,10 @@ export async function EditItemDrawer({
         <Drawer open={open} onOpenChange={onClose}>
           <DrawerContent>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
-              <p className="text-destructive">List not found: {listKey}</p>
+              <p className="text-destructive">{pt ? 'Cadastro não encontrado:' : 'List not found:'} {translateSchemaLabel(locale, listKey)}</p>
             </div>
           </DrawerContent>
         </Drawer>
@@ -80,11 +85,11 @@ export async function EditItemDrawer({
         <Drawer open={open} onOpenChange={onClose}>
           <DrawerContent>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
               <p className="text-destructive">
-                Failed to load item: {'error' in itemResponse ? itemResponse.error : 'Unknown error'}
+                {pt ? 'Não foi possível carregar o registro:' : 'Failed to load item:'} {'error' in itemResponse ? itemResponse.error : (pt ? 'Erro desconhecido' : 'Unknown error')}
               </p>
             </div>
           </DrawerContent>
@@ -112,11 +117,11 @@ export async function EditItemDrawer({
       <Drawer open={open} onOpenChange={onClose}>
         <DrawerContent>
           <DrawerHeader className="flex-shrink-0">
-            <DrawerTitle>Error</DrawerTitle>
+            <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
           </DrawerHeader>
           <div className="p-6 text-center">
             <p className="text-destructive">
-              Error loading drawer: {error instanceof Error ? error.message : 'Unknown error'}
+              {pt ? 'Não foi possível carregar o formulário:' : 'Error loading drawer:'} {error instanceof Error ? error.message : (pt ? 'Erro desconhecido' : 'Unknown error')}
             </p>
           </div>
         </DrawerContent>

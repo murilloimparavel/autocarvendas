@@ -1,10 +1,10 @@
-import { getServiceOrderDetail, getServiceTaxRate } from '../actions'
+import { getServiceOrderDetail, getServiceTaxRate, getServiceCurrencyCode } from '../actions'
 import { ServiceOrderDetailPageClient } from './ServiceOrderDetailPageClient'
 import { getDealershipTimeZone } from '../../lib/dealershipTimeZone'
 
 export async function ServiceOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [response, timeZone, taxRateBps] = await Promise.all([getServiceOrderDetail(id), getDealershipTimeZone(), getServiceTaxRate()])
+  const [response, timeZone, taxRateBps, currencyCode] = await Promise.all([getServiceOrderDetail(id), getDealershipTimeZone(), getServiceTaxRate(), getServiceCurrencyCode()])
 
   return (
     <ServiceOrderDetailPageClient
@@ -13,6 +13,7 @@ export async function ServiceOrderDetailPage({ params }: { params: Promise<{ id:
       initialError={response.success ? null : response.error}
       timeZone={timeZone}
       taxRateBps={taxRateBps}
+      currencyCode={currencyCode}
     />
   )
 }

@@ -18,6 +18,7 @@ export interface SectionItemProps {
     description?: string;
   };
   step?: 'template' | 'progress' | 'done';
+  locale?: 'pt-BR' | 'en-US';
 }
 
 export const SectionItem: React.FC<SectionItemProps> = ({
@@ -26,6 +27,7 @@ export const SectionItem: React.FC<SectionItemProps> = ({
   errorMessage,
   requiresEnvVar,
   step,
+  locale = 'en-US',
 }) => {
   // Determine styling based on status
   const getItemStyles = () => {
@@ -67,17 +69,16 @@ export const SectionItem: React.FC<SectionItemProps> = ({
                 className="p-4 text-xs min-w-[250px] max-w-[450px] z-[100]"
               >
                 <div className="font-medium text-sm mb-2 text-red-600 dark:text-red-400">
-                  Failed to create {item}
+                  {locale === 'pt-BR' ? `Não foi possível cadastrar ${item}` : `Failed to create ${item}`}
                 </div>
                 <div className="text-sm text-left mb-3">
-                  This item already exists or conflicts with existing data in
-                  your installation.
+                  {locale === 'pt-BR' ? 'Este registro já existe ou há um conflito com dados já cadastrados.' : 'This item already exists or conflicts with existing data in your installation.'}
                 </div>
                 <div className="font-mono text-xs text-left whitespace-pre-wrap break-words max-h-[150px] overflow-y-auto text-muted-foreground border-t pt-3 mt-1">
                   <span className="font-semibold block mb-1">
-                    Error details:
+                    {locale === 'pt-BR' ? 'Detalhes do erro:' : 'Error details:'}
                   </span>
-                  {errorMessage || 'Unknown error'}
+                  {errorMessage || (locale === 'pt-BR' ? 'Erro desconhecido' : 'Unknown error')}
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -111,16 +112,16 @@ export const SectionItem: React.FC<SectionItemProps> = ({
               className="p-3 text-xs max-w-sm z-[100]"
             >
               <p>
-                Requires
+                {locale === 'pt-BR' ? 'Requer' : 'Requires'}
                 {requiresEnvVar.vars.map((envVar, index) => (
                   <React.Fragment key={envVar}>
-                    {index > 0 && ' and '}
+                    {index > 0 && (locale === 'pt-BR' ? ' e ' : ' and ')}
                     <code className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded">
                       {envVar}
                     </code>
                   </React.Fragment>
                 ))}
-                in your
+                {locale === 'pt-BR' ? ' no arquivo ' : ' in your '}
                 <code className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded">
                   .env
                 </code>

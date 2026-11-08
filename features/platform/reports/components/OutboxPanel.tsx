@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { RefreshCw, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Code, Notice, Panel, Pill, Readout, ReadoutStrip, Segmented, TitleLine, Track, type DeskTone } from '@/features/platform/components/desk'
 import { EmptyRow, TAP, TAP_INPUT } from '@/features/platform/catalog/components/formKit'
 import { cn } from '@/lib/utils'
@@ -14,6 +15,8 @@ const STATUS_TONE: Record<string, DeskTone> = { pending: 'warn', processing: 'in
 const STATUS_LABEL: Record<string, string> = { pending: 'Pending', processing: 'Processing', failed: 'Failed', delivered: 'Delivered' }
 
 export function OutboxPanel({ timeZone }: { timeZone: string }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [status, setStatus] = useState<StatusFilter>('pending')
   const [topic, setTopic] = useState('')
   const [events, setEvents] = useState<OutboxEvent[]>([])
@@ -43,27 +46,27 @@ export function OutboxPanel({ timeZone }: { timeZone: string }) {
       {counts && (
         <Notice tone={tone}>
           {counts.pending > 0 && counts.delivered === 0 && counts.processing === 0
-            ? 'Dispatcher: not running. Events stay pending.'
+            ? (pt ? 'Processador parado. Os eventos continuarão pendentes.' : 'Dispatcher: not running. Events stay pending.')
             : counts.failed > 0
-              ? `${counts.failed} failed ${counts.failed === 1 ? 'delivery' : 'deliveries'}`
+              ? (pt ? `${counts.failed} falha${counts.failed === 1 ? '' : 's'} no envio` : `${counts.failed} failed ${counts.failed === 1 ? 'delivery' : 'deliveries'}`)
               : counts.pending > 0
-                ? `${counts.pending} awaiting delivery`
-                : 'All events delivered'}
+                ? (pt ? `${counts.pending} aguardando envio` : `${counts.pending} awaiting delivery`)
+                : (pt ? 'Todos os eventos foram enviados' : 'All events delivered')}
         </Notice>
       )}
 
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Segmented<StatusFilter>
-          label="Filter outbox"
+          label={pt ? 'Filtrar fila de envio' : 'Filter outbox'}
           value={status}
           onChange={setStatus}
           size="sm"
           options={[
-            { value: 'pending', label: 'Pending', count: counts?.pending, tone: counts?.pending ? 'warn' : undefined },
-            { value: 'processing', label: 'Processing', count: counts?.processing },
-            { value: 'failed', label: 'Failed', count: counts?.failed, tone: counts?.failed ? 'bad' : undefined },
-            { value: 'delivered', label: 'Delivered', count: counts?.delivered },
-            { value: 'all', label: 'All', count: counts ? total : undefined },
+            { value: 'pending', label: pt ? 'Pendente' : 'Pending', count: counts?.pending, tone: counts?.pending ? 'warn' : undefined },
+            { value: 'processing', label: pt ? 'Processando' : 'Processing', count: counts?.processing },
+            { value: 'failed', label: pt ? 'Com falha' : 'Failed', count: counts?.failed, tone: counts?.failed ? 'bad' : undefined },
+            { value: 'delivered', label: pt ? 'Enviado' : 'Delivered', count: counts?.delivered },
+            { value: 'all', label: pt ? 'Todos' : 'All', count: counts ? total : undefined },
           ]}
         />
         <form
@@ -72,12 +75,12 @@ export function OutboxPanel({ timeZone }: { timeZone: string }) {
         >
           <div className="relative min-w-0 flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className={cn('pl-9', TAP_INPUT)} value={topic} onChange={event => setTopic(event.target.value)} placeholder="Topic, e.g. deal." aria-label="Search by topic" />
+            <Input className={cn('pl-9', TAP_INPUT)} value={topic} onChange={event => setTopic(event.target.value)} placeholder={pt ? 'Tópico, por exemplo: negociação' : 'Topic, e.g. deal.'} aria-label={pt ? 'Buscar por tópico' : 'Search by topic'} />
           </div>
           <Track>
             <Pill type="submit" className={TAP} disabled={loading}>
               <RefreshCw className={loading ? 'animate-spin' : undefined} />
-              {loading ? 'Loading…' : 'Apply'}
+              {loading ? (pt ? 'Carregando…' : 'Loading…') : (pt ? 'Aplicar' : 'Apply')}
             </Pill>
           </Track>
         </form>
@@ -85,19 +88,19 @@ export function OutboxPanel({ timeZone }: { timeZone: string }) {
 
       <Panel className="overflow-hidden">
         {loading && events.length === 0 ? (
-          <EmptyRow>Loading…</EmptyRow>
+          <EmptyRow>{pt ? 'Carregando…' : 'Loading…'}</EmptyRow>
         ) : events.length === 0 ? (
-          <EmptyRow>No outbox events match</EmptyRow>
+          <EmptyRow>{pt ? 'Nenhum evento corresponde aos filtros' : 'No outbox events match'}</EmptyRow>
         ) : (
           <ul className="divide-y">
             {events.map(event => (
               <li key={event.id} className="min-w-0 px-4 py-3">
                 <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-                  <TitleLine as="p" tone={STATUS_TONE[event.status] || 'idle'} status={STATUS_LABEL[event.status] || event.status} className="break-all text-sm font-medium">{event.topic}</TitleLine>
-                  <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(event.availableAt, timeZone)}</span>
+                  <TitleLine as="p" tone={STATUS_TONE[event.status] || 'idle'} status={pt ? ({ Pending: 'Pendente', Processing: 'Processando', Failed: 'Com falha', Delivered: 'Enviado' } as Record<string, string>)[STATUS_LABEL[event.status]] || event.status : STATUS_LABEL[event.status] || event.status} className="break-all text-sm font-medium">{event.topic}</TitleLine>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(event.availableAt, timeZone, locale)}</span>
                 </div>
                 <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                  {[STATUS_LABEL[event.status] || event.status, `${event.aggregateType} ${event.aggregateId.slice(-10)}`, `${event.attemptCount} ${event.attemptCount === 1 ? 'attempt' : 'attempts'}`, event.processedAt ? `Processed ${formatDateTime(event.processedAt, timeZone)}` : null].filter(Boolean).join(' · ')}
+                  {[pt ? ({ Pending: 'Pendente', Processing: 'Processando', Failed: 'Com falha', Delivered: 'Enviado' } as Record<string, string>)[STATUS_LABEL[event.status]] || event.status : STATUS_LABEL[event.status] || event.status, `${event.aggregateType} ${event.aggregateId.slice(-10)}`, `${event.attemptCount} ${pt ? (event.attemptCount === 1 ? 'tentativa' : 'tentativas') : (event.attemptCount === 1 ? 'attempt' : 'attempts')}`, event.processedAt ? `${pt ? 'Processado' : 'Processed'} ${formatDateTime(event.processedAt, timeZone, locale)}` : null].filter(Boolean).join(' · ')}
                 </p>
                 {event.lastError && <p className="mt-1 break-words text-xs text-red-600 dark:text-red-400">{event.lastError}</p>}
                 <p className="mt-0.5 break-all"><Code>{event.deliveryKey}</Code></p>
@@ -107,10 +110,10 @@ export function OutboxPanel({ timeZone }: { timeZone: string }) {
         )}
       </Panel>
       <ReadoutStrip>
-        <Readout label="Pending" value={counts?.pending ?? '-'} tone={counts?.pending ? 'warn' : undefined} sub={oldestAge ? `Oldest ${oldestAge}` : undefined} />
-        <Readout label="Processing" value={counts?.processing ?? '-'} />
-        <Readout label="Failed" value={counts?.failed ?? '-'} tone={counts?.failed ? 'bad' : undefined} />
-        <Readout label="Delivered" value={counts?.delivered ?? '-'} tone={counts?.delivered ? 'ok' : undefined} />
+        <Readout label={pt ? 'Pendentes' : 'Pending'} value={counts?.pending ?? '-'} tone={counts?.pending ? 'warn' : undefined} sub={oldestAge ? `${pt ? 'Mais antigo' : 'Oldest'} ${oldestAge}` : undefined} />
+        <Readout label={pt ? 'Processando' : 'Processing'} value={counts?.processing ?? '-'} />
+        <Readout label={pt ? 'Com falha' : 'Failed'} value={counts?.failed ?? '-'} tone={counts?.failed ? 'bad' : undefined} />
+        <Readout label={pt ? 'Enviados' : 'Delivered'} value={counts?.delivered ?? '-'} tone={counts?.delivered ? 'ok' : undefined} />
       </ReadoutStrip>
     </div>
   )

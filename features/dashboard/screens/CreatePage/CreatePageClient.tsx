@@ -84,7 +84,7 @@ export function CreatePageClient({ listKey, list }: CreatePageClientProps) {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            The requested list "{listKey}" was not found.
+            {t('requestedListNotFound')}
           </AlertDescription>
         </Alert>
       </div>

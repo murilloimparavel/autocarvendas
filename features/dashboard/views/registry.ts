@@ -65,7 +65,7 @@ export interface FieldController<Value = unknown, InputValue = Value> {
   filter?: {
     Filter: React.ComponentType<FilterProps>;
     graphql: (args: { type: string; value: any }) => Record<string, any>;
-    Label: (args: { label: string; type: string; value: any }) => string;
+    Label: (args: { label: string; type: string; value: any; locale?: 'pt-BR' | 'en-US' }) => string;
     types: Record<string, {
       label: string;
       initialValue: any;

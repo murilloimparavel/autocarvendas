@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { DeskTable, Figure, Notice, Panel, Pill, Segmented, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { formatCentsForInput, parseDollarsToCents } from '@/features/platform/deals/lib/moneyInput'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { type CatalogRooftop, type CatalogServicePackage, type IncludedService, deleteServicePackage, saveServicePackage } from '../actions'
 import { ConfirmDialog, EmptyRow, Field, FormDialog, TAP, TAP_INPUT, TAP_SM } from './formKit'
 
@@ -46,6 +47,8 @@ export function ServicePackagesPanel({
   error: string | null
   onReload: () => Promise<void>
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [rooftopFilter, setRooftopFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [draft, setDraft] = useState<Draft | null>(null)
@@ -55,7 +58,7 @@ export function ServicePackagesPanel({
   const [pending, setPending] = useState<CatalogServicePackage | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const money = useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 2 }), [currencyCode])
+  const money = useMemo(() => new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 2 }), [currencyCode, locale])
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase()
     return packages
@@ -74,26 +77,26 @@ export function ServicePackagesPanel({
     if (!draft) return
     const errors: Record<string, string> = {}
     const name = draft.name.trim()
-    if (!draft.id && !draft.rooftopId) errors.rooftopId = 'Choose a rooftop'
-    if (!name) errors.name = 'Name is required'
-    else if (name.length > 200) errors.name = 'Name is too long'
-    else if (packages.some(item => item.id !== draft.id && item.rooftop?.id === draft.rooftopId && item.name.toLowerCase() === name.toLowerCase())) errors.name = 'This rooftop already has a package with this name'
+    if (!draft.id && !draft.rooftopId) errors.rooftopId = pt ? 'Selecione uma loja' : 'Choose a rooftop'
+    if (!name) errors.name = pt ? 'Informe o nome' : 'Name is required'
+    else if (name.length > 200) errors.name = pt ? 'O nome deve ter até 200 caracteres' : 'Name is too long'
+    else if (packages.some(item => item.id !== draft.id && item.rooftop?.id === draft.rooftopId && item.name.toLowerCase() === name.toLowerCase())) errors.name = pt ? 'Esta loja já tem um pacote com esse nome' : 'This rooftop already has a package with this name'
     const priceCents = draft.price.trim() ? parseDollarsToCents(draft.price) : null
-    if (!draft.price.trim()) errors.price = 'Price is required'
-    else if (priceCents === null) errors.price = 'Enter dollars and cents, e.g. 89.95'
+    if (!draft.price.trim()) errors.price = pt ? 'Informe o preço' : 'Price is required'
+    else if (priceCents === null) errors.price = pt ? 'Informe o valor em reais e centavos, por exemplo, 89,95' : 'Enter dollars and cents, e.g. 89.95'
     let duration: number | null = null
     if (draft.duration.trim()) {
       duration = Number(draft.duration.trim())
-      if (!Number.isInteger(duration) || duration < 1 || duration > 1440) errors.duration = 'Minutes must be a whole number from 1 to 1440'
+      if (!Number.isInteger(duration) || duration < 1 || duration > 1440) errors.duration = pt ? 'Informe um número inteiro de minutos entre 1 e 1.440' : 'Minutes must be a whole number from 1 to 1440'
     }
-    if (draft.description.length > 2000) errors.description = 'Description is too long'
+    if (draft.description.length > 2000) errors.description = pt ? 'A descrição deve ter até 2.000 caracteres' : 'Description is too long'
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
     setBusy(true); setFormError(null)
     const response = await saveServicePackage({ id: draft.id, rooftopId: draft.rooftopId, name, description: draft.description, priceCents: priceCents as number, estimatedDuration: duration, includedServices: textToIncluded(draft.included) })
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice(draft.id ? `Saved ${name}` : `Added ${name}`)
+    setNotice(pt ? `${draft.id ? 'Pacote salvo' : 'Pacote adicionado'}: ${name}` : draft.id ? `Saved ${name}` : `Added ${name}`)
     setDraft(null)
     await onReload()
   }
@@ -104,7 +107,7 @@ export function ServicePackagesPanel({
     const response = await deleteServicePackage(pending.id)
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice(`Deleted ${pending.name}`)
+    setNotice(pt ? `Pacote excluído: ${pending.name}` : `Deleted ${pending.name}`)
     setPending(null)
     await onReload()
   }
@@ -116,38 +119,38 @@ export function ServicePackagesPanel({
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {rooftops.length > 1 && (
           <Segmented
-            label="Filter by rooftop"
+            label={pt ? 'Filtrar por loja' : 'Filter by rooftop'}
             value={rooftopFilter}
             onChange={setRooftopFilter}
             size="sm"
-            options={[{ value: 'all', label: 'All', count: packages.length }, ...rooftops.map(rooftop => ({ value: rooftop.id, label: rooftop.name, count: packages.filter(item => item.rooftop?.id === rooftop.id).length }))]}
+            options={[{ value: 'all', label: pt ? 'Todas' : 'All', count: packages.length }, ...rooftops.map(rooftop => ({ value: rooftop.id, label: rooftop.name, count: packages.filter(item => item.rooftop?.id === rooftop.id).length }))]}
           />
         )}
         <div className="relative min-w-0 sm:max-w-xs sm:flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className={cn('pl-9', TAP_INPUT)} value={search} onChange={event => setSearch(event.target.value)} placeholder="Package or included service" aria-label="Search service packages" />
+          <Input className={cn('pl-9', TAP_INPUT)} value={search} onChange={event => setSearch(event.target.value)} placeholder={pt ? 'Pacote ou serviço incluído' : 'Package or included service'} aria-label={pt ? 'Buscar pacotes de serviço' : 'Search service packages'} />
         </div>
         <Track className="sm:ml-auto">
           <Pill variant="primary" className={TAP} disabled={rooftops.length === 0} onClick={() => open()}>
             <Plus />
-            Add package
+            {pt ? 'Adicionar pacote' : 'Add package'}
           </Pill>
         </Track>
       </div>
-      {rooftops.length === 0 && <Notice tone="warn">No rooftop available for new packages</Notice>}
+      {rooftops.length === 0 && <Notice tone="warn">{pt ? 'Nenhuma loja disponível para novos pacotes.' : 'No rooftop available for new packages'}</Notice>}
 
       {visible.length === 0 ? (
-        <Panel><EmptyRow>{packages.length === 0 ? 'No service packages yet' : 'No packages match'}</EmptyRow></Panel>
+        <Panel><EmptyRow>{packages.length === 0 ? (pt ? 'Nenhum pacote de serviço cadastrado' : 'No service packages yet') : (pt ? 'Nenhum pacote encontrado' : 'No packages match')}</EmptyRow></Panel>
       ) : (
-        <DeskTable aria-label="Service packages">
+        <DeskTable aria-label={pt ? 'Pacotes de serviço' : 'Service packages'}>
           <thead>
             <tr>
-              <Th>Package</Th>
-              {rooftops.length > 1 && <Th priority={2}>Rooftop</Th>}
-              <Th priority={3}>Included</Th>
-              <Th align="right" priority={2}>Duration</Th>
-              <Th align="right">Price</Th>
-              <Th align="right"><span className="sr-only">Actions</span></Th>
+              <Th>{pt ? 'Pacote' : 'Package'}</Th>
+              {rooftops.length > 1 && <Th priority={2}>{pt ? 'Loja' : 'Rooftop'}</Th>}
+              <Th priority={3}>{pt ? 'Itens incluídos' : 'Included'}</Th>
+              <Th align="right" priority={2}>{pt ? 'Duração' : 'Duration'}</Th>
+              <Th align="right">{pt ? 'Preço' : 'Price'}</Th>
+              <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
             </tr>
           </thead>
           <tbody>
@@ -162,9 +165,9 @@ export function ServicePackagesPanel({
                       {[formatDuration(item.estimatedDuration), rooftops.length > 1 ? item.rooftop?.name : null].filter(Boolean).join(' · ')}
                     </span>
                   </Td>
-                  {rooftops.length > 1 && <Td priority={2} className="text-muted-foreground">{item.rooftop?.name || 'None'}</Td>}
+                  {rooftops.length > 1 && <Td priority={2} className="text-muted-foreground">{item.rooftop?.name || (pt ? 'Nenhuma' : 'None')}</Td>}
                   <Td priority={3} className="max-w-[16rem] text-muted-foreground">
-                    <span className="line-clamp-2">{included.length ? included.map(service => service.service).join(', ') : 'None'}</span>
+                    <span className="line-clamp-2">{included.length ? included.map(service => service.service).join(', ') : (pt ? 'Nenhum' : 'None')}</span>
                   </Td>
                   <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">{formatDuration(item.estimatedDuration) || ''}</Td>
                   <Td align="right"><Figure size="sm">{money.format(item.priceCents / 100)}</Figure></Td>
@@ -172,9 +175,9 @@ export function ServicePackagesPanel({
                     <div className="inline-flex gap-1">
                       <Pill size="sm" className={TAP_SM} onClick={() => open(item)}>
                         <Pencil />
-                        Edit
+                        {pt ? 'Editar' : 'Edit'}
                       </Pill>
-                      <Pill size="sm" variant="plain" className={cn(TAP_SM, 'max-sm:w-11')} aria-label={`Delete ${item.name}`} onClick={() => { setFormError(null); setPending(item) }}>
+                      <Pill size="sm" variant="plain" className={cn(TAP_SM, 'max-sm:w-11')} aria-label={pt ? `Excluir ${item.name}` : `Delete ${item.name}`} onClick={() => { setFormError(null); setPending(item) }}>
                         <Trash2 />
                       </Pill>
                     </div>
@@ -199,7 +202,7 @@ export function ServicePackagesPanel({
           {!draft?.id && rooftops.length > 1 && (
             <Field id="package-rooftop" label="Rooftop" error={fieldErrors.rooftopId} className="sm:col-span-2">
               <Select value={draft?.rooftopId || ''} onValueChange={value => setDraft(current => current && { ...current, rooftopId: value })}>
-                <SelectTrigger id="package-rooftop" className={TAP_INPUT}><SelectValue placeholder="Select rooftop" /></SelectTrigger>
+                <SelectTrigger id="package-rooftop" className={TAP_INPUT}><SelectValue placeholder={pt ? 'Selecione uma loja' : 'Select rooftop'} /></SelectTrigger>
                 <SelectContent>{rooftops.map(rooftop => <SelectItem key={rooftop.id} value={rooftop.id}>{rooftop.name}</SelectItem>)}</SelectContent>
               </Select>
             </Field>

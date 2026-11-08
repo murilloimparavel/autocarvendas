@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader'
 import { useStorefrontBusiness } from '../components/StorefrontBusinessProvider'
 import { customerRequestReference } from '../lib/customerRequests'
 import { Field, Notice, RequestReceived, Sticker } from '../components/forms/RequestForm'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const PREFERRED_CONTACT = [
   { value: 'email', label: 'Email' },
@@ -26,6 +27,9 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function ContactPage() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const text = (en: string, br: string) => pt ? br : en
   const business = useStorefrontBusiness()
   const [formData, setFormData] = useState({
     firstName: '',
@@ -58,36 +62,36 @@ export function ContactPage() {
       setSubmissionReference(customerRequestReference('inquiry', result.data.leadId))
       setSubmitted(true)
     } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : 'There was an error submitting your message. Please try again.')
+      setSubmissionError(error instanceof Error ? error.message : text('There was an error submitting your message. Please try again.', 'Não foi possível enviar sua mensagem. Tente novamente.'))
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const preferredLabel = PREFERRED_CONTACT.find((option) => option.value === formData.preferredContact)?.label
+  const preferredLabel = (pt ? ({ email: 'E-mail', phone: 'Telefone', text: 'Mensagem de texto' } as Record<string, string>)[formData.preferredContact] : PREFERRED_CONTACT.find((option) => option.value === formData.preferredContact)?.label)
 
   if (submitted) {
     return (
       <RequestReceived
-        context="Message"
+        context={text('Message', 'Mensagem')}
         reference={submissionReference}
         summary={
           <Sticker
-            title="Message"
+            title={text('Message', 'Mensagem')}
             meta={business.shortName || business.fullName}
             rows={[
-              { label: 'Name', value: [formData.firstName, formData.lastName].filter(Boolean).join(' ') },
-              { label: 'Reply by', value: preferredLabel, strong: true },
-              { label: 'Email', value: formData.email },
-              ...(formData.phone ? [{ label: 'Phone', value: formData.phone }] : []),
+              { label: text('Name', 'Nome'), value: [formData.firstName, formData.lastName].filter(Boolean).join(' ') },
+              { label: text('Reply by', 'Retorno por'), value: preferredLabel, strong: true },
+              { label: text('Email', 'E-mail'), value: formData.email },
+              ...(formData.phone ? [{ label: text('Phone', 'Telefone'), value: formData.phone }] : []),
             ]}
           />
         }
         actions={
           <>
-            <Link href="/" className="sf-btn sf-btn-primary">Back home</Link>
-            <Link href="/inventory" className="sf-btn sf-btn-ghost">Inventory</Link>
-            <Link href="/service" className="sf-btn sf-btn-ghost">Service</Link>
+            <Link href="/" className="sf-btn sf-btn-primary">{text('Back home', 'Voltar ao início')}</Link>
+            <Link href="/inventory" className="sf-btn sf-btn-ghost">{text('Inventory', 'Estoque')}</Link>
+            <Link href="/service" className="sf-btn sf-btn-ghost">{text('Service', 'Oficina')}</Link>
           </>
         }
       />
@@ -96,13 +100,13 @@ export function ContactPage() {
 
   const hasAddress = Boolean(business.addressLine1 || business.addressLine2)
   const hours = [
-    { label: 'Mon–Fri', value: business.hoursMonFri },
-    { label: 'Saturday', value: business.hoursSaturday },
-    { label: 'Sunday', value: business.hoursSunday },
+    { label: text('Mon–Fri', 'Segunda a sexta'), value: business.hoursMonFri },
+    { label: text('Saturday', 'Sábado'), value: business.hoursSaturday },
+    { label: text('Sunday', 'Domingo'), value: business.hoursSunday },
   ].filter((row) => row.value)
   const departments = [
-    business.salesEmail ? { label: 'Sales', email: business.salesEmail } : null,
-    business.serviceEmail ? { label: 'Service', email: business.serviceEmail } : null,
+    business.salesEmail ? { label: text('Sales', 'Vendas'), email: business.salesEmail } : null,
+    business.serviceEmail ? { label: text('Service', 'Oficina'), email: business.serviceEmail } : null,
   ].filter((row): row is { label: string; email: string } => Boolean(row))
 
   return (
@@ -113,7 +117,7 @@ export function ContactPage() {
         <div className="grid gap-[var(--sf-space-xl)] lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] xl:gap-[var(--sf-space-2xl)]">
           <aside className="order-2 min-w-0 space-y-[var(--sf-space-lg)] lg:order-1">
             <section>
-              <h2 className="sf-heading mb-3 text-[length:var(--sf-text-lg)]">Visit</h2>
+              <h2 className="sf-heading mb-3 text-[length:var(--sf-text-lg)]">{text('Visit', 'Visite nossa loja')}</h2>
               {hasAddress ? (
                 <>
                   <address className="not-italic">
@@ -123,26 +127,26 @@ export function ContactPage() {
                   {business.directionsHref && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       <a href={business.directionsHref} target="_blank" rel="noopener noreferrer" className="sf-btn sf-btn-primary">
-                        Directions
+                        {text('Directions', 'Como chegar')}
                         <ArrowUpRight className="size-4" aria-hidden="true" />
                       </a>
                       {business.phoneHref && business.phoneDisplay && (
-                        <a href={business.phoneHref} className="sf-btn sf-btn-ghost">Call</a>
+                        <a href={business.phoneHref} className="sf-btn sf-btn-ghost">{text('Call', 'Ligar')}</a>
                       )}
                     </div>
                   )}
                 </>
               ) : (
-                <p className="sf-muted text-[length:var(--sf-text-sm)]">Address not listed</p>
+                <p className="sf-muted text-[length:var(--sf-text-sm)]">{text('Address not listed', 'Endereço não informado')}</p>
               )}
             </section>
 
             <section>
-              <h2 className="sf-heading mb-3 text-[length:var(--sf-text-lg)]">Departments</h2>
+              <h2 className="sf-heading mb-3 text-[length:var(--sf-text-lg)]">{text('Departments', 'Departamentos')}</h2>
               {business.phoneDisplay || departments.length ? (
                 <dl className="border-t" style={{ borderColor: 'var(--sf-rule)' }}>
                   {business.phoneHref && business.phoneDisplay && (
-                    <InfoRow label="Phone">
+                    <InfoRow label={text('Phone', 'Telefone')}>
                       <a href={business.phoneHref} className="sf-link sf-figure">{business.phoneDisplay}</a>
                     </InfoRow>
                   )}
@@ -153,12 +157,12 @@ export function ContactPage() {
                   ))}
                 </dl>
               ) : (
-                <p className="sf-muted text-[length:var(--sf-text-sm)]">Contact details not listed</p>
+                <p className="sf-muted text-[length:var(--sf-text-sm)]">{text('Contact details not listed', 'Dados de contato não informados')}</p>
               )}
             </section>
 
             <section>
-              <h2 className="sf-heading mb-3 text-[length:var(--sf-text-lg)]">Hours</h2>
+              <h2 className="sf-heading mb-3 text-[length:var(--sf-text-lg)]">{text('Hours', 'Horários')}</h2>
               {hours.length ? (
                 <dl className="border-t" style={{ borderColor: 'var(--sf-rule)' }}>
                   {hours.map((row) => (
@@ -168,15 +172,15 @@ export function ContactPage() {
                   ))}
                 </dl>
               ) : (
-                <p className="sf-muted text-[length:var(--sf-text-sm)]">Hours not listed</p>
+                <p className="sf-muted text-[length:var(--sf-text-sm)]">{text('Hours not listed', 'Horários não informados')}</p>
               )}
             </section>
           </aside>
 
           <form onSubmit={handleSubmit} className="order-1 min-w-0 lg:order-2 lg:border-l lg:pl-[var(--sf-space-xl)]" style={{ borderColor: 'var(--sf-rule)' }}>
-            <h2 className="sf-heading mb-5 text-[length:var(--sf-text-xl)]">Message</h2>
+            <h2 className="sf-heading mb-5 text-[length:var(--sf-text-xl)]">{text('Message', 'Envie uma mensagem')}</h2>
             <div className="grid gap-4">
-              <Field label="First name" htmlFor="contact-first-name">
+              <Field label={text('First name', 'Nome')} htmlFor="contact-first-name">
                 <input
                   id="contact-first-name"
                   type="text"
@@ -187,7 +191,7 @@ export function ContactPage() {
                   className="sf-input"
                 />
               </Field>
-              <Field label="Last name" htmlFor="contact-last-name">
+              <Field label={text('Last name', 'Sobrenome')} htmlFor="contact-last-name">
                 <input
                   id="contact-last-name"
                   type="text"
@@ -198,7 +202,7 @@ export function ContactPage() {
                   className="sf-input"
                 />
               </Field>
-              <Field label="Email" htmlFor="contact-email">
+              <Field label={text('Email', 'E-mail')} htmlFor="contact-email">
                 <input
                   id="contact-email"
                   type="email"
@@ -209,7 +213,7 @@ export function ContactPage() {
                   className="sf-input"
                 />
               </Field>
-              <Field label="Phone" htmlFor="contact-phone" optional={formData.preferredContact === 'email'}>
+              <Field label={text('Phone', 'Telefone')} htmlFor="contact-phone" optional={formData.preferredContact === 'email'}>
                 <input
                   id="contact-phone"
                   type="tel"
@@ -221,7 +225,7 @@ export function ContactPage() {
                 />
               </Field>
               <div>
-                <p id="contact-preferred" className="sf-label">Preferred contact</p>
+                <p id="contact-preferred" className="sf-label">{text('Preferred contact', 'Prefiro receber contato por')}</p>
                 <div role="group" aria-labelledby="contact-preferred" className="sf-track">
                   {PREFERRED_CONTACT.map((option) => (
                     <button
@@ -236,7 +240,7 @@ export function ContactPage() {
                   ))}
                 </div>
               </div>
-              <Field label="Message" htmlFor="contact-message">
+              <Field label={text('Message', 'Mensagem')} htmlFor="contact-message">
                 <textarea
                   id="contact-message"
                   required
@@ -260,7 +264,7 @@ export function ContactPage() {
             <div className="mt-6 space-y-4">
               {submissionError && <Notice tone="bad">{submissionError}</Notice>}
               <button type="submit" disabled={isSubmitting} className="sf-btn sf-btn-primary w-full sm:w-auto sm:min-w-56">
-                {isSubmitting ? 'Sending…' : 'Send message'}
+                {isSubmitting ? text('Sending…', 'Enviando…') : text('Send message', 'Enviar mensagem')}
               </button>
             </div>
           </form>

@@ -8,6 +8,7 @@ import { CalendarClock, X } from 'lucide-react'
 import { cancelCustomerBooking, rescheduleCustomerBooking } from '../../actions/customerRecords'
 import { DEFAULT_SERVICE_SLOTS, DEFAULT_TEST_DRIVE_SLOTS, closedDayLabel, dayAvailability, localDateString } from '../../lib/bookingSlots'
 import { useStorefrontBusiness } from '../StorefrontBusinessProvider'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { ACTION_ROW, Field, Notice, RadioPills } from '../forms/RequestForm'
 
 type Mode = 'idle' | 'reschedule' | 'cancel'
@@ -24,6 +25,8 @@ export function BookingActions({
   canReschedule: boolean
 }) {
   const business = useStorefrontBusiness()
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('idle')
   const [date, setDate] = useState('')
@@ -36,7 +39,7 @@ export function BookingActions({
   if (!canCancel && !canReschedule) {
     return (
       <p className="sf-muted text-[length:var(--sf-text-sm)]">
-        {kind === 'service' ? 'Online changes closed. Contact the service department.' : 'Online changes closed. Contact the dealership.'}
+        {kind === 'service' ? (pt ? 'Alterações on-line encerradas. Entre em contato com a oficina.' : 'Online changes closed. Contact the service department.') : (pt ? 'Alterações on-line encerradas. Entre em contato com a loja.' : 'Online changes closed. Contact the dealership.')}
       </p>
     )
   }
@@ -54,7 +57,7 @@ export function BookingActions({
   const submitReschedule = (event: React.FormEvent) => {
     event.preventDefault()
     if (!date || !time) {
-      setError('Choose a date and time.')
+      setError(pt ? 'Escolha uma data e um horário.' : 'Choose a date and time.')
       return
     }
     setError(null)
@@ -64,7 +67,7 @@ export function BookingActions({
         setError(result.error)
         return
       }
-      setDone('Rescheduled')
+      setDone(pt ? 'Agendamento alterado' : 'Rescheduled')
       setMode('idle')
       setDate('')
       setTime('')
@@ -81,7 +84,7 @@ export function BookingActions({
         setError(result.error)
         return
       }
-      setDone('Cancelled')
+      setDone(pt ? 'Agendamento cancelado' : 'Cancelled')
       setMode('idle')
       router.refresh()
     })
@@ -96,13 +99,13 @@ export function BookingActions({
           {canReschedule && (
             <button type="button" onClick={() => reset('reschedule')} className="sf-btn sf-btn-ghost">
               <CalendarClock className="size-4" aria-hidden="true" />
-              Reschedule
+              {pt ? 'Alterar horário' : 'Reschedule'}
             </button>
           )}
           {canCancel && (
             <button type="button" onClick={() => reset('cancel')} className="sf-btn sf-btn-ghost">
               <X className="size-4" aria-hidden="true" />
-              Cancel booking
+              {pt ? 'Cancelar agendamento' : 'Cancel booking'}
             </button>
           )}
         </div>
@@ -112,15 +115,15 @@ export function BookingActions({
         <div className="sf-well space-y-3 p-4">
           <p className="sf-title-line text-[length:var(--sf-text-sm)]">
             <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-            <span>Cancel this {kind === 'service' ? 'appointment' : 'test drive'}?</span>
+            <span>{pt ? `Deseja cancelar ${kind === 'service' ? 'este atendimento' : 'este test-drive'}?` : `Cancel this ${kind === 'service' ? 'appointment' : 'test drive'}?`}</span>
           </p>
           {error && <Notice tone="bad">{error}</Notice>}
           <div className={ACTION_ROW}>
             <button type="button" disabled={pending} onClick={confirmCancel} className="sf-btn sf-btn-primary">
-              {pending ? 'Cancelling' : 'Confirm cancel'}
+              {pending ? (pt ? 'Cancelando' : 'Cancelling') : (pt ? 'Confirmar cancelamento' : 'Confirm cancel')}
             </button>
             <button type="button" disabled={pending} onClick={() => reset('idle')} className="sf-btn sf-btn-ghost">
-              Keep booking
+              {pt ? 'Manter agendamento' : 'Keep booking'}
             </button>
           </div>
         </div>
@@ -128,7 +131,7 @@ export function BookingActions({
 
       {mode === 'reschedule' && (
         <form onSubmit={submitReschedule} className="sf-well space-y-4 p-4">
-          <Field label="New date" htmlFor={`reschedule-date-${id}`}>
+          <Field label={pt ? 'Nova data' : 'New date'} htmlFor={`reschedule-date-${id}`}>
             <PlatformDateInput
               id={`reschedule-date-${id}`}
               required
@@ -144,11 +147,11 @@ export function BookingActions({
           {date && (availability.status === 'closed' ? (
             <p role="alert" className="sf-title-line text-[length:var(--sf-text-sm)]">
               <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-              <span>{closedDayLabel(availability)} Choose another date.</span>
+              <span>{closedDayLabel(availability)} {pt ? 'Escolha outra data.' : 'Choose another date.'}</span>
             </p>
           ) : (
             <RadioPills
-              legend="New time"
+              legend={pt ? 'Novo horário' : 'New time'}
               name={`reschedule-time-${id}`}
               required
               variant="grid"
@@ -161,10 +164,10 @@ export function BookingActions({
           {error && <Notice tone="bad">{error}</Notice>}
           <div className={ACTION_ROW}>
             <button type="submit" disabled={pending} className="sf-btn sf-btn-primary">
-              {pending ? 'Saving' : 'Save new time'}
+              {pending ? (pt ? 'Salvando' : 'Saving') : (pt ? 'Salvar novo horário' : 'Save new time')}
             </button>
             <button type="button" disabled={pending} onClick={() => reset('idle')} className="sf-btn sf-btn-ghost">
-              Keep current time
+              {pt ? 'Manter horário atual' : 'Keep current time'}
             </button>
           </div>
         </form>

@@ -5,6 +5,8 @@
 'use server'
 
 import { keystoneClient } from '../lib/keystoneClient'
+import { getRequestLocale } from '@/features/i18n/server'
+import { publicRequestError } from '../lib/security'
 
 export async function getItemValidationAction(listKey: string, itemId: string) {
   try {
@@ -67,7 +69,7 @@ export async function getItemValidationAction(listKey: string, itemId: string) {
     console.error("Dashboard operation failed (details redacted).")
     return {
       success: false,
-      error: "Unknown error"
+      error: publicRequestError(await getRequestLocale())
     }
   }
 }

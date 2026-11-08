@@ -22,6 +22,3 @@ export function publicSignUpsAllowed(env: Env = process.env) {
 export function passwordResetEmailAvailable(env: Env = process.env) {
   return Boolean(env.SMTP_HOST)
 }
-
-export const RESET_EMAIL_UNAVAILABLE =
-  'Password reset emails are not available because this store has no email delivery set up. Ask an administrator to set a new password for you.'

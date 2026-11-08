@@ -17,6 +17,7 @@ import { customerRequestReference } from '../lib/customerRequests'
 import { fillBlankFields, useCustomerPrefill } from '../lib/useCustomerPrefill'
 import { FINANCING_ANNUAL_INCOME_INPUT, isFinancingSubmitDisabled } from '../lib/financingForm'
 import { buildAmortizationSchedule, calculateFinancingEstimate, parseFinancingAmount } from '../lib/data/financing-calculator'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { classifyVehicleDetailResponse } from '../lib/data/vehicle-detail-response'
 import {
   Field,
@@ -41,11 +42,14 @@ const DEFAULT_DOWN_PAYMENT_PERCENT = 10
 const DOWN_PAYMENT_PRESETS = [0, 10, 15, 20, 25]
 
 function FinancingContent() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const text = (en: string, br: string) => pt ? br : en
   const business = useStorefrontBusiness()
   const currency = storefrontCurrency(business.currencyCode)
   const symbol = currencySymbol(currency)
-  const money = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
-  const wholeMoney = (value: number) => formatPrice(value, currency)
+  const money = (value: number) => new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
+  const wholeMoney = (value: number) => formatPrice(value, currency, locale)
   const searchParams = useSearchParams()
   const vehiclePrice = searchParams?.get('price') ?? null
   const vehicleId = searchParams?.get('vehicleId') || ''
@@ -98,8 +102,8 @@ function FinancingContent() {
   const selectedVehicle = currentVehicleLookup.status === 'available' ? currentVehicleLookup.vehicle : null
   const selectedPrice = selectedVehicle ? parseFinancingAmount(selectedVehicle.price) : null
   const selectedPriceLabel = selectedPrice?.status === 'valid' && selectedPrice.value > 0
-    ? formatPrice(selectedPrice.value, currency)
-    : 'Price unavailable'
+    ? formatPrice(selectedPrice.value, currency, locale)
+    : text('Price unavailable', 'Preço indisponível')
   const calculationInput = currentVehicleLookup.status === 'loading' ? { ...formData, vehiclePrice: '' } : formData
   const calculation = calculateFinancingEstimate(calculationInput)
   const calculatedResults = 'estimate' in calculation ? calculation.estimate : null
@@ -245,45 +249,45 @@ function FinancingContent() {
 
   const estimateReadout = calculation.status === 'ready' && calculatedResults ? (
     <div className="px-4 pb-4 pt-5">
-      <p className="sf-eyebrow">Monthly payment</p>
+      <p className="sf-eyebrow">{text('Monthly payment', 'Parcela mensal')}</p>
       <p className="sf-price mt-2 text-[length:var(--sf-text-display)]" aria-live="polite">
         {money(calculatedResults.monthlyPayment)}
       </p>
       <p className="sf-figure sf-muted mt-2 text-[length:var(--sf-text-sm)]">
-        {formData.loanTerm} mo / {formData.interestRate}% APR
+        {pt ? `${formData.loanTerm} meses / ${formData.interestRate}% a.a.` : `${formData.loanTerm} mo / ${formData.interestRate}% APR`}
       </p>
     </div>
   ) : (
     <div className="px-4 py-5">
-      <p className="sf-eyebrow">Monthly payment</p>
+      <p className="sf-eyebrow">{text('Monthly payment', 'Parcela mensal')}</p>
       {calculation.status === 'no-loan' ? (
         <p role="status" className="sf-title-line mt-3 text-[length:var(--sf-text-sm)]">
           <span className="sf-dot" data-tone="ok" aria-hidden="true" />
-          <span>Down payment and trade-in cover the full price.</span>
+          <span>{text('Down payment and trade-in cover the full price.', 'A entrada e o veículo na troca cobrem o valor total.')}</span>
         </p>
       ) : calculation.status === 'invalid-price' || calculation.status === 'invalid-input' ? (
         <p role="alert" className="sf-title-line mt-3 text-[length:var(--sf-text-sm)]">
           <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-          <span>Check the amounts entered.</span>
+          <span>{text('Check the amounts entered.', 'Confira os valores informados.')}</span>
         </p>
       ) : (
-        <p role="status" className="sf-faint mt-3 text-[length:var(--sf-text-sm)]">Enter a vehicle price.</p>
+        <p role="status" className="sf-faint mt-3 text-[length:var(--sf-text-sm)]">{text('Enter a vehicle price.', 'Informe o preço do veículo.')}</p>
       )}
     </div>
   )
 
   const estimateRows: StickerRowData[] = calculatedResults && (calculation.status === 'ready' || calculation.status === 'no-loan')
     ? [
-        { label: 'Vehicle price', value: wholeMoney(calculatedResults.vehiclePrice) },
-        { label: 'Down payment', value: `−${wholeMoney(calculatedResults.downPayment)}` },
+        { label: text('Vehicle price', 'Valor do veículo'), value: wholeMoney(calculatedResults.vehiclePrice) },
+        { label: text('Down payment', 'Entrada'), value: `−${wholeMoney(calculatedResults.downPayment)}` },
         ...(calculatedResults.tradeInValue > 0
-          ? [{ label: 'Trade-in', value: `−${wholeMoney(calculatedResults.tradeInValue)}` }]
+          ? [{ label: text('Trade-in', 'Veículo na troca'), value: `−${wholeMoney(calculatedResults.tradeInValue)}` }]
           : []),
-        { label: 'Loan amount', value: wholeMoney(calculatedResults.loanAmount), strong: true },
+        { label: text('Loan amount', 'Valor financiado'), value: wholeMoney(calculatedResults.loanAmount), strong: true },
         ...(calculation.status === 'ready'
           ? [
-              { label: 'Total interest', value: `+${money(calculatedResults.totalInterest)}` },
-              { label: 'Total payment', value: money(calculatedResults.totalPayment), strong: true },
+              { label: text('Total interest', 'Total de juros'), value: `+${money(calculatedResults.totalInterest)}` },
+              { label: text('Total payment', 'Total pago'), value: money(calculatedResults.totalPayment), strong: true },
             ]
           : []),
       ]
@@ -291,12 +295,12 @@ function FinancingContent() {
 
   const summary = (
     <Sticker
-      title="Payment estimate"
-      meta={`${formData.loanTerm} mo`}
+      title={text('Payment estimate', 'Simulação de financiamento')}
+      meta={pt ? `${formData.loanTerm} meses` : `${formData.loanTerm} mo`}
       rows={estimateRows}
-      footer={<p className="sf-faint text-[length:var(--sf-text-xs)]">Estimate. Actual rates and terms may differ.</p>}
+      footer={<p className="sf-faint text-[length:var(--sf-text-xs)]">{text('Estimate. Actual rates and terms may differ.', 'Simulação. As taxas e condições reais podem variar.')}</p>}
     >
-      {selectedVehicle && <StickerVehicle vehicle={selectedVehicle} label={`Vehicle / ${selectedPriceLabel}`} />}
+      {selectedVehicle && <StickerVehicle vehicle={selectedVehicle} label={`${text('Vehicle', 'Veículo')} / ${selectedPriceLabel}`} />}
       <div className={estimateRows.length ? 'border-b border-dashed' : undefined} style={{ borderColor: 'var(--sf-rule)' }}>
         {estimateReadout}
       </div>
@@ -307,40 +311,40 @@ function FinancingContent() {
 
   return (
     <>
-      <PageHeader title="Payment estimate" />
+      <PageHeader title={text('Payment estimate', 'Simulação de financiamento')} />
 
       <RequestLayout summary={summary}>
         <div className="space-y-[var(--sf-space-xl)]">
           {vehicleId && currentVehicleLookup.status === 'loading' && (
-            <Notice role="status">Loading vehicle…</Notice>
+            <Notice role="status">{text('Loading vehicle…', 'Carregando veículo…')}</Notice>
           )}
           {vehicleId && currentVehicleLookup.status === 'not-found' && (
             <Notice tone="warn" role="status">
-              This vehicle is no longer available.{' '}
-              <Link href="/inventory" className="sf-link">Browse inventory</Link>
+                {text('This vehicle is no longer available.', 'Este veículo não está mais disponível.')} {' '}
+              <Link href="/inventory" className="sf-link">{text('Browse inventory', 'Ver estoque')}</Link>
             </Notice>
           )}
           {vehicleId && currentVehicleLookup.status === 'error' && (
             <Notice tone="bad">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span>This vehicle couldn&apos;t be loaded.</span>
-                <button type="button" onClick={retryVehicleLookup} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">Retry</button>
+                <span>{text('This vehicle couldn’t be loaded.', 'Não foi possível carregar este veículo.')}</span>
+                <button type="button" onClick={retryVehicleLookup} className="sf-btn sf-btn-ghost sf-btn-sm min-h-10">{text('Retry', 'Tentar novamente')}</button>
               </div>
             </Notice>
           )}
 
           <FormSection
-            title="Loan"
+            title={text('Loan', 'Financiamento')}
             first
             aside={selectedVehicle ? (
               <Link href={`/inventory/${selectedVehicle.id}`} className="sf-link shrink-0 text-[length:var(--sf-text-sm)]">
-                Vehicle details
+                {text('Vehicle details', 'Detalhes do veículo')}
               </Link>
             ) : undefined}
           >
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Vehicle price" htmlFor="financing-vehicle-price">
+                <Field label={text('Vehicle price', 'Valor do veículo')} htmlFor="financing-vehicle-price">
                   <div className="relative">
                     <span className="sf-figure sf-faint pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">{symbol}</span>
                     <input
@@ -360,17 +364,17 @@ function FinancingContent() {
                         }))
                       }}
                       className="sf-input sf-figure pl-8"
-                      placeholder="e.g. 35,000"
+                      placeholder={text('e.g. 35,000', 'Ex.: 35.000')}
                       step="0.01"
                       min="0"
                       aria-invalid={invalidPriceFromLink || undefined}
                     />
                   </div>
                   {invalidPriceFromLink && (
-                    <p role="alert" className="sf-error">Enter a vehicle price.</p>
+                    <p role="alert" className="sf-error">{text('Enter a vehicle price.', 'Informe o preço do veículo.')}</p>
                   )}
                 </Field>
-                <Field label="APR" htmlFor="financing-apr">
+                <Field label={text('Interest rate', 'Taxa de juros anual')} htmlFor="financing-apr">
                   <div className="relative">
                     <input
                       id="financing-apr"
@@ -379,7 +383,7 @@ function FinancingContent() {
                       value={formData.interestRate}
                       onChange={(e) => setFormData((prev) => ({ ...prev, interestRate: parseFloat(e.target.value) || 0 }))}
                       className="sf-input sf-figure pr-8"
-                      placeholder="e.g. 7.5"
+                      placeholder={text('e.g. 7.5', 'Ex.: 7,5')}
                       step="0.1"
                       min="0"
                       max="30"
@@ -390,7 +394,7 @@ function FinancingContent() {
               </div>
 
               <div>
-                <p id="financing-loan-term" className="sf-label">Term</p>
+                <p id="financing-loan-term" className="sf-label">{text('Term', 'Prazo')}</p>
                 <div role="group" aria-labelledby="financing-loan-term" className="sf-track sf-track-block">
                   {LOAN_TERMS.map((term) => (
                     <button
@@ -401,7 +405,7 @@ function FinancingContent() {
                       aria-pressed={formData.loanTerm === term}
                     >
                       <span className="sf-figure text-[length:var(--sf-text-lg)]">{term}</span>
-                      <span className="sf-faint text-[length:var(--sf-text-xs)] max-[379px]:hidden">mo</span>
+                      <span className="sf-faint text-[length:var(--sf-text-xs)] max-[379px]:hidden">{pt ? 'meses' : 'mo'}</span>
                     </button>
                   ))}
                 </div>
@@ -409,10 +413,10 @@ function FinancingContent() {
 
               <div>
                 <div className="flex items-baseline justify-between gap-3">
-                  <label htmlFor="financing-down-payment" className="sf-label">Down payment</label>
+                  <label htmlFor="financing-down-payment" className="sf-label">{text('Down payment', 'Entrada')}</label>
                   <span className="sf-figure sf-muted text-[length:var(--sf-text-sm)]">{formData.downPaymentPercent.toFixed(1)}%</span>
                 </div>
-                <div role="group" aria-label="Down payment share" className="sf-track sf-track-block mb-3">
+                <div role="group" aria-label={text('Down payment share', 'Percentual de entrada')} className="sf-track sf-track-block mb-3">
                   {DOWN_PAYMENT_PRESETS.map((percent) => (
                     <button
                       key={percent}
@@ -436,7 +440,7 @@ function FinancingContent() {
                       value={formData.downPayment}
                       onChange={(e) => handleDownPaymentChange(e.target.value)}
                       className="sf-input sf-figure pl-8"
-                      placeholder="e.g. 3,500"
+                      placeholder={text('e.g. 3,500', 'Ex.: 3.500')}
                       step="100"
                       min="0"
                     />
@@ -451,14 +455,14 @@ function FinancingContent() {
                       value={formData.downPaymentPercent}
                       onChange={(e) => setDownPaymentPercent(parseFloat(e.target.value))}
                       className="h-11 w-full min-w-0 accent-[var(--sf-accent)]"
-                      aria-label="Down payment percentage"
+                      aria-label={text('Down payment percentage', 'Percentual de entrada')}
                     />
                     <span className="sf-figure sf-faint text-[length:var(--sf-text-xs)]">50%</span>
                   </div>
                 </div>
               </div>
 
-              <Field label="Trade-in amount" htmlFor="financing-trade-in" className="sm:max-w-sm">
+              <Field label={text('Trade-in amount', 'Valor do veículo na troca')} htmlFor="financing-trade-in" className="sm:max-w-sm">
                 <div className="relative">
                   <span className="sf-figure sf-faint pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">{symbol}</span>
                   <input
@@ -468,7 +472,7 @@ function FinancingContent() {
                     value={formData.tradeInValue}
                     onChange={(e) => setFormData((prev) => ({ ...prev, tradeInValue: e.target.value }))}
                     className="sf-input sf-figure pl-8"
-                    placeholder="e.g. 5,000"
+                    placeholder={text('e.g. 5,000', 'Ex.: 5.000')}
                     step="100"
                     min="0"
                   />
@@ -477,7 +481,7 @@ function FinancingContent() {
                   href={selectedVehicle ? `/trade-in?vehicleId=${selectedVehicle.id}` : '/trade-in'}
                   className="sf-link mt-1 inline-flex min-h-11 items-center text-[length:var(--sf-text-sm)]"
                 >
-                  Request a trade-in review
+                  {text('Request a trade-in review', 'Solicitar avaliação para troca')}
                 </Link>
               </Field>
             </div>
@@ -493,7 +497,7 @@ function FinancingContent() {
                 aria-expanded={showAmortization}
                 className="flex min-h-11 w-full items-center justify-between gap-4 text-left"
               >
-                <span className="sf-heading text-[length:var(--sf-text-xl)]">Amortization</span>
+                <span className="sf-heading text-[length:var(--sf-text-xl)]">{text('Amortization', 'Amortização')}</span>
                 <ChevronDown
                   className={`size-5 shrink-0 transition-transform ${showAmortization ? 'rotate-180' : ''}`}
                   aria-hidden="true"
@@ -505,11 +509,11 @@ function FinancingContent() {
                   <table className="sf-figure w-full min-w-[30rem] text-[length:var(--sf-text-sm)]">
                     <thead>
                       <tr>
-                        <th className="sf-eyebrow px-3 py-2.5 text-left font-medium">Month</th>
-                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">Payment</th>
-                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">Principal</th>
-                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">Interest</th>
-                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">Balance</th>
+                        <th className="sf-eyebrow px-3 py-2.5 text-left font-medium">{text('Month', 'Mês')}</th>
+                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">{text('Payment', 'Parcela')}</th>
+                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">{text('Principal', 'Amortização')}</th>
+                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">{text('Interest', 'Juros')}</th>
+                        <th className="sf-eyebrow px-3 py-2.5 text-right font-medium">{text('Balance', 'Saldo devedor')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -538,50 +542,50 @@ function FinancingContent() {
             </section>
           )}
 
-          <FormSection title="Financing request">
+          <FormSection title={text('Financing request', 'Solicitação de financiamento')}>
             {applicationStatus === 'success' ? (
               <div className="space-y-5">
                 <p role="status" className="sf-title-line">
                   <span className="sf-dot" data-tone="ok" aria-hidden="true" />
-                  <span className="sf-heading text-[length:var(--sf-text-2xl)]">Request received</span>
+                  <span className="sf-heading text-[length:var(--sf-text-2xl)]">{text('Request received', 'Solicitação recebida')}</span>
                 </p>
                 <dl className="sf-spec">
                   <div>
-                    <dt>Dealer</dt>
+                    <dt>{text('Dealer', 'Concessionária')}</dt>
                     <dd>{business.fullName}</dd>
                   </div>
                   {applicationReference && (
                     <div>
-                      <dt>Reference</dt>
+                      <dt>{text('Reference', 'Protocolo')}</dt>
                       <dd className="sf-figure">{applicationReference}</dd>
                     </div>
                   )}
                   {selectedVehicle && (
                     <div>
-                      <dt>Vehicle</dt>
+                      <dt>{text('Vehicle', 'Veículo')}</dt>
                       <dd>{vehicleTitle(selectedVehicle)}</dd>
                     </div>
                   )}
                 </dl>
-                <nav aria-label="Next" className={ACTION_ROW}>
+                <nav aria-label={text('Next', 'Próximas etapas')} className={ACTION_ROW}>
                   <Link
                     href={selectedVehicle ? `/inventory/${selectedVehicle.id}` : '/inventory'}
                     className="sf-btn sf-btn-primary"
                   >
-                    {selectedVehicle ? 'Return to vehicle' : 'Browse inventory'}
+                    {selectedVehicle ? text('Return to vehicle', 'Voltar ao veículo') : text('Browse inventory', 'Ver estoque')}
                   </Link>
                   <Link
                     href={selectedVehicle ? `/test-drive?vehicleId=${selectedVehicle.id}` : '/test-drive'}
                     className="sf-btn sf-btn-ghost"
                   >
-                    Test drive
+                    {text('Test drive', 'Agendar test-drive')}
                   </Link>
-                  <Link href="/account" className="sf-btn sf-btn-ghost">Account</Link>
+                  <Link href="/account" className="sf-btn sf-btn-ghost">{text('Account', 'Minha conta')}</Link>
                 </nav>
               </div>
             ) : (
               <form onSubmit={handleApplicationSubmit} className="grid gap-4 sm:grid-cols-2">
-                <Field label="Full name" htmlFor="financing-full-name" className="sm:col-span-2">
+                <Field label={text('Full name', 'Nome completo')} htmlFor="financing-full-name" className="sm:col-span-2">
                   <input
                     id="financing-full-name"
                     type="text"
@@ -592,7 +596,7 @@ function FinancingContent() {
                     className="sf-input"
                   />
                 </Field>
-                <Field label="Email" htmlFor="financing-email">
+                <Field label="E-mail" htmlFor="financing-email">
                   <input
                     id="financing-email"
                     type="email"
@@ -603,7 +607,7 @@ function FinancingContent() {
                     className="sf-input"
                   />
                 </Field>
-                <Field label="Phone" htmlFor="financing-phone">
+                <Field label={text('Phone', 'Telefone')} htmlFor="financing-phone">
                   <input
                     id="financing-phone"
                     type="tel"
@@ -614,7 +618,7 @@ function FinancingContent() {
                     className="sf-input"
                   />
                 </Field>
-                <Field label="Employment status" htmlFor="financing-employment">
+                <Field label={text('Employment status', 'Situação profissional')} htmlFor="financing-employment">
                   <PlatformSelect
                     id="financing-employment"
                     name="employmentStatus"
@@ -622,17 +626,17 @@ function FinancingContent() {
                     value={applicationForm.employmentStatus}
                     onValueChange={(value) => setApplicationForm((prev) => ({ ...prev, employmentStatus: value }))}
                     className="sf-input sf-trigger"
-                    placeholder="Select"
+                    placeholder={text('Select', 'Selecione')}
                     options={[
-                      { value: 'employed', label: 'Employed' },
-                      { value: 'self-employed', label: 'Self-employed' },
-                      { value: 'retired', label: 'Retired' },
-                      { value: 'student', label: 'Student' },
-                      { value: 'other', label: 'Other' },
+                      { value: 'employed', label: text('Employed', 'Empregado(a)') },
+                      { value: 'self-employed', label: text('Self-employed', 'Autônomo(a)') },
+                      { value: 'retired', label: text('Retired', 'Aposentado(a)') },
+                      { value: 'student', label: text('Student', 'Estudante') },
+                      { value: 'other', label: text('Other', 'Outro') },
                     ]}
                   />
                 </Field>
-                <Field label="Annual income" htmlFor="financing-income">
+                <Field label={text('Annual income', 'Renda mensal')} htmlFor="financing-income">
                   <div className="relative">
                     <span className="sf-figure sf-faint pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">{symbol}</span>
                     <input
@@ -648,7 +652,7 @@ function FinancingContent() {
                     />
                   </div>
                 </Field>
-                <Field label="Credit range" htmlFor="financing-credit" className="sm:col-span-2">
+                <Field label={text('Credit range', 'Faixa de crédito')} htmlFor="financing-credit" className="sm:col-span-2">
                   <PlatformSelect
                     id="financing-credit"
                     name="creditTier"
@@ -656,13 +660,13 @@ function FinancingContent() {
                     value={applicationForm.creditTier}
                     onValueChange={(value) => setApplicationForm((prev) => ({ ...prev, creditTier: value }))}
                     className="sf-input sf-trigger"
-                    placeholder="Self-reported credit range"
+                    placeholder={text('Self-reported credit range', 'Informe sua faixa de crédito')}
                     options={[
-                      { value: 'excellent-720-plus', label: 'Excellent (720+)' },
-                      { value: 'good-680-719', label: 'Good (680–719)' },
-                      { value: 'fair-620-679', label: 'Fair (620–679)' },
-                      { value: 'rebuilding-under-620', label: 'Rebuilding (<620)' },
-                      { value: 'unknown', label: 'Not sure' },
+                      { value: 'excellent-720-plus', label: text('Excellent (720+)', 'Excelente (720+)') },
+                      { value: 'good-680-719', label: text('Good (680–719)', 'Boa (680–719)') },
+                      { value: 'fair-620-679', label: text('Fair (620–679)', 'Regular (620–679)') },
+                      { value: 'rebuilding-under-620', label: text('Rebuilding (<620)', 'Em reconstrução (<620)') },
+                      { value: 'unknown', label: text('Not sure', 'Não sei') },
                     ]}
                   />
                 </Field>
@@ -674,7 +678,7 @@ function FinancingContent() {
                     onChange={(e) => setApplicationForm((prev) => ({ ...prev, consent: e.target.checked }))}
                     className="mt-0.5 size-5 shrink-0 accent-[var(--sf-accent)]"
                   />
-                  <span>I agree to be contacted about financing options.</span>
+                  <span>{text('I agree to be contacted about financing options.', 'Concordo em receber contato sobre opções de financiamento.')}</span>
                 </label>
                 <label className="sf-muted flex min-h-11 cursor-pointer items-start gap-3 text-[length:var(--sf-text-sm)] sm:col-span-2">
                   <input
@@ -684,7 +688,7 @@ function FinancingContent() {
                     onChange={(e) => setApplicationForm((prev) => ({ ...prev, privacyAcknowledged: e.target.checked }))}
                     className="mt-0.5 size-5 shrink-0 accent-[var(--sf-accent)]"
                   />
-                  <span>I acknowledge that {business.fullName} stores this application to review financing options with lenders.</span>
+                  <span>{text(`I acknowledge that ${business.fullName} stores this application to review financing options with lenders.`, `Estou ciente de que ${business.fullName} armazenará esta solicitação para analisar opções de financiamento junto às instituições financeiras.`)}</span>
                 </label>
                 <input
                   type="text"
@@ -699,7 +703,7 @@ function FinancingContent() {
                 {applicationStatus === 'error' && (
                   <div className="sm:col-span-2">
                     <Notice tone="bad">
-                      {applicationError || 'We could not submit your request. Please try again or contact the dealership.'}
+                      {applicationError || text('We could not submit your request. Please try again or contact the dealership.', 'Não foi possível enviar sua solicitação. Tente novamente ou entre em contato com a concessionária.')}
                     </Notice>
                   </div>
                 )}
@@ -709,7 +713,7 @@ function FinancingContent() {
                     disabled={isFinancingSubmitDisabled(isApplying)}
                     className="sf-btn sf-btn-primary w-full sm:w-auto sm:min-w-56"
                   >
-                    {isApplying ? 'Sending…' : 'Send financing request'}
+                    {isApplying ? text('Sending…', 'Enviando…') : text('Send financing request', 'Solicitar financiamento')}
                   </button>
                 </div>
               </form>
@@ -722,9 +726,10 @@ function FinancingContent() {
 }
 
 function FinancingFallback() {
+  const { locale } = useLocale()
   return (
     <>
-      <PageHeader title="Payment estimate" />
+      <PageHeader title={locale === 'pt-BR' ? 'Simulação de financiamento' : 'Payment estimate'} />
       <Container className="sf-section">
         <div className="grid gap-[var(--sf-space-xl)] lg:grid-cols-[minmax(0,1fr)_23rem]">
           <div className="sf-skeleton h-96" />

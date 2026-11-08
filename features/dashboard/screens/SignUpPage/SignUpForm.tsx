@@ -52,7 +52,7 @@ function SubmitButton() {
 }
 
 export function SignUpForm() {
-  const { t } = useLocale()
+  const { t, locale } = useLocale()
   const [showPassword, setShowPassword] = useState(false);
   const [state, formAction] = useActionState(signUp, initialState);
 
@@ -89,7 +89,7 @@ export function SignUpForm() {
               id="email"
               name="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder={locale === 'pt-BR' ? 'voce@exemplo.com.br' : 'you@example.com'}
               className="mt-2 bg-muted/40"
               defaultValue={state.formData.email}
               required

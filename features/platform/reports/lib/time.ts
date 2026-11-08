@@ -19,9 +19,9 @@ export function zonedDayStart(date: string, timeZone: string, addDays = 0) {
   return new Date(wall - zoneOffsetMs(first, timeZone))
 }
 
-export function formatDateTime(value: string | null | undefined, timeZone: string) {
+export function formatDateTime(value: string | null | undefined, timeZone: string, locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return '-'
-  return new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
 export function formatAge(value: string | null | undefined, now = Date.now()) {

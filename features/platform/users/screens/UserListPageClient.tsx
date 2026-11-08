@@ -25,6 +25,7 @@ import { buildOrderByClause } from '../../../dashboard/lib/buildOrderByClause'
 import { buildWhereClause } from '../../../dashboard/lib/buildWhereClause'
 import { DeskHeader, DeskSection, DeskTable, Notice, Pill, Status, Td, Th, Tr, Track } from '../../components/desk'
 import Link from 'next/link'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface UserListPageClientProps {
   list: any
@@ -43,16 +44,16 @@ interface UserListPageClientProps {
   } | null
 }
 
-function EmptyStateDefault() {
-  return <p className="py-12 text-center text-sm text-muted-foreground">No staff</p>
+function EmptyStateDefault({ pt }: { pt: boolean }) {
+  return <p className="py-12 text-center text-sm text-muted-foreground">{pt ? 'Nenhuma pessoa na equipe' : 'No staff'}</p>
 }
 
-function EmptyStateSearch({ onResetFilters }: { onResetFilters: () => void }) {
+function EmptyStateSearch({ onResetFilters, pt }: { onResetFilters: () => void; pt: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-12 text-center">
-      <p className="text-sm text-muted-foreground">No matches</p>
+      <p className="text-sm text-muted-foreground">{pt ? 'Nenhum resultado' : 'No matches'}</p>
       <Track>
-        <Pill size="sm" onClick={onResetFilters}>Reset filters</Pill>
+        <Pill size="sm" onClick={onResetFilters}>{pt ? 'Limpar filtros' : 'Reset filters'}</Pill>
       </Track>
     </div>
   )
@@ -66,6 +67,8 @@ export function UserListPageClient({
   statusCounts
 }: UserListPageClientProps) {
   const router = useRouter()
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const searchParams = useSearchParams()
   const { basePath } = useDashboard()
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false)
@@ -151,28 +154,28 @@ export function UserListPageClient({
 
   if (!list) {
     return (
-      <PageContainer title="List not found">
+      <PageContainer title={pt ? 'Lista não encontrada' : "List not found"}>
         <div className="px-4 md:px-6">
-          <Notice tone="bad">List not found</Notice>
+          <Notice tone="bad">{pt ? 'Lista não encontrada' : "List not found"}</Notice>
         </div>
       </PageContainer>
     )
   }
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Staff' }
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Equipe' : 'Staff' }
   ]
 
   const header = (
     <DeskHeader
-      title="Staff"
-      meta={statusCounts ? `${statusCounts.all} ${statusCounts.all === 1 ? 'member' : 'members'} · ${statusCounts.sales} sales · ${statusCounts.service} service · ${statusCounts.finance} finance` : undefined}
+      title={pt ? 'Equipe' : 'Staff'}
+      meta={statusCounts ? `${statusCounts.all} ${pt ? 'pessoas' : statusCounts.all === 1 ? 'member' : 'members'} · ${statusCounts.sales} ${pt ? 'vendas' : 'sales'} · ${statusCounts.service} ${pt ? 'oficina' : 'service'} · ${statusCounts.finance} ${pt ? 'financeiro' : 'finance'}` : undefined}
       actions={
-        <Pill variant="primary" onClick={() => setIsCreateDrawerOpen(true)} aria-label="Add staff member">
+        <Pill variant="primary" onClick={() => setIsCreateDrawerOpen(true)} aria-label={pt ? 'Adicionar pessoa à equipe' : 'Add staff member'}>
           <CirclePlus />
-          Add staff member
+          {pt ? 'Adicionar pessoa' : 'Add staff member'}
         </Pill>
       }
     />
@@ -189,19 +192,19 @@ export function UserListPageClient({
   const isEmpty = data?.count === 0 && !isFiltered
 
   return (
-    <PageContainer title="Staff" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Equipe' : 'Staff'} header={header} breadcrumbs={breadcrumbs}>
       {/* Needs you: staff waiting on a role */}
       {!error && needsRole.length > 0 && (
         <div className="px-4 pb-6 md:px-6">
-          <DeskSection title="Needs a role" count={needsRole.length} id="staff-needs-role">
+          <DeskSection title={pt ? 'Sem função definida' : 'Needs a role'} count={needsRole.length} id="staff-needs-role">
             <DeskTable aria-labelledby="staff-needs-role">
               <thead>
                 <tr>
-                  <Th>Member</Th>
-                  <Th priority={2}>Functions</Th>
-                  <Th>Status</Th>
-                  <Th align="right" priority={2}>Added</Th>
-                  <Th align="right"><span className="sr-only">Action</span></Th>
+                  <Th>{pt ? 'Pessoa' : 'Member'}</Th>
+                  <Th priority={2}>{pt ? 'Áreas' : 'Functions'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th align="right" priority={2}>{pt ? 'Adicionada em' : 'Added'}</Th>
+                  <Th align="right"><span className="sr-only">{pt ? 'Ação' : 'Action'}</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -213,14 +216,14 @@ export function UserListPageClient({
                         <span className="block font-medium text-foreground [overflow-wrap:anywhere]">{user.name || user.email}</span>
                         <span className="block text-xs text-muted-foreground [overflow-wrap:anywhere]">{user.email}</span>
                       </Td>
-                      <Td priority={2} className="text-muted-foreground">{functions.length ? functions.map((item) => item.label).join(', ') : 'None'}</Td>
-                      <Td><Status tone="warn">No role</Status></Td>
+                      <Td priority={2} className="text-muted-foreground">{functions.length ? functions.map((item) => item.label).join(', ') : (pt ? 'Nenhuma' : 'None')}</Td>
+                      <Td><Status tone="warn">{pt ? 'Sem função' : "No role"}</Status></Td>
                       <Td align="right" priority={2} className="whitespace-nowrap text-muted-foreground">
-                        {user.createdAt ? formatInZone(user.createdAt, undefined, "date") : 'Unknown'}
+                        {user.createdAt ? formatInZone(user.createdAt, locale, "date") : (pt ? 'Desconhecida' : 'Unknown')}
                       </Td>
                       <Td align="right" className="w-px">
                         <Pill size="sm" asChild className="max-sm:h-10">
-                          <Link href={`${basePath}/users/${user.id}`}>Assign role</Link>
+                          <Link href={`${basePath}/users/${user.id}`}>{pt ? 'Definir função' : 'Assign role'}</Link>
                         </Pill>
                       </Td>
                     </Tr>
@@ -255,28 +258,28 @@ export function UserListPageClient({
       {/* Staff list */}
       {error ? (
         <div className="px-4 md:px-6">
-          <Notice tone="bad">Unable to load staff: {error}</Notice>
+          <Notice tone="bad">{pt ? 'Não foi possível carregar a equipe' : 'Unable to load staff'}: {error}</Notice>
         </div>
       ) : isEmpty ? (
         <div className="px-4 md:px-6">
-          <EmptyStateDefault />
+          <EmptyStateDefault pt={pt} />
         </div>
       ) : data?.count === 0 ? (
         <div className="px-4 md:px-6">
-          <EmptyStateSearch onResetFilters={handleResetFilters} />
+          <EmptyStateSearch onResetFilters={handleResetFilters} pt={pt} />
         </div>
       ) : (
         <>
           <div className="px-4 pb-2 md:px-6">
-            <DeskTable aria-label="Staff">
+            <DeskTable aria-label={pt ? 'Equipe' : "Staff"}>
               <thead>
                 <tr>
-                  <Th>Member</Th>
-                  <Th priority={2}>Role</Th>
-                  <Th priority={3}>Functions</Th>
-                  <Th>Status</Th>
-                  <Th align="right" priority={2}>Workload</Th>
-                  <Th align="right"><span className="sr-only">Actions</span></Th>
+                  <Th>{pt ? 'Pessoa' : 'Member'}</Th>
+                  <Th priority={2}>{pt ? 'Função' : 'Role'}</Th>
+                  <Th priority={3}>{pt ? 'Áreas' : 'Functions'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
+                  <Th align="right" priority={2}>{pt ? 'Atividades' : 'Workload'}</Th>
+                  <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                 </tr>
               </thead>
               <tbody>
@@ -294,7 +297,7 @@ export function UserListPageClient({
                 currentPage={currentPage}
                 total={data.count}
                 pageSize={pageSize}
-                list={{ singular: 'staff member', plural: 'staff members' }}
+                list={{ singular: pt ? 'pessoa da equipe' : 'staff member', plural: pt ? 'pessoas da equipe' : 'staff members' }}
               />
             </div>
           )}

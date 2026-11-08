@@ -1,6 +1,7 @@
 'use client'
 
 import { Node } from 'slate'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { DocumentRenderer } from '@keystone-6/document-renderer'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -323,6 +324,7 @@ interface FilterProps {
  * Filter component for document fields
  */
 export function Filter({ value, onChange, operator }: FilterProps) {
+  const { locale } = useLocale()
   // Get the filter type based on the operator
   operator = operator as keyof ReturnType<typeof getFilterTypes>
 
@@ -339,7 +341,7 @@ export function Filter({ value, onChange, operator }: FilterProps) {
           Empty
         </ToggleGroupItem>
         <ToggleGroupItem value="false" className="text-xs">
-          Not Empty
+          {locale === 'pt-BR' ? 'Não vazio' : 'Not Empty'}
         </ToggleGroupItem>
       </ToggleGroup>
     )
@@ -351,7 +353,7 @@ export function Filter({ value, onChange, operator }: FilterProps) {
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder="Enter search text"
+      placeholder={locale === 'pt-BR' ? 'Digite o texto para buscar' : 'Enter search text'}
       className="w-full"
     />
   )

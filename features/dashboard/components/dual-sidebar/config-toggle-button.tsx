@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAiConfig } from "../../hooks/use-ai-config";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface ConfigToggleButtonProps {
   disabled?: boolean;
@@ -17,6 +18,8 @@ export function ConfigToggleButton({
   disabled = false,
 }: ConfigToggleButtonProps) {
   const { config, setConfig } = useAiConfig();
+  const { locale } = useLocale();
+  const pt = locale === 'pt-BR';
   const isGlobal = config.keyMode === "env";
 
   const handleToggle = () => {
@@ -48,7 +51,7 @@ export function ConfigToggleButton({
           <div className="text-xs max-w-[240px]">
             {isGlobal ? (
               <>
-                <p className="font-medium mb-1">Global Configuration</p>
+                <p className="font-medium mb-1">{pt ? 'Configuração global' : 'Global Configuration'}</p>
                 <p className="text-muted-foreground mb-2">
                   Using environment variables set by the application deployer
                 </p>
@@ -66,7 +69,7 @@ export function ConfigToggleButton({
               </>
             ) : (
               <>
-                <p className="font-medium mb-1">Local Configuration</p>
+                <p className="font-medium mb-1">{pt ? 'Configuração local' : 'Local Configuration'}</p>
                 <p className="text-muted-foreground">
                   Using your own API key and settings. Keys are saved locally to your machine.
                 </p>

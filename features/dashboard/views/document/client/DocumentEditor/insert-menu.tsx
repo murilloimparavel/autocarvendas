@@ -17,6 +17,7 @@ import { useOverlayTriggerState } from '@react-stately/overlays'
 import { Popover as ShadPopover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { cn } from '@/lib/utils' // Assuming cn utility is available
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export * from './insert-menu-shared'
 
@@ -30,7 +31,8 @@ function getOptions(
   editor: Editor,
   editorDocumentFeatures: any,
   componentBlocks: Record<string, ComponentBlock>,
-  relationships: Relationships
+  relationships: Relationships,
+  locale: string
 ): Option[] {
   const codeBlockEntry = Editor.nodes(editor, { match: node => node.type === 'code' }).next().value
   const isInCodeBlock = !!codeBlockEntry
@@ -56,7 +58,7 @@ function getOptions(
       },
     })),
     ...(isInCodeBlock ? [] : editorDocumentFeatures.formatting.headingLevels.map((level: any) => ({
-      label: `Heading ${level}`,
+      label: locale === 'pt-BR' ? `Título ${level}` : `Heading ${level}`,
       insert(editor: Editor) {
         insertNodesButReplaceIfSelectionIsAtEmptyParagraphOrHeading(editor, {
           type: 'heading',
@@ -66,7 +68,7 @@ function getOptions(
       },
     }))),
     !isInCodeBlock && editorDocumentFeatures.formatting.blockTypes.blockquote && {
-      label: 'Blockquote',
+      label: locale === 'pt-BR' ? 'Citação' : 'Blockquote',
       insert(editor) {
         insertNodesButReplaceIfSelectionIsAtEmptyParagraphOrHeading(editor, {
           type: 'blockquote',
@@ -75,7 +77,7 @@ function getOptions(
       },
     },
     !isInCodeBlock && editorDocumentFeatures.formatting.blockTypes.code && {
-      label: 'Code block',
+      label: locale === 'pt-BR' ? 'Bloco de código' : 'Code block',
       insert(editor) {
         insertNodesButReplaceIfSelectionIsAtEmptyParagraphOrHeading(editor, {
           type: 'code',
@@ -84,7 +86,7 @@ function getOptions(
       },
     },
     !isInCodeBlock && editorDocumentFeatures.dividers && {
-      label: 'Divider',
+      label: locale === 'pt-BR' ? 'Divisor' : 'Divider',
       insert(editor) {
         insertNodesButReplaceIfSelectionIsAtEmptyParagraphOrHeading(editor, {
           type: 'divider',
@@ -93,13 +95,13 @@ function getOptions(
       },
     },
     !!editorDocumentFeatures.layouts.length && {
-      label: 'Layout',
+      label: locale === 'pt-BR' ? 'Layout' : 'Layout',
       insert(editor) {
         insertLayout(editor, editorDocumentFeatures.layouts[0])
       },
     },
     !isInCodeBlock && !isInHeading && editorDocumentFeatures.formatting.listTypes.ordered && {
-      label: 'Numbered List',
+      label: locale === 'pt-BR' ? 'Lista numerada' : 'Numbered List',
       keywords: ['ordered list'],
       insert(editor) {
         insertNodesButReplaceIfSelectionIsAtEmptyParagraphOrHeading(editor, {
@@ -109,7 +111,7 @@ function getOptions(
       },
     },
     !isInCodeBlock && !isInHeading && editorDocumentFeatures.formatting.listTypes.unordered && {
-      label: 'Bullet List',
+      label: locale === 'pt-BR' ? 'Lista com marcadores' : 'Bullet List',
       keywords: ['unordered list'],
       insert(editor) {
         insertNodesButReplaceIfSelectionIsAtEmptyParagraphOrHeading(editor, {
@@ -144,6 +146,7 @@ function insertOption(editor: Editor, text: Text, option: Option) {
 }
 
 export function InsertMenu({ children, text }: { children: ReactNode; text: Text }) {
+  const { locale } = useLocale()
   // Safety check for text node
   if (!text || typeof text.text !== 'string') {
     console.warn("Dashboard operation failed (details redacted).")
@@ -182,7 +185,7 @@ export function InsertMenu({ children, text }: { children: ReactNode; text: Text
   }
 
   const options = matchSorter(
-    getOptions(editor, editorDocumentFeatures, componentBlocks, relationships),
+    getOptions(editor, editorDocumentFeatures, componentBlocks, relationships, locale),
     text.text.slice(1),
     {
       keys: ['label', 'keywords'],
@@ -309,7 +312,7 @@ export function InsertMenu({ children, text }: { children: ReactNode; text: Text
           {/* CommandInput could be added here if live filtering of the already filtered `options` is desired */}
           {/* <CommandInput placeholder="Type a command or search..." /> */}
           <CommandList ref={scrollableRef} className="max-h-[300px] overflow-y-auto">
-            {options.length === 0 && <CommandEmpty>No results found.</CommandEmpty>}
+            {options.length === 0 && <CommandEmpty>{locale === 'pt-BR' ? 'Nenhum resultado encontrado.' : 'No results found.'}</CommandEmpty>}
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem

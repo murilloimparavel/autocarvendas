@@ -47,7 +47,7 @@ export function VehicleCard({
   const imageUrl = vehicleImageUrl(primaryVehicleImage(vehicle.images))
   const name = `${vehicle.year} ${vehicle.make} ${vehicle.model}`
   const title = vehicle.trim ? `${name} ${vehicle.trim}` : name
-  const status = vehicleStatus(vehicle.status)
+  const status = vehicleStatus(vehicle.status, locale)
   const href = `/inventory/${vehicle.id}`
   const representative = isRepresentativePhoto(imageUrl, vehicle)
 
@@ -66,10 +66,10 @@ export function VehicleCard({
       onClick={toggleCompare}
       className={`sf-btn sf-btn-sm ${comparing ? 'sf-btn-secondary' : 'sf-btn-ghost'}`}
       aria-pressed={comparing}
-      aria-label={comparing ? `Remove ${title} from compare` : `Add ${title} to compare`}
+      aria-label={locale === 'pt-BR' ? (comparing ? `Remover ${title} da comparação` : `Adicionar ${title} à comparação`) : (comparing ? `Remove ${title} from compare` : `Add ${title} to compare`)}
     >
       {comparing ? <Check className="size-4" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
-      Compare
+      {locale === 'pt-BR' ? 'Comparar' : 'Compare'}
     </button>
   ) : null
 
@@ -82,9 +82,9 @@ export function VehicleCard({
           ) : (
             <VehiclePhotoPlaceholder />
           )}
-          <span className="sf-chip sf-chip-dark absolute left-3 top-3">{vehicleConditionLabel(vehicle.condition)}</span>
+          <span className="sf-chip sf-chip-dark absolute left-3 top-3">{vehicleConditionLabel(vehicle.condition, locale)}</span>
           <span className="sf-stall absolute bottom-3 left-3">#{vehicle.stockNumber}</span>
-          {representative && <span className="sf-chip sf-chip-dark absolute bottom-3 right-3">Representative photo</span>}
+          {representative && <span className="sf-chip sf-chip-dark absolute bottom-3 right-3">{locale === 'pt-BR' ? 'Imagem ilustrativa' : 'Representative photo'}</span>}
         </Link>
         <div className="flex min-w-0 flex-col justify-end gap-5">
           <div className="min-w-0">
@@ -101,17 +101,17 @@ export function VehicleCard({
           </div>
           <dl className="sf-spec">
             <div><dt>{t('mileageShort')}</dt><dd className="sf-figure">{formatMileage(vehicle.mileage, locale)}</dd></div>
-            <div><dt>Color</dt><dd>{vehicle.color || 'Not listed'}</dd></div>
-            <div><dt>Stock</dt><dd className="sf-figure">{vehicle.stockNumber}</dd></div>
+            <div><dt>{locale === 'pt-BR' ? 'Cor' : 'Color'}</dt><dd>{vehicle.color || (locale === 'pt-BR' ? 'Não informada' : 'Not listed')}</dd></div>
+            <div><dt>{locale === 'pt-BR' ? 'Estoque' : 'Stock'}</dt><dd className="sf-figure">{vehicle.stockNumber}</dd></div>
           </dl>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <p className="sf-price text-[length:var(--sf-text-2xl)]">{formatPrice(vehicle.price, currencyCode, locale)}</p>
             <div className="flex flex-wrap gap-2">
-              <Link href={href} className="sf-btn sf-btn-primary sf-btn-sm">View vehicle</Link>
+              <Link href={href} className="sf-btn sf-btn-primary sf-btn-sm">{locale === 'pt-BR' ? 'Ver veículo' : 'View vehicle'}</Link>
               {compareButton}
             </div>
           </div>
-          {compareFull && <p role="status" className="sf-muted text-[length:var(--sf-text-xs)]">Compare holds 4 vehicles.</p>}
+          {compareFull && <p role="status" className="sf-muted text-[length:var(--sf-text-xs)]">{locale === 'pt-BR' ? 'A comparação permite até 4 veículos.' : 'Compare holds 4 vehicles.'}</p>}
           <PhotoAttribution src={imageUrl} />
         </div>
       </article>
@@ -134,9 +134,9 @@ export function VehicleCard({
         ) : (
           <VehiclePhotoPlaceholder />
         )}
-        <span className="sf-chip sf-chip-dark absolute left-2.5 top-2.5">{vehicleConditionLabel(vehicle.condition)}</span>
+        <span className="sf-chip sf-chip-dark absolute left-2.5 top-2.5">{vehicleConditionLabel(vehicle.condition, locale)}</span>
         <span className="sf-stall absolute bottom-2.5 left-2.5">#{vehicle.stockNumber}</span>
-        {representative && <span className="sf-chip sf-chip-dark absolute bottom-2.5 right-2.5">Representative photo</span>}
+        {representative && <span className="sf-chip sf-chip-dark absolute bottom-2.5 right-2.5">{locale === 'pt-BR' ? 'Imagem ilustrativa' : 'Representative photo'}</span>}
       </Link>
 
       <div className="flex flex-1 flex-col pt-3">
@@ -152,15 +152,15 @@ export function VehicleCard({
 
         <dl className="mt-3 grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto] border-y text-[length:var(--sf-text-xs)]" style={{ borderColor: 'var(--sf-rule)' }}>
           <div className="min-w-0 py-2 pr-2">
-            <dt className="sf-faint">Miles</dt>
+            <dt className="sf-faint">{locale === 'pt-BR' ? 'Quilometragem' : 'Miles'}</dt>
             <dd className="sf-figure truncate text-[length:var(--sf-text-sm)]">{formatMileage(vehicle.mileage, locale)}</dd>
           </div>
           <div className="min-w-0 border-l py-2 pl-3 pr-2" style={{ borderColor: 'var(--sf-rule)' }}>
-            <dt className="sf-faint">Color</dt>
-            <dd className="line-clamp-2 break-words leading-snug text-[length:var(--sf-text-sm)]" title={vehicle.color || undefined}>{vehicle.color || 'Not listed'}</dd>
+            <dt className="sf-faint">{locale === 'pt-BR' ? 'Cor' : 'Color'}</dt>
+            <dd className="line-clamp-2 break-words leading-snug text-[length:var(--sf-text-sm)]" title={vehicle.color || undefined}>{vehicle.color || (locale === 'pt-BR' ? 'Não informada' : 'Not listed')}</dd>
           </div>
           <div className="border-l py-2 pl-3" style={{ borderColor: 'var(--sf-rule)' }}>
-            <dt className="sf-faint">Status</dt>
+            <dt className="sf-faint">{locale === 'pt-BR' ? 'Situação' : 'Status'}</dt>
             <dd className="flex items-baseline gap-1.5 whitespace-nowrap leading-snug text-[length:var(--sf-text-sm)]">
               <span className="sf-dot shrink-0 -translate-y-px" data-tone={status.tone} aria-hidden="true" />
               <span>{status.label}</span>
@@ -172,7 +172,7 @@ export function VehicleCard({
           <PhotoAttribution src={imageUrl} className="min-w-0" />
           {compareButton && <div className="ml-auto shrink-0">{compareButton}</div>}
         </div>
-        {compareFull && <p role="status" className="sf-muted mt-2 text-[length:var(--sf-text-xs)]">Compare holds 4 vehicles.</p>}
+        {compareFull && <p role="status" className="sf-muted mt-2 text-[length:var(--sf-text-xs)]">{locale === 'pt-BR' ? 'A comparação permite até 4 veículos.' : 'Compare holds 4 vehicles.'}</p>}
       </div>
     </article>
   )

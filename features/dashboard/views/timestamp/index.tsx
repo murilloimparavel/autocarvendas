@@ -5,6 +5,8 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { localizeValidationMessage } from '@/features/i18n/validation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -70,8 +72,8 @@ interface CellProps {
 }
 
 // Viewer's browser zone with a short label. Empty until mounted so SSR/hydration match.
-export function formatTimestamp(date: Date, timeZone?: string | null, mounted = true) {
-  return mounted ? formatInZone(date, timeZone, 'datetime') : ''
+export function formatTimestamp(date: Date, timeZone?: string | null, mounted = true, locale: 'pt-BR' | 'en-US' = 'en-US') {
+  return mounted ? formatInZone(date, timeZone, 'datetime', locale) : ''
 }
 
 function validate(
@@ -109,6 +111,8 @@ export function Field({
   forceValidation,
   isRequired = false,
 }: TimestampFieldProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isDirty, setDirty] = useState(false)
   const isReadOnly = !onChange
 
@@ -116,6 +120,7 @@ export function Field({
   const validationMessage = showValidation
     ? validate(value, field.fieldMeta, isRequired, field.label)
     : undefined
+  const localizedValidationMessage = validationMessage ? localizeValidationMessage(validationMessage, locale) : undefined
 
   const timeZone = undefined
   const mounted = useIsMounted()
@@ -167,7 +172,7 @@ export function Field({
             onBlur={() => setDirty(true)}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateValue ? formatTimestamp(dateValue, timeZone, mounted) : <span>Pick a date and time</span>}
+            {dateValue ? formatTimestamp(dateValue, timeZone, mounted) : <span>{pt ? 'Selecione a data e o horário' : 'Pick a date and time'}</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -188,7 +193,7 @@ export function Field({
           />
           {dateValue && (
             <div className="p-3 border-t">
-              <Label className="text-sm">Time</Label>
+              <Label className="text-sm">{pt ? 'Horário' : 'Time'}</Label>
               <Input
                 type="time"
                 step="1"
@@ -210,25 +215,27 @@ export function Field({
           )}
         </PopoverContent>
       </Popover>
-      {validationMessage && (
-        <div className="text-sm text-red-600" role="alert">{validationMessage}</div>
+      {localizedValidationMessage && (
+        <div className="text-sm text-red-600" role="alert">{localizedValidationMessage}</div>
       )}
     </FieldContainer>
   )
 }
 
 export function Cell({ item, field }: CellProps) {
+  const { locale } = useLocale()
   const timeZone = undefined
   const mounted = useIsMounted()
   const value = item[field.path]
   return (
     <span className="text-sm">
-      {value ? formatTimestamp(new Date(value), timeZone, mounted) : <span className="text-muted-foreground">—</span>}
+      {value ? formatTimestamp(new Date(value), timeZone, mounted, locale) : <span className="text-muted-foreground">—</span>}
     </span>
   )
 }
 
 export function CardValue({ item, field }: CellProps) {
+  const { locale } = useLocale()
   const timeZone = undefined
   const mounted = useIsMounted()
   const value = item[field.path]
@@ -236,7 +243,7 @@ export function CardValue({ item, field }: CellProps) {
     <div>
       <div className="text-sm font-medium">{field.label}</div>
       <div className="text-sm text-muted-foreground">
-        {value ? formatTimestamp(new Date(value), timeZone, mounted) : '—'}
+        {value ? formatTimestamp(new Date(value), timeZone, mounted, locale) : '—'}
       </div>
     </div>
   )
@@ -275,6 +282,8 @@ export function controller(config: FieldControllerConfig<TimestampFieldMeta>): F
       validate(value, config.fieldMeta, opts.isRequired, config.label) === undefined,
     filter: {
       Filter: ({ value, onChange, type, autoFocus }: any) => {
+        const { locale } = useLocale()
+        const pt = locale === 'pt-BR'
         const [isDirty, setDirty] = useState(false)
         const timeZone = undefined
   const mounted = useIsMounted()
@@ -295,7 +304,7 @@ export function controller(config: FieldControllerConfig<TimestampFieldMeta>): F
                 onBlur={() => setDirty(true)}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateValue ? formatTimestamp(dateValue, timeZone, mounted) : <span>Pick a date and time</span>}
+                {dateValue ? formatTimestamp(dateValue, timeZone, mounted) : <span>{pt ? 'Selecione a data e o horário' : 'Pick a date and time'}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -315,7 +324,7 @@ export function controller(config: FieldControllerConfig<TimestampFieldMeta>): F
               />
               {dateValue && (
                 <div className="p-3 border-t">
-                  <Label className="text-sm">Time</Label>
+                  <Label className="text-sm">{pt ? 'Horário' : 'Time'}</Label>
                   <Input
                     type="time"
                     step="1"
@@ -362,12 +371,12 @@ export function controller(config: FieldControllerConfig<TimestampFieldMeta>): F
           return []
         })
       },
-      Label: ({ label, type, value }: { label: string; type: string; value: string }) => {
+      Label: ({ label, type, value, locale = 'en-US' }: { label: string; type: string; value: string; locale?: 'pt-BR' | 'en-US' }) => {
         if (type === 'empty' || type === 'not_empty' || value == null) {
           return label.toLowerCase()
         }
 
-        return `${label.toLowerCase()} ${formatInZone(new Date(value), undefined, "datetime")}`
+        return `${label.toLowerCase()} ${formatInZone(new Date(value), undefined, "datetime", locale)}`
       },
       types: {
         equals: {

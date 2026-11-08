@@ -3,6 +3,7 @@
  */
 
 import React from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { FieldContainer } from '@/components/ui/field-container'
@@ -77,12 +78,13 @@ export function Cell({ item, field, value }: CellProps) {
 }
 
 export function CardValue({ item, field }: CellProps) {
+  const { locale } = useLocale()
   const value = item[field.path]
   return (
     <div>
       <div className="text-sm font-medium">{field.label}</div>
       <div className="text-sm text-muted-foreground">
-        {value ? 'True' : 'False'}
+        {locale === 'pt-BR' ? (value ? 'Sim' : 'Não') : (value ? 'True' : 'False')}
       </div>
     </div>
   )

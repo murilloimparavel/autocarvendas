@@ -1,3 +1,4 @@
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { useMemo } from 'react'
 import { type RenderElementProps } from 'slate-react'
 import {
@@ -47,19 +48,22 @@ const BlockquoteButton = () => {
   )
 }
 
-export const blockquoteButton = (
+export function BlockquoteToolbarButton() {
+  const { locale } = useLocale()
+  return (
   <Tooltip>
     <TooltipTrigger asChild>
       <BlockquoteButton />
     </TooltipTrigger>
     <TooltipContent side="bottom">
       <span className="flex items-center gap-2">
-        <span>Quote</span>
+        <span>{locale === 'pt-BR' ? 'Citação' : 'Quote'}</span>
         <KeyboardInTooltip>{">"}</KeyboardInTooltip>
       </span>
     </TooltipContent>
   </Tooltip>
-)
+  )
+}
 
 const QuoteIcon = () => (
   <svg width="16" height="16" viewBox="0 0 18 16" fill="currentColor">

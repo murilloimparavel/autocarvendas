@@ -11,6 +11,7 @@ export async function DealCreatePage({ searchParams }: { searchParams?: Promise<
       initialLeads={response.success ? response.data.leads : []}
       initialTradeIns={response.success ? response.data.tradeIns : []}
       initialDealDefaults={response.success ? response.data.dealDefaults : { salesTaxRateBps: 0, docFeeCents: 0 }}
+      currencyCode={response.success ? response.data.currencyCode : 'USD'}
       initialError={response.success ? null : response.error}
       prefillLeadId={first(params.leadId)}
       prefillTradeInId={first(params.tradeInId)}

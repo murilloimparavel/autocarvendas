@@ -2,7 +2,10 @@
  * Select field view - Keystone implementation with Shadcn UI
  */
 
+'use client'
+
 import React, { useMemo, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -91,6 +94,7 @@ function NullableFieldWrapper({
   onChange: (isChecked: boolean) => void
   children: React.ReactNode
 }) {
+  const { locale } = useLocale()
   const nullId = React.useId()
   if (!isAllowed) {
     return <>{children}</>
@@ -108,7 +112,7 @@ function NullableFieldWrapper({
           autoFocus={autoFocus}
         />
         <Label htmlFor={nullId} className="text-sm text-muted-foreground">
-          Set field as null
+          {locale === 'pt-BR' ? 'Definir campo como nulo' : 'Set field as null'}
         </Label>
       </div>
     </div>
@@ -123,6 +127,8 @@ export function Field({
   forceValidation,
   isRequired = false,
 }: SelectFieldProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isDirty, setDirty] = useState(false)
   const [preNullValue, setPreNullValue] = useState(
     value.value || (value.kind === 'update' ? value.initial : null)
@@ -134,7 +140,7 @@ export function Field({
   const isInvalid = !validate(value, isRequired)
   const isReadOnly = onChange == null
   const errorMessage =
-    isInvalid && (isDirty || forceValidation) ? `${field.label} is required.` : undefined
+    isInvalid && (isDirty || forceValidation) ? (pt ? `${field.label} é obrigatório.` : `${field.label} is required.`) : undefined
 
   const onSelectionChange = (key: string) => {
     if (!onChange) return
@@ -199,7 +205,7 @@ export function Field({
               value={selectedKey || ''}
             >
               <SelectTrigger id={`field-${field.path}`} className={errorMessage ? 'border-red-500 shadow-xs' : 'shadow-xs'}>
-                <SelectValue placeholder="Select an option..." />
+                <SelectValue placeholder={pt ? 'Selecione uma opção…' : 'Select an option...'} />
               </SelectTrigger>
               <SelectContent>
                 {field.options.map(item => (

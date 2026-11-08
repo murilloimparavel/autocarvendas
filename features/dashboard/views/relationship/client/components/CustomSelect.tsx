@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Check, ChevronDown, XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -42,6 +43,9 @@ export function CustomSelect({
   className,
   isClearable = true,
 }: CustomSelectProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const displayPlaceholder = pt ? (placeholder === 'Select...' ? 'Selecione…' : placeholder === 'Search...' ? 'Buscar…' : placeholder) : placeholder
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
   const [availableOptions, setAvailableOptions] = React.useState<Option[]>(options)
@@ -112,7 +116,7 @@ export function CustomSelect({
           aria-haspopup="listbox"
           aria-expanded={open}
         >
-          <span className="text-base self-start text-left w-full min-w-0 truncate">{value ? value.label : placeholder}</span>
+          <span className="text-base self-start text-left w-full min-w-0 truncate">{value ? value.label : displayPlaceholder}</span>
           
           {/* This exactly matches the SelectTrigger's chevron area */}
           <div className="flex items-center">
@@ -136,7 +140,7 @@ export function CustomSelect({
         <Command>
           <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
             <input
-              placeholder="Search..."
+              placeholder={pt ? 'Buscar…' : 'Search...'}
               value={inputValue}
               onChange={(e) => handleInputChange(e.target.value)}
               className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -152,9 +156,9 @@ export function CustomSelect({
                 {availableOptions.length === 0 ? (
                   <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
                     {inputValue.length > 0 ? (
-                      <>No results found for "{inputValue}"</>
+                      <>{pt ? `Nenhum resultado para "${inputValue}"` : `No results found for "${inputValue}"`}</>
                     ) : (
-                      <>No options available</>
+                      <>{pt ? 'Nenhuma opção disponível' : 'No options available'}</>
                     )}
                   </CommandEmpty>
                 ) : (

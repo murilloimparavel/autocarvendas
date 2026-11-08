@@ -5,6 +5,8 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { localizeValidationMessage } from '@/features/i18n/validation'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { FieldContainer } from '@/components/ui/field-container'
@@ -77,6 +79,8 @@ export function Field({
   forceValidation,
   isRequired = false,
 }: IntegerFieldProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isDirty, setDirty] = useState(false)
   const isReadOnly = !onChange || field.hasAutoIncrementDefault
 
@@ -90,13 +94,13 @@ export function Field({
         <Input
           id={`field-${field.path}`}
           readOnly
-          value="Auto increment"
+          value={pt ? 'Numeração automática' : 'Auto increment'}
           className="bg-muted shadow-xs"
         />
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            This field is set to auto increment. It will default to the next available number.
+            {pt ? 'Este campo usa numeração automática e receberá o próximo número disponível.' : 'This field is set to auto increment. It will default to the next available number.'}
           </AlertDescription>
         </Alert>
       </FieldContainer>
@@ -113,7 +117,8 @@ export function Field({
     )
   }
 
-  const errorMessage = (forceValidation || isDirty) && validate(value)
+  const rawErrorMessage = (forceValidation || isDirty) && validate(value)
+  const errorMessage = rawErrorMessage ? localizeValidationMessage(rawErrorMessage, locale) : undefined
 
   return (
     <FieldContainer>
@@ -201,6 +206,7 @@ export function controller(
     validate: (value, opts) => validate(value, opts) === undefined,
     filter: {
       Filter: ({ value, onChange, type, autoFocus }: any) => {
+        const { locale } = useLocale()
         const [isDirty, setDirty] = useState(false)
         if (type === 'empty' || type === 'not_empty') return null
 
@@ -215,7 +221,7 @@ export function controller(
               const numValue = e.target.value === '' ? null : Number(e.target.value)
               onChange(!Number.isFinite(numValue) ? null : numValue)
             }}
-            placeholder="Enter number..."
+            placeholder={locale === 'pt-BR' ? 'Digite um número…' : 'Enter number...'}
           />
         )
       },

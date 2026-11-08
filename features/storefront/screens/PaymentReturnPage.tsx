@@ -6,29 +6,33 @@ import { Sticker } from '../components/forms/RequestForm'
 import { loadStorefrontBusiness } from '../lib/data/storefront-business'
 import { loadPaymentReturn, type PaymentReturn } from '../lib/data/payment-return'
 import { storefrontCurrency } from '../lib/format'
+import { getRequestLocale } from '@/features/i18n/server'
 
 type Outcome = 'success' | 'cancel'
 
-function money(cents: number, currency: string) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: storefrontCurrency(currency) }).format(cents / 100)
+function money(cents: number, currency: string, locale: 'pt-BR' | 'en-US') {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: storefrontCurrency(currency) }).format(cents / 100)
 }
 
 /** Heading, tone and sentence for where the customer came back from and what the payment now says. */
-function copyFor(outcome: Outcome, payment: PaymentReturn | null) {
+function copyFor(outcome: Outcome, payment: PaymentReturn | null, pt: boolean) {
+  const text = (en: string, br: string) => pt ? br : en
   if (!payment) {
-    return { tone: 'warn', title: outcome === 'success' ? 'Payment received' : 'Payment not completed', line: 'We could not look up this payment link. Contact the dealership and they will confirm it for you.' }
+    return { tone: 'warn', title: outcome === 'success' ? text('Payment received', 'Pagamento recebido') : text('Payment not completed', 'Pagamento não concluído'), line: text('We could not look up this payment link. Contact the dealership and they will confirm it for you.', 'Não foi possível localizar este pagamento. Entre em contato com a loja para confirmar.') }
   }
-  if (payment.state === 'received') return { tone: 'ok', title: 'Payment received', line: 'Thank you. Your payment went through and the dealership has been notified.' }
-  if (payment.state === 'refunded') return { tone: 'ok', title: 'Payment refunded', line: 'This payment has been refunded to your card. Refunds usually show up within 5 to 10 business days.' }
-  if (outcome === 'success') return { tone: 'warn', title: 'Payment processing', line: 'Your bank is still confirming this payment. This page updates when you refresh it.' }
-  if (payment.state === 'pending') return { tone: 'warn', title: 'Payment not completed', line: 'No charge was made. You can return to checkout to finish paying.' }
-  return { tone: 'bad', title: 'Payment not completed', line: 'No charge was made. This checkout link has expired, so ask the dealership to send a new one.' }
+  if (payment.state === 'received') return { tone: 'ok', title: text('Payment received', 'Pagamento recebido'), line: text('Thank you. Your payment went through and the dealership has been notified.', 'Obrigado. O pagamento foi confirmado e a loja foi avisada.') }
+  if (payment.state === 'refunded') return { tone: 'ok', title: text('Payment refunded', 'Pagamento reembolsado'), line: text('This payment has been refunded to your card. Refunds usually show up within 5 to 10 business days.', 'O valor foi estornado no seu cartão. O crédito costuma aparecer em até 5 a 10 dias úteis.') }
+  if (outcome === 'success') return { tone: 'warn', title: text('Payment processing', 'Pagamento em processamento'), line: text('Your bank is still confirming this payment. This page updates when you refresh it.', 'O banco ainda está confirmando o pagamento. Atualize esta página para consultar o status.') }
+  if (payment.state === 'pending') return { tone: 'warn', title: text('Payment not completed', 'Pagamento não concluído'), line: text('No charge was made. You can return to checkout to finish paying.', 'Nenhuma cobrança foi feita. Volte ao pagamento para concluir a operação.') }
+  return { tone: 'bad', title: text('Payment not completed', 'Pagamento não concluído'), line: text('No charge was made. This checkout link has expired, so ask the dealership to send a new one.', 'Nenhuma cobrança foi feita. Este link de pagamento expirou; peça à loja para enviar outro.') }
 }
 
 export async function PaymentReturnPage({ outcome, reference }: { outcome: Outcome; reference: string | null }) {
-  const [payment, settings, customer] = await Promise.all([loadPaymentReturn(reference), loadStorefrontBusiness(), getCustomer()])
+  const [payment, settings, customer, locale] = await Promise.all([loadPaymentReturn(reference), loadStorefrontBusiness(), getCustomer(), getRequestLocale()])
+  const pt = locale === 'pt-BR'
+  const text = (en: string, br: string) => pt ? br : en
   const business = settings.status === 'ready' ? settings.business : null
-  const copy = copyFor(outcome, payment)
+  const copy = copyFor(outcome, payment, pt)
   const retryUrl = outcome === 'cancel' && payment?.state === 'pending' ? payment.retryUrl : null
 
   return (
@@ -42,16 +46,16 @@ export async function PaymentReturnPage({ outcome, reference }: { outcome: Outco
           <p role="status" className="sf-muted mt-3 max-w-xl text-[length:var(--sf-text-md)]">{copy.line}</p>
           {payment && (
             <p className="mt-5 flex flex-wrap items-baseline gap-3">
-              <span className="sf-eyebrow">Amount</span>
-              <span className="sf-figure text-[length:var(--sf-text-xl)] font-semibold">{money(payment.amountCents, payment.currency)}</span>
+              <span className="sf-eyebrow">{text('Amount', 'Valor')}</span>
+              <span className="sf-figure text-[length:var(--sf-text-xl)] font-semibold">{money(payment.amountCents, payment.currency, locale)}</span>
             </p>
           )}
-          <nav aria-label="Next" className="mt-[var(--sf-space-lg)] flex flex-wrap gap-2">
-            {retryUrl && <a href={retryUrl} className="sf-btn sf-btn-primary">Return to checkout</a>}
+          <nav aria-label={pt ? 'Próximas etapas' : 'Next'} className="mt-[var(--sf-space-lg)] flex flex-wrap gap-2">
+            {retryUrl && <a href={retryUrl} className="sf-btn sf-btn-primary">{text('Return to checkout', 'Voltar ao pagamento')}</a>}
             {customer
-              ? <Link href="/account" className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>Your account</Link>
-              : <Link href="/inventory" className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>Browse inventory</Link>}
-            <Link href="/contact" className="sf-btn sf-btn-ghost">Contact us</Link>
+              ? <Link href="/account" className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>{text('Your account', 'Minha conta')}</Link>
+              : <Link href="/inventory" className={`sf-btn ${retryUrl ? 'sf-btn-ghost' : 'sf-btn-primary'}`}>{text('Browse inventory', 'Ver estoque')}</Link>}
+            <Link href="/contact" className="sf-btn sf-btn-ghost">{text('Contact us', 'Fale conosco')}</Link>
           </nav>
         </div>
         <div className="grid min-w-0 gap-[var(--sf-space-md)]">
@@ -60,20 +64,20 @@ export async function PaymentReturnPage({ outcome, reference }: { outcome: Outco
               title={payment.purpose}
               meta={payment.reference}
               rows={[
-                { label: payment.stockNumber || payment.purpose === 'Vehicle payment' ? 'Vehicle' : 'For', value: payment.item ?? undefined },
-                ...(payment.stockNumber ? [{ label: 'Stock', value: `#${payment.stockNumber}` }] : []),
-                { label: 'Amount', value: money(payment.amountCents, payment.currency), strong: true },
+                { label: payment.stockNumber || payment.purpose === 'Vehicle payment' ? text('Vehicle', 'Veículo') : text('For', 'Referente a'), value: payment.item ?? undefined },
+                ...(payment.stockNumber ? [{ label: text('Stock', 'Estoque'), value: `#${payment.stockNumber}` }] : []),
+                { label: text('Amount', 'Valor'), value: money(payment.amountCents, payment.currency, locale), strong: true },
               ]}
             />
           )}
           {business && (
             <Sticker
-              title="Dealership"
+              title={pt ? 'Concessionária' : 'Dealership'}
               meta={business.shortName || business.fullName}
               rows={[
-                ...(business.phoneDisplay ? [{ label: 'Phone', value: business.phoneHref ? <a href={business.phoneHref} className="underline underline-offset-2">{business.phoneDisplay}</a> : business.phoneDisplay }] : []),
-                ...(business.salesEmail ? [{ label: 'Email', value: <a href={`mailto:${business.salesEmail}`} className="break-all underline underline-offset-2">{business.salesEmail}</a> }] : []),
-                ...(business.addressLine1 ? [{ label: 'Visit', value: [business.addressLine1, business.addressLine2].filter(Boolean).join(', ') }] : []),
+                ...(business.phoneDisplay ? [{ label: text('Phone', 'Telefone'), value: business.phoneHref ? <a href={business.phoneHref} className="underline underline-offset-2">{business.phoneDisplay}</a> : business.phoneDisplay }] : []),
+                ...(business.salesEmail ? [{ label: text('Email', 'E-mail'), value: <a href={`mailto:${business.salesEmail}`} className="break-all underline underline-offset-2">{business.salesEmail}</a> }] : []),
+                ...(business.addressLine1 ? [{ label: text('Visit', 'Endereço'), value: [business.addressLine1, business.addressLine2].filter(Boolean).join(', ') }] : []),
               ]}
             />
           )}

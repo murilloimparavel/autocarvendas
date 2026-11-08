@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -88,6 +89,7 @@ export function controller(
     serialize: value => ({ [config.path]: value.value }),
     filter: {
       Filter(props) {
+        const { locale } = useLocale()
         const {
           autoFocus,
           context,
@@ -126,7 +128,7 @@ export function controller(
             />
             {(forceValidation || isDirty) &&
               !validate({ kind: 'update', initial: null, value }, { isRequired: true }) && (
-                <p className="text-sm text-destructive">Required</p>
+                <p className="text-sm text-destructive">{locale === 'pt-BR' ? 'Obrigatório' : 'Required'}</p>
               )}
           </div>
         )
@@ -209,6 +211,7 @@ export function Field({
   forceValidation,
   isRequired,
 }: FieldProps<typeof controller>) {
+  const { locale } = useLocale()
   const [isDirty, setDirty] = useState(false)
   const isReadOnly = !onChange || field.hasAutoIncrementDefault
 
@@ -231,7 +234,9 @@ export function Field({
           className="bg-muted shadow-xs"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          This field is set to auto increment. It will default to the next available number.
+          {locale === 'pt-BR'
+            ? 'Este campo é incrementado automaticamente e usará o próximo número disponível.'
+            : 'This field is set to auto increment. It will default to the next available number.'}
         </p>
       </FieldContainer>
     )
@@ -247,7 +252,14 @@ export function Field({
     )
   }
 
-  const errorMessage = (forceValidation || isDirty) && validate(value)
+  const rawErrorMessage = (forceValidation || isDirty) && validate(value)
+  const errorMessage = locale === 'pt-BR' && rawErrorMessage
+    ? rawErrorMessage
+        .replace(' is required', ' é obrigatório')
+        .replace(' must be greater than or equal to ', ' deve ser maior ou igual a ')
+        .replace(' must be less than or equal to ', ' deve ser menor ou igual a ')
+        .replace(' is not a valid BigInt', ' não é um número inteiro válido')
+    : rawErrorMessage
 
   return (
     <FieldContainer>

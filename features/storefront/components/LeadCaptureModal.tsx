@@ -15,12 +15,13 @@ import {
 import { vehicleTitle } from '../lib/format'
 import { DEFAULT_TEST_DRIVE_SLOTS, closedDayLabel, dayAvailability, localDateString } from '../lib/bookingSlots'
 import { useStorefrontBusiness } from './StorefrontBusinessProvider'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 // Mirrors RESERVATION_DEPOSIT_CENTS in features/keystone/mutations/reserveVehicle.ts: $500, or the price if lower.
-function formatDeposit(price: unknown) {
+function formatDeposit(price: unknown, locale: 'pt-BR' | 'en-US', currencyCode: string) {
   const dollars = Number(price)
   const amount = Number.isFinite(dollars) && dollars > 0 ? Math.min(500, dollars) : 500
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount)
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount)
 }
 
 export type LeadIntent = 'contact' | 'test-drive' | 'get-quote' | 'reserve'
@@ -73,6 +74,7 @@ export function LeadCaptureModal({
   >
 }) {
   const business = useStorefrontBusiness()
+  const { locale } = useLocale()
   const availability = dayAvailability(business, formData.preferredDate, DEFAULT_TEST_DRIVE_SLOTS)
   const overlayRef = useRef<HTMLDivElement>(null)
   // Capture the opener during the first modal render. By the time effects run,
@@ -146,7 +148,7 @@ export function LeadCaptureModal({
         <div className="flex items-start justify-between gap-4 border-b px-5 pb-4 pt-5 sm:px-6" style={{ borderColor: 'var(--sf-rule)' }}>
           <div className="min-w-0">
             <h2 id="lead-modal-title" className="sf-heading text-[length:var(--sf-text-xl)]">
-              {titles[intent]}
+              {locale === 'pt-BR' ? ({ contact: 'Dúvida sobre este veículo', 'test-drive': 'Agendar um test-drive', 'get-quote': 'Solicitar uma proposta', reserve: 'Reservar este veículo' } as const)[intent] : titles[intent]}
             </h2>
             <p className="sf-muted mt-1.5 flex min-w-0 items-center gap-2 text-[length:var(--sf-text-sm)]">
               <span className="truncate">{vehicleTitle(vehicle)}</span>
@@ -158,7 +160,7 @@ export function LeadCaptureModal({
             onClick={onClose}
             disabled={isSubmitting}
             className="-mr-2 -mt-1 grid size-11 shrink-0 place-items-center rounded-[var(--sf-radius-sm)] transition-colors hover:bg-[var(--sf-paper-2)] disabled:opacity-50"
-            aria-label="Close"
+            aria-label={locale === 'pt-BR' ? 'Fechar' : 'Close'}
           >
             <X className="size-5" aria-hidden="true" />
           </button>
@@ -170,25 +172,25 @@ export function LeadCaptureModal({
             <div className="sf-notice" data-tone="ok">
               <p className="sf-title-line font-semibold">
                 <span className="sf-dot" data-tone="ok" aria-hidden="true" />
-                Request received
+                {locale === 'pt-BR' ? 'Solicitação recebida' : 'Request received'}
               </p>
               <p className="sf-muted mt-1 pl-4">{feedback.message}</p>
             </div>
             {feedback.reference && (
               <dl className="sf-sticker">
                 <div className="sf-sticker-row">
-                  <dt>Reference</dt>
+                <dt>{locale === 'pt-BR' ? 'Referência' : 'Reference'}</dt>
                   <dd>{feedback.reference}</dd>
                 </div>
               </dl>
             )}
-            <button type="button" onClick={onClose} className="sf-btn sf-btn-primary w-full" data-dialog-initial-focus>Done</button>
+            <button type="button" onClick={onClose} className="sf-btn sf-btn-primary w-full" data-dialog-initial-focus>{locale === 'pt-BR' ? 'Concluir' : 'Done'}</button>
           </div>
         ) : (
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <label htmlFor={fieldId('first-name')} className="sf-label">First name</label>
+              <label htmlFor={fieldId('first-name')} className="sf-label">{locale === 'pt-BR' ? 'Nome' : 'First name'}</label>
               <input
                 id={fieldId('first-name')}
                 type="text"
@@ -201,7 +203,7 @@ export function LeadCaptureModal({
               />
             </div>
             <div className="min-w-0">
-              <label htmlFor={fieldId('last-name')} className="sf-label">Last name</label>
+              <label htmlFor={fieldId('last-name')} className="sf-label">{locale === 'pt-BR' ? 'Sobrenome' : 'Last name'}</label>
               <input
                 id={fieldId('last-name')}
                 type="text"
@@ -215,7 +217,7 @@ export function LeadCaptureModal({
           </div>
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
             <div className="min-w-0">
-              <label htmlFor={fieldId('email')} className="sf-label">Email</label>
+              <label htmlFor={fieldId('email')} className="sf-label">E-mail</label>
               <input
                 id={fieldId('email')}
                 type="email"
@@ -227,7 +229,7 @@ export function LeadCaptureModal({
               />
             </div>
             <div className="min-w-0">
-              <label htmlFor={fieldId('phone')} className="sf-label">Phone</label>
+              <label htmlFor={fieldId('phone')} className="sf-label">{locale === 'pt-BR' ? 'Telefone' : 'Phone'}</label>
               <input
                 id={fieldId('phone')}
                 type="tel"
@@ -243,7 +245,7 @@ export function LeadCaptureModal({
           {intent === 'test-drive' && (
             <div className="grid grid-cols-2 gap-3">
               <div className="min-w-0">
-                <label htmlFor={fieldId('preferred-date')} className="sf-label">Date</label>
+                <label htmlFor={fieldId('preferred-date')} className="sf-label">{locale === 'pt-BR' ? 'Data' : 'Date'}</label>
                 <PlatformDateInput
                   id={fieldId('preferred-date')}
                   value={formData.preferredDate}
@@ -254,14 +256,14 @@ export function LeadCaptureModal({
                 />
               </div>
               <div className="min-w-0">
-                <label htmlFor={fieldId('preferred-time')} className="sf-label">Time</label>
+                <label htmlFor={fieldId('preferred-time')} className="sf-label">{locale === 'pt-BR' ? 'Horário' : 'Time'}</label>
                 <PlatformSelect
                   id={fieldId('preferred-time')}
                   value={formData.preferredTime}
                   onValueChange={(value) => setFormData((p) => ({ ...p, preferredTime: value }))}
                   className="sf-input sf-trigger sf-figure"
                   required
-                  placeholder="Select"
+                  placeholder={locale === 'pt-BR' ? 'Selecione' : 'Select'}
                   aria-invalid={availability.status === 'closed' && formData.preferredDate ? true : undefined}
                   options={availability.status === 'open' ? availability.slots.map((slot) => ({ value: slot, label: slot })) : []}
                 />
@@ -285,8 +287,10 @@ export function LeadCaptureModal({
 
           <div>
             <label htmlFor={fieldId('message')} className="sf-label">
-              {intent === 'contact' ? 'Vehicle question' : 'Message'}
-              {intent !== 'contact' && <span className="sf-faint"> / Optional</span>}
+              {intent === 'contact'
+                ? (locale === 'pt-BR' ? 'Dúvida sobre o veículo' : 'Vehicle question')
+                : (locale === 'pt-BR' ? 'Mensagem' : 'Message')}
+              {intent !== 'contact' && <span className="sf-faint"> / {locale === 'pt-BR' ? 'Opcional' : 'Optional'}</span>}
             </label>
             <textarea
               id={fieldId('message')}
@@ -300,19 +304,19 @@ export function LeadCaptureModal({
 
           {intent === 'reserve' && (
             <p className="sf-muted text-[length:var(--sf-text-sm)]">
-              A refundable deposit of {formatDeposit(vehicle.price)} holds this vehicle. You pay by card on the next screen, and the deposit counts toward the purchase or is refunded in full if you change your mind.
+              {locale === 'pt-BR' ? <>Um sinal reembolsável de {formatDeposit(vehicle.price, locale, business.currencyCode)} reserva este veículo. O pagamento é feito com cartão na próxima etapa e será abatido da compra ou devolvido integralmente se você mudar de ideia.</> : <>A refundable deposit of {formatDeposit(vehicle.price, locale, business.currencyCode)} holds this vehicle. You pay by card on the next screen, and the deposit counts toward the purchase or is refunded in full if you change your mind.</>}
             </p>
           )}
 
           {feedback.status === 'error' && (
             <p role="alert" className="sf-notice" data-tone="bad">
-              {feedback.message || 'Something went wrong. Please try again.'}
+              {feedback.message || (locale === 'pt-BR' ? 'Algo deu errado. Tente novamente.' : 'Something went wrong. Please try again.')}
             </p>
           )}
 
           <button type="submit" disabled={isSubmitting} className="sf-btn sf-btn-primary w-full" aria-busy={isSubmitting || undefined}>
             {isSubmitting && <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}
-            {isSubmitting ? (intent === 'reserve' ? 'Opening secure checkout' : 'Sending') : intent === 'reserve' ? `Pay ${formatDeposit(vehicle.price)} deposit` : 'Submit request'}
+            {isSubmitting ? (locale === 'pt-BR' ? (intent === 'reserve' ? 'Abrindo pagamento seguro' : 'Enviando') : (intent === 'reserve' ? 'Opening secure checkout' : 'Sending')) : intent === 'reserve' ? (locale === 'pt-BR' ? `Pagar sinal de ${formatDeposit(vehicle.price, locale, business.currencyCode)}` : `Pay ${formatDeposit(vehicle.price, locale, business.currencyCode)} deposit`) : (locale === 'pt-BR' ? 'Enviar solicitação' : 'Submit request')}
           </button>
         </form>
         )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ClipboardList, Pencil, Plus, RefreshCw, Search } from 'lucide-react'
@@ -36,7 +37,8 @@ import {
   STOCK_TONE,
   available,
   formatAge,
-  formatCents,
+  formatCents as formatCentsBase,
+  partsLabel,
   poLines,
   stockState,
   type Part,
@@ -63,12 +65,17 @@ export function PartsPageClient({
   initialRooftops,
   initialError,
   initialPurchaseOrders = [],
+  currencyCode,
 }: {
   initialParts: Part[]
   initialRooftops: PartsRooftop[]
   initialError: string | null
   initialPurchaseOrders?: PurchaseOrder[]
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
   const router = useRouter()
   const [parts, setParts] = useState(initialParts)
   const [rooftops, setRooftops] = useState(initialRooftops)
@@ -139,14 +146,14 @@ export function PartsPageClient({
   const poHref = (order: PurchaseOrder) => `${basePath}/platform/parts/purchase-orders/${order.id}`
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Parts' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Peças' : 'Parts' },
   ]
 
   const header = (
     <DeskHeader
-      title="Parts"
+      title={pt ? 'Peças' : 'Parts'}
       tone={error ? 'bad' : counts.out ? 'bad' : counts.low ? 'warn' : 'ok'}
       status={error ? 'Unavailable' : `${counts.out} out of stock, ${counts.low} low`}
       meta={`${countLabel(counts.all, 'part')} · ${counts.low} low · ${counts.out} out · ${countLabel(toReceive.length, 'PO')} to receive`}
@@ -162,7 +169,7 @@ export function PartsPageClient({
               Purchase orders
             </Link>
           </Pill>
-          <Pill variant="primary" className="h-11 sm:h-8" onClick={() => setEditing({ part: null })} disabled={!rooftops.length} title={rooftops.length ? undefined : 'No rooftop available'}>
+          <Pill variant="primary" className="h-11 sm:h-8" onClick={() => setEditing({ part: null })} disabled={!rooftops.length} title={rooftops.length ? undefined : (pt ? 'Nenhuma loja disponível' : 'No rooftop available')}>
             <Plus />
             New part
           </Pill>
@@ -172,31 +179,31 @@ export function PartsPageClient({
   )
 
   return (
-    <PageContainer title="Parts" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Peças' : 'Parts'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
         {notice && (
           <Notice tone="ok">
             <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
               <p className="min-w-0">{notice}</p>
-              <Pill size="sm" variant="plain" className="max-sm:h-10" onClick={() => setNotice(null)}>Dismiss</Pill>
+              <Pill size="sm" variant="plain" className="max-sm:h-10" onClick={() => setNotice(null)}>{pt ? 'Fechar' : 'Dismiss'}</Pill>
             </div>
           </Notice>
         )}
 
         {!error && (
           <div className="grid min-w-0 grid-cols-1 gap-8 xl:grid-cols-2">
-            <DeskSection title="Below reorder point" count={belowReorder.length} id="parts-below-reorder">
+            <DeskSection title={pt ? 'Abaixo do ponto de reposição' : 'Below reorder point'} count={belowReorder.length} id="parts-below-reorder">
               {belowReorder.length === 0 ? (
                 <Empty>{scoped.length ? 'No parts below reorder point' : 'No parts'}</Empty>
               ) : (
                 <DeskTable aria-labelledby="parts-below-reorder">
                   <thead>
                     <tr>
-                      <Th>Part</Th>
-                      <Th align="right">Avail</Th>
-                      <Th align="right" priority={2}>Reorder at</Th>
-                      <Th align="right">On order</Th>
-                      <Th priority={2}>Status</Th>
+                      <Th>{pt ? 'Peça' : 'Part'}</Th>
+                      <Th align="right">{pt ? 'Disponível' : 'Avail'}</Th>
+                      <Th align="right" priority={2}>{pt ? 'Ponto de reposição' : 'Reorder at'}</Th>
+                      <Th align="right">{pt ? 'Em pedido' : 'On order'}</Th>
+                      <Th priority={2}>{pt ? 'Situação' : 'Status'}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -209,12 +216,12 @@ export function PartsPageClient({
                               <Code className="text-foreground">{part.partNumber}</Code>
                             </Link>
                             <p className="truncate text-xs text-muted-foreground">{part.description}</p>
-                            <div className="md:hidden"><Status tone={STOCK_TONE[state]} className="text-xs">{STOCK_LABEL[state]}</Status></div>
+                            <div className="md:hidden"><Status tone={STOCK_TONE[state]} className="text-xs">{partsLabel(locale, STOCK_LABEL[state])}</Status></div>
                           </Td>
                           <Td align="right"><Figure size="sm" attention={state === 'out'}>{available(part)}</Figure></Td>
                           <Td align="right" priority={2} className="text-muted-foreground">{part.minimumQuantity || '-'}</Td>
                           <Td align="right" className={Number(part.onOrderQuantity || 0) ? undefined : 'text-muted-foreground'}>{part.onOrderQuantity ?? 0}</Td>
-                          <Td priority={2}><Status tone={STOCK_TONE[state]}>{STOCK_LABEL[state]}</Status></Td>
+                          <Td priority={2}><Status tone={STOCK_TONE[state]}>{partsLabel(locale, STOCK_LABEL[state])}</Status></Td>
                         </Tr>
                       )
                     })}
@@ -224,25 +231,25 @@ export function PartsPageClient({
             </DeskSection>
 
             <DeskSection
-              title="POs to receive"
+              title={pt ? 'Pedidos de compra para receber' : 'POs to receive'}
               count={toReceive.length}
               id="parts-to-receive"
               actions={
                 <Pill size="sm" variant="plain" className="max-sm:h-10" asChild>
-                  <Link href={`${basePath}/platform/parts/purchase-orders`}>All POs</Link>
+                  <Link href={`${basePath}/platform/parts/purchase-orders`}>{pt ? 'Todos os pedidos' : 'All POs'}</Link>
                 </Pill>
               }
             >
               {toReceive.length === 0 ? (
-                <Empty>No purchase orders waiting to be received</Empty>
+                <Empty>{pt ? 'Nenhum pedido de compra aguardando recebimento' : 'No purchase orders waiting to be received'}</Empty>
               ) : (
                 <DeskTable aria-labelledby="parts-to-receive">
                   <thead>
                     <tr>
-                      <Th>PO</Th>
-                      <Th priority={2}>Status</Th>
-                      <Th align="right">Received</Th>
-                      <Th align="right">Age</Th>
+                      <Th>{pt ? 'Pedido' : 'PO'}</Th>
+                      <Th priority={2}>{pt ? 'Situação' : 'Status'}</Th>
+                      <Th align="right">{pt ? 'Recebido' : 'Received'}</Th>
+                      <Th align="right">{pt ? 'Tempo' : 'Age'}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -258,7 +265,7 @@ export function PartsPageClient({
                             </Link>
                             <p className="truncate text-xs text-muted-foreground">{order.supplier}</p>
                           </Td>
-                          <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status></Td>
+                          <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status></Td>
                           <Td align="right" className="whitespace-nowrap">{received} of {ordered}</Td>
                           <Td align="right" className="whitespace-nowrap">
                             <Figure size="sm">{formatAge(order.orderedAt || order.createdAt, now)}</Figure>
@@ -275,18 +282,18 @@ export function PartsPageClient({
         )}
 
         <ReadoutStrip>
-          <Readout label="Parts" value={counts.all} />
-          <Readout label="Low stock" value={counts.low} tone={counts.low ? 'warn' : undefined} />
-          <Readout label="Out of stock" value={counts.out} tone={counts.out ? 'bad' : undefined} />
-          <Readout label="Committed" value={totals.committed} sub="units" />
-          <Readout label="On order" value={totals.onOrder} sub="units" />
-          <Readout label="Stock at cost" value={formatCents(totals.value)} />
+          <Readout label={pt ? 'Peças' : 'Parts'} value={counts.all} />
+          <Readout label={pt ? 'Estoque baixo' : 'Low stock'} value={counts.low} tone={counts.low ? 'warn' : undefined} />
+          <Readout label={pt ? 'Sem estoque' : 'Out of stock'} value={counts.out} tone={counts.out ? 'bad' : undefined} />
+          <Readout label={pt ? 'Reservadas' : 'Committed'} value={totals.committed} sub={pt ? 'unidades' : 'units'} />
+          <Readout label={pt ? 'Em pedido' : 'On order'} value={totals.onOrder} sub={pt ? 'unidades' : 'units'} />
+          <Readout label={pt ? 'Custo do estoque' : 'Stock at cost'} value={formatCents(totals.value)} />
         </ReadoutStrip>
 
-        <DeskSection title="All parts" count={visible.length} id="parts-all">
+        <DeskSection title={pt ? 'Todas as peças' : 'All parts'} count={visible.length} id="parts-all">
           <div className="space-y-3">
             <Segmented<StockFilter>
-              label="Filter parts"
+              label={pt ? 'Filtrar peças' : 'Filter parts'}
               value={filter}
               onChange={setFilter}
               size="sm"
@@ -300,33 +307,33 @@ export function PartsPageClient({
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative min-w-0 sm:max-w-sm sm:flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input className="h-11 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="Part number, description, bin or supplier" aria-label="Search parts" />
+                <Input className="h-11 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder={pt ? 'Código, descrição, endereço no estoque ou fornecedor' : 'Part number, description, bin or supplier'} aria-label={pt ? 'Buscar peças' : 'Search parts'} />
               </div>
               {multiRooftop && (
                 <Select value={rooftopId} onValueChange={setRooftopId}>
-                  <SelectTrigger className="h-11 w-full rounded-[4px] px-3 text-[13px] sm:h-9 sm:w-[200px]" aria-label="Rooftop">
+                  <SelectTrigger className="h-11 w-full rounded-[4px] px-3 text-[13px] sm:h-9 sm:w-[200px]" aria-label={pt ? 'Loja' : 'Rooftop'}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All rooftops</SelectItem>
+                    <SelectItem value="all">{pt ? 'Todas as lojas' : 'All rooftops'}</SelectItem>
                     {rooftops.map(rooftop => <SelectItem key={rooftop.id} value={rooftop.id}>{rooftop.name || rooftop.id}</SelectItem>)}
                   </SelectContent>
                 </Select>
               )}
-              {loading && <span className="text-xs text-muted-foreground" role="status">Refreshing…</span>}
+              {loading && <span className="text-xs text-muted-foreground" role="status">{pt ? 'Atualizando…' : 'Refreshing…'}</span>}
             </div>
 
             {error ? (
               <Notice tone="bad">
-                <p className="font-medium">Parts unavailable</p>
+                <p className="font-medium">{pt ? 'Peças indisponíveis' : 'Parts unavailable'}</p>
                 <p className="mt-0.5 text-muted-foreground">{error}</p>
-                <Track className="mt-2"><Pill size="sm" className="max-sm:h-10" onClick={load}>Retry</Pill></Track>
+                <Track className="mt-2"><Pill size="sm" className="max-sm:h-10" onClick={load}>{pt ? 'Tentar novamente' : 'Retry'}</Pill></Track>
               </Notice>
             ) : visible.length === 0 ? (
               <Empty>
                 <p>{scoped.length && isFiltered ? 'No matching parts' : 'No parts'}</p>
                 {scoped.length > 0 && isFiltered ? (
-                  <Pill size="sm" className="max-sm:h-10" onClick={() => { setFilter('all'); setSearch('') }}>Reset filters</Pill>
+                  <Pill size="sm" className="max-sm:h-10" onClick={() => { setFilter('all'); setSearch('') }}>{pt ? 'Limpar filtros' : 'Reset filters'}</Pill>
                 ) : (
                   <Pill size="sm" variant="primary" className="max-sm:h-10" onClick={() => setEditing({ part: null })} disabled={!rooftops.length}>
                     <Plus />
@@ -338,17 +345,17 @@ export function PartsPageClient({
               <DeskTable aria-labelledby="parts-all">
                 <thead>
                   <tr>
-                    <Th>Part</Th>
-                    <Th priority={3}>Bin</Th>
-                    <Th priority={3}>Supplier</Th>
-                    <Th align="right" priority={3}>Price</Th>
-                    <Th align="right" priority={2}>On hand</Th>
-                    <Th align="right" priority={2}>Commit</Th>
-                    <Th align="right">Avail</Th>
-                    <Th align="right" priority={2}>Order</Th>
-                    <Th align="right" priority={3}>Reorder</Th>
-                    <Th priority={2}>Status</Th>
-                    <Th align="right"><span className="sr-only">Actions</span></Th>
+                    <Th>{pt ? 'Peça' : 'Part'}</Th>
+                    <Th priority={3}>{pt ? 'Endereço' : 'Bin'}</Th>
+                    <Th priority={3}>{pt ? 'Fornecedor' : 'Supplier'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Preço' : 'Price'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Em estoque' : 'On hand'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Reservadas' : 'Commit'}</Th>
+                    <Th align="right">{pt ? 'Disponível' : 'Avail'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Em pedido' : 'Order'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Reposição' : 'Reorder'}</Th>
+                    <Th priority={2}>{pt ? 'Situação' : 'Status'}</Th>
+                    <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -365,7 +372,7 @@ export function PartsPageClient({
                           {multiRooftop && part.rooftop?.name && <p className="truncate text-xs text-muted-foreground">{part.rooftop.name}</p>}
                           <div className="md:hidden"><Status tone={STOCK_TONE[state]} className="text-xs">{STOCK_LABEL[state]}</Status></div>
                         </Td>
-                        <Td priority={3}>{part.binLocation ? <Code>{part.binLocation}</Code> : <span className="text-muted-foreground">No bin</span>}</Td>
+                        <Td priority={3}>{part.binLocation ? <Code>{part.binLocation}</Code> : <span className="text-muted-foreground">{pt ? 'Sem endereço' : 'No bin'}</span>}</Td>
                         <Td priority={3} className="max-w-[10rem] truncate text-muted-foreground">{part.supplier || '-'}</Td>
                         <Td align="right" priority={3} className="whitespace-nowrap">{formatCents(part.priceCents)}</Td>
                         <Td align="right" priority={2}>{part.quantity ?? 0}</Td>
@@ -378,10 +385,10 @@ export function PartsPageClient({
                           <div className="flex justify-end gap-0.5">
                             <Pill size="sm" variant="plain" className="max-sm:h-10" onClick={() => setEditing({ part })} aria-label={`Edit ${part.partNumber}`}>
                               <Pencil />
-                              <span className="max-sm:sr-only">Edit</span>
+                              <span className="max-sm:sr-only">{pt ? 'Editar' : 'Edit'}</span>
                             </Pill>
                             <Pill size="sm" variant="plain" className="max-sm:h-10" asChild>
-                              <Link href={partHref(part)}>Ledger</Link>
+                              <Link href={partHref(part)}>{pt ? 'Movimentações' : 'Ledger'}</Link>
                             </Pill>
                           </div>
                         </Td>
@@ -398,9 +405,10 @@ export function PartsPageClient({
           open={Boolean(editing)}
           part={editing?.part || null}
           rooftops={dialogRooftops}
+          currencyCode={currencyCode}
           onOpenChange={open => { if (!open) setEditing(null) }}
           onSaved={async () => {
-            setNotice(editing?.part ? 'Part saved' : 'Part created')
+            setNotice(pt ? (editing?.part ? 'Peça salva' : 'Peça cadastrada') : (editing?.part ? 'Part saved' : 'Part created'))
             setEditing(null)
             await load()
           }}

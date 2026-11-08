@@ -7,6 +7,7 @@ import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Panel, Pill, Readout, ReadoutStrip, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { recordReference, countLabel } from '@/features/platform/lib/format'
@@ -28,8 +29,9 @@ import {
   SOURCE_TYPES,
   SOURCE_TYPE_LABEL,
   batchTone,
-  dateTime,
-  money,
+  dateTime as dateTimeBase,
+  money as moneyBase,
+  accountingLabel,
   nonce,
   type AccountingSourceType,
 } from '../lib/format'
@@ -48,14 +50,15 @@ function ageDays(value: string) {
 }
 
 /** What the office has to do with an unposted batch. */
-function nextStepLabel(batch: AccountingBatchListItem) {
-  if (batch.status === 'failed') return 'Fix and queue again'
-  if (batch.status === 'staged') return 'Queue for posting'
-  return 'Record posting result'
+function nextStepLabel(batch: AccountingBatchListItem, locale: 'pt-BR' | 'en-US') {
+  if (batch.status === 'failed') return accountingLabel(locale, 'Fix and queue again')
+  if (batch.status === 'staged') return accountingLabel(locale, 'Queue for posting')
+  return accountingLabel(locale, 'Record posting result')
 }
 
 export function AccountingPageClient({
   timeZone,
+  currencyCode,
   initialBatches,
   initialCounts,
   initialBatchError,
@@ -64,6 +67,7 @@ export function AccountingPageClient({
   initialMappingError,
 }: {
   timeZone: string
+  currencyCode: string
   initialBatches: AccountingBatchListItem[]
   initialCounts: BatchCounts | null
   initialBatchError: string | null
@@ -72,6 +76,10 @@ export function AccountingPageClient({
   initialMappingError: string | null
 }) {
   const router = useRouter()
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const money = (cents: number | null | undefined) => moneyBase(cents, currencyCode, locale)
+  const dateTime = (value: string | null | undefined, zone: string) => dateTimeBase(value, zone, locale)
   const [view, setView] = useState<View>('batches')
   const [message, setMessage] = useState<string | null>(null)
 
@@ -178,8 +186,8 @@ export function AccountingPageClient({
 
   const submitStage = async () => {
     const errors: FieldErrors = {}
-    if (!stageValues.sourceType) errors.sourceType = 'Choose a source type'
-    if (!stageValues.sourceId) errors.sourceId = 'Choose a source record'
+    if (!stageValues.sourceType) errors.sourceType = pt ? 'Selecione o tipo de origem' : 'Choose a source type'
+    if (!stageValues.sourceId) errors.sourceId = pt ? 'Selecione o registro de origem' : 'Choose a source record'
     setStageFieldErrors(errors)
     if (Object.keys(errors).length) return
     setStageBusy(true)
@@ -195,14 +203,14 @@ export function AccountingPageClient({
   }
 
   const stageFields: CommandField[] = [
-    { name: 'sourceType', label: 'Source type', type: 'select', options: SOURCE_TYPES.map(value => ({ value, label: SOURCE_TYPE_LABEL[value] })) },
+    { name: 'sourceType', label: locale === 'pt-BR' ? 'Tipo de origem' : 'Source type', type: 'select', options: SOURCE_TYPES.map(value => ({ value, label: accountingLabel(locale, SOURCE_TYPE_LABEL[value]) })) },
     {
       name: 'sourceId',
-      label: 'Source record',
+      label: pt ? 'Registro de origem' : 'Source record',
       type: 'select',
       wide: true,
       disabled: stageOptionsState === 'loading' || stageOptions.length === 0,
-      placeholder: stageOptionsState === 'loading' ? 'Loading…' : stageOptionsState === 'error' ? 'Sources unavailable' : stageOptions.length === 0 ? 'No eligible records' : 'Select a record',
+      placeholder: stageOptionsState === 'loading' ? (pt ? 'Carregando…' : 'Loading…') : stageOptionsState === 'error' ? (pt ? 'Origens indisponíveis' : 'Sources unavailable') : stageOptions.length === 0 ? (pt ? 'Nenhum registro elegível' : 'No eligible records') : (pt ? 'Selecione um registro' : 'Select a record'),
       options: stageOptions.map(option => ({ value: option.id, label: [option.label, option.detail, option.rooftop].filter(Boolean).join(' · ') })),
     },
   ]
@@ -239,18 +247,18 @@ export function AccountingPageClient({
     if (!mappingForm) return
     const values = mappingForm.values
     const errors: FieldErrors = {}
-    if (!values.rooftopId) errors.rooftopId = 'Choose a rooftop'
-    if (!values.sourceType) errors.sourceType = 'Choose a source type'
-    if (!values.sourceCode) errors.sourceCode = 'Choose a source code'
+    if (!values.rooftopId) errors.rooftopId = pt ? 'Selecione uma loja' : 'Choose a rooftop'
+    if (!values.sourceType) errors.sourceType = pt ? 'Selecione o tipo de origem' : 'Choose a source type'
+    if (!values.sourceCode) errors.sourceCode = pt ? 'Selecione o código de origem' : 'Choose a source code'
     const debit = (values.debitAccount || '').trim()
     const credit = (values.creditAccount || '').trim()
-    if (!debit) errors.debitAccount = 'Debit account is required'
-    else if (debit.length > 100) errors.debitAccount = 'Up to 100 characters'
-    if (!credit) errors.creditAccount = 'Credit account is required'
-    else if (credit.length > 100) errors.creditAccount = 'Up to 100 characters'
-    if (debit && credit && debit === credit) errors.creditAccount = 'Must differ from the debit account'
+    if (!debit) errors.debitAccount = pt ? 'Informe a conta de débito' : 'Debit account is required'
+    else if (debit.length > 100) errors.debitAccount = pt ? 'Máximo de 100 caracteres' : 'Up to 100 characters'
+    if (!credit) errors.creditAccount = pt ? 'Informe a conta de crédito' : 'Credit account is required'
+    else if (credit.length > 100) errors.creditAccount = pt ? 'Máximo de 100 caracteres' : 'Up to 100 characters'
+    if (debit && credit && debit === credit) errors.creditAccount = pt ? 'A conta deve ser diferente da conta de débito' : 'Must differ from the debit account'
     if (mappingForm.mode === 'create' && mappings.some(m => m.rooftop?.id === values.rooftopId && m.sourceType === values.sourceType && m.sourceCode === values.sourceCode)) {
-      errors.sourceCode = 'A mapping for this code exists; edit it instead'
+      errors.sourceCode = pt ? 'Já existe um mapeamento para este código; edite o existente' : 'A mapping for this code exists; edit it instead'
     }
     setMappingFieldErrors(errors)
     if (Object.keys(errors).length) return
@@ -271,7 +279,7 @@ export function AccountingPageClient({
       return
     }
     setMappingForm(null)
-    setMessage(mappingForm.mode === 'create' ? 'Mapping added.' : 'Mapping updated.')
+    setMessage(mappingForm.mode === 'create' ? (pt ? 'Mapeamento adicionado.' : 'Mapping added.') : (pt ? 'Mapeamento atualizado.' : 'Mapping updated.'))
     await loadMappings()
   }
 
@@ -286,24 +294,24 @@ export function AccountingPageClient({
       return
     }
     setDeleting(null)
-    setMessage('Mapping deleted.')
+    setMessage(pt ? 'Mapeamento excluído.' : 'Mapping deleted.')
     await loadMappings()
   }
 
   const mappingFields: CommandField[] = mappingForm
     ? [
-        { name: 'rooftopId', label: 'Rooftop', type: 'select', disabled: mappingForm.mode === 'edit', options: rooftops.map(r => ({ value: r.id, label: r.name })), placeholder: rooftops.length ? 'Select a rooftop' : 'No rooftops' },
-        { name: 'sourceType', label: 'Source type', type: 'select', disabled: mappingForm.mode === 'edit', options: SOURCE_TYPES.map(value => ({ value, label: SOURCE_TYPE_LABEL[value] })) },
+        { name: 'rooftopId', label: pt ? 'Loja' : 'Rooftop', type: 'select', disabled: mappingForm.mode === 'edit', options: rooftops.map(r => ({ value: r.id, label: r.name })), placeholder: rooftops.length ? (pt ? 'Selecione uma loja' : 'Select a rooftop') : (pt ? 'Nenhuma loja cadastrada' : 'No rooftops') },
+        { name: 'sourceType', label: locale === 'pt-BR' ? 'Tipo de origem' : 'Source type', type: 'select', disabled: mappingForm.mode === 'edit', options: SOURCE_TYPES.map(value => ({ value, label: accountingLabel(locale, SOURCE_TYPE_LABEL[value]) })) },
         {
           name: 'sourceCode',
-          label: 'Source code',
+          label: pt ? 'Código de origem' : 'Source code',
           type: 'select',
           wide: true,
           disabled: mappingForm.mode === 'edit',
           options: (SOURCE_CODES[mappingForm.values.sourceType as AccountingSourceType] || []).map(code => ({ value: code, label: code })),
         },
-        { name: 'debitAccount', label: 'Debit account', maxLength: 100, placeholder: '1010 Cash' },
-        { name: 'creditAccount', label: 'Credit account', maxLength: 100, placeholder: '4010 Vehicle sales' },
+        { name: 'debitAccount', label: pt ? 'Conta de débito' : 'Debit account', maxLength: 100, placeholder: pt ? 'Ex.: 1010 Caixa' : '1010 Cash' },
+        { name: 'creditAccount', label: pt ? 'Conta de crédito' : 'Credit account', maxLength: 100, placeholder: pt ? 'Ex.: 4010 Venda de veículos' : '4010 Vehicle sales' },
       ]
     : []
 
@@ -355,42 +363,42 @@ export function AccountingPageClient({
 
   const needsAction = counts.staged + counts.posting + counts.failed
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'page' as const, label: 'Accounting' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: pt ? 'Plataforma' : 'Platform' },
+    { type: 'page' as const, label: pt ? 'Contabilidade' : 'Accounting' },
   ]
   const filtered = Boolean(search.trim()) || status !== 'all' || sourceType !== 'all'
 
   const header = (
     <DeskHeader
-      title="Accounting"
+      title={pt ? 'Contabilidade' : 'Accounting'}
       tone={batchError ? 'bad' : counts.failed > 0 ? 'bad' : needsAction > 0 ? 'warn' : 'ok'}
-      status={batchError ? 'Unavailable' : counts.failed > 0 ? `${counts.failed} failed` : needsAction > 0 ? `${needsAction} open` : 'Clear'}
+      status={batchError ? (pt ? 'Indisponível' : 'Unavailable') : counts.failed > 0 ? `${counts.failed} ${pt ? 'com falha' : 'failed'}` : needsAction > 0 ? `${needsAction} ${pt ? 'em aberto' : 'open'}` : (pt ? 'Em dia' : 'Clear')}
       meta={
         batchError
-          ? 'Unavailable'
+          ? (pt ? 'Indisponível' : 'Unavailable')
           : [
-              counts.failed > 0 ? `${counts.failed} failed` : '',
-              counts.staged + counts.posting > 0 ? `${counts.staged + counts.posting} not posted` : '',
+              counts.failed > 0 ? `${counts.failed} ${pt ? 'com falha' : 'failed'}` : '',
+              counts.staged + counts.posting > 0 ? `${counts.staged + counts.posting} ${pt ? 'não lançados' : 'not posted'}` : '',
               countLabel(counts.all, 'batch', 'batches'),
               countLabel(mappings.length, 'mapping'),
             ].filter(Boolean).join(' · ')
       }
       actions={
         <>
-          <Pill variant="plain" onClick={refresh} disabled={batchLoading} aria-label="Refresh" className="h-11 sm:h-8">
+          <Pill variant="plain" onClick={refresh} disabled={batchLoading} aria-label={pt ? 'Atualizar' : 'Refresh'} className="h-11 sm:h-8">
             <RefreshCw className={batchLoading ? 'animate-spin' : undefined} />
-            Refresh
+            {pt ? 'Atualizar' : 'Refresh'}
           </Pill>
           {view === 'batches' ? (
             <Pill variant="primary" onClick={openStage} className="h-11 sm:h-8">
               <Plus />
-              Stage batch
+              {pt ? 'Preparar lote' : 'Stage batch'}
             </Pill>
           ) : (
             <Pill variant="primary" onClick={openMappingCreate} disabled={rooftops.length === 0} className="h-11 sm:h-8">
               <Plus />
-              Add mapping
+              {pt ? 'Adicionar mapeamento' : 'Add mapping'}
             </Pill>
           )}
         </>
@@ -399,31 +407,31 @@ export function AccountingPageClient({
   )
 
   return (
-    <PageContainer title="Accounting" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Contabilidade' : 'Accounting'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-6 px-4 pb-24 md:px-6">
         {message && (
           <Notice tone="ok">
             <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
               <p className="min-w-0">{message}</p>
               <Track>
-                <Pill size="sm" variant="plain" onClick={() => setMessage(null)} className="h-10 sm:h-7">Dismiss</Pill>
+                <Pill size="sm" variant="plain" onClick={() => setMessage(null)} className="h-10 sm:h-7">{pt ? 'Fechar' : 'Dismiss'}</Pill>
               </Track>
             </div>
           </Notice>
         )}
 
-        <DeskSection title="Needs you" count={queueError ? undefined : queue.length + (unmappedCount > 0 && !mappingError ? 1 : 0)} id="accounting-queue">
+        <DeskSection title={pt ? 'Pendências' : 'Needs you'} count={queueError ? undefined : queue.length + (unmappedCount > 0 && !mappingError ? 1 : 0)} id="accounting-queue">
           {queueError ? (
             <Notice tone="bad">Queue unavailable: {queueError}</Notice>
           ) : queue.length === 0 && (unmappedCount === 0 || mappingError) ? (
-            <p className="py-3 text-sm text-muted-foreground">No unposted batches or exceptions</p>
+            <p className="py-3 text-sm text-muted-foreground">{pt ? 'Nenhum lote pendente de lançamento ou outra ocorrência' : 'No unposted batches or exceptions'}</p>
           ) : (
             <div className="space-y-3">
               {unmappedCount > 0 && !mappingError && (
                 <Notice tone="warn">
                   <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-                    <p className="min-w-0 font-medium">{unmappedCount} unmapped {unmappedCount === 1 ? 'code' : 'codes'}</p>
-                    <Pill size="sm" onClick={() => setView('mappings')} className="h-10 sm:h-7">Open mappings</Pill>
+                    <p className="min-w-0 font-medium">{pt ? `${unmappedCount} ${unmappedCount === 1 ? 'código sem mapeamento' : 'códigos sem mapeamento'}` : `${unmappedCount} unmapped ${unmappedCount === 1 ? 'code' : 'codes'}`}</p>
+                    <Pill size="sm" onClick={() => setView('mappings')} className="h-10 sm:h-7">{pt ? 'Abrir mapeamentos' : 'Open mappings'}</Pill>
                   </div>
                 </Notice>
               )}
@@ -431,12 +439,12 @@ export function AccountingPageClient({
                 <DeskTable aria-labelledby="accounting-queue">
                   <thead>
                     <tr>
-                      <Th>Batch</Th>
-                      <Th>Status</Th>
-                      <Th priority={2}>Next step</Th>
-                      <Th priority={3} align="right">Attempts</Th>
-                      <Th priority={2} align="right">Age</Th>
-                      <Th align="right">Amount</Th>
+                      <Th>{pt ? 'Lote' : 'Batch'}</Th>
+                      <Th>{pt ? 'Situação' : 'Status'}</Th>
+                      <Th priority={2}>{pt ? 'Próxima etapa' : 'Next step'}</Th>
+                      <Th priority={3} align="right">{pt ? 'Tentativas' : 'Attempts'}</Th>
+                      <Th priority={2} align="right">{pt ? 'Tempo' : 'Age'}</Th>
+                      <Th align="right">{pt ? 'Valor' : 'Amount'}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -447,7 +455,7 @@ export function AccountingPageClient({
                         <Tr key={batch.id} className="cursor-pointer" onClick={() => router.push(`${basePath}/platform/accounting/${batch.id}`)}>
                           <Td className="min-w-0">
                             <Link href={`${basePath}/platform/accounting/${batch.id}`} className="block font-medium text-foreground hover:underline" onClick={event => event.stopPropagation()}>
-                              {SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType}
+                              {accountingLabel(locale, SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType)}
                             </Link>
                             <p className="mt-0.5 flex min-w-0 flex-wrap gap-x-2 text-xs text-muted-foreground">
                               <Code>{recordReference('SRC', batch.sourceId)}</Code>
@@ -457,13 +465,13 @@ export function AccountingPageClient({
                           </Td>
                           <Td>
                             <span className="inline-flex flex-wrap items-center gap-1.5">
-                              <Status tone={batchTone(batch.status)}>{BATCH_STATUS_LABEL[batch.status] || batch.status}</Status>
-                              {batch.status === 'failed' && <Attention>Failed</Attention>}
-                              {unbalanced && <Attention>Out of balance</Attention>}
+                              <Status tone={batchTone(batch.status)}>{accountingLabel(locale, BATCH_STATUS_LABEL[batch.status] || batch.status)}</Status>
+                              {batch.status === 'failed' && <Attention>{accountingLabel(locale, 'Failed')}</Attention>}
+                              {unbalanced && <Attention>{accountingLabel(locale, 'out of balance')}</Attention>}
                             </span>
                             {batch.status === 'failed' && batch.lastErrorCode && <p className="mt-0.5"><Code>{batch.lastErrorCode}</Code></p>}
                           </Td>
-                          <Td priority={2} className="text-muted-foreground">{batch.status in QUEUE_RANK ? nextStepLabel(batch) : 'Review lines'}</Td>
+                          <Td priority={2} className="text-muted-foreground">{batch.status in QUEUE_RANK ? nextStepLabel(batch, locale) : locale === 'pt-BR' ? 'Revisar lançamentos' : 'Review lines'}</Td>
                           <Td priority={3} align="right">{batch.attemptCount}</Td>
                           <Td priority={2} align="right" className="whitespace-nowrap">
                             <Figure size="sm">{days}</Figure>
@@ -483,19 +491,19 @@ export function AccountingPageClient({
         </DeskSection>
 
         <ReadoutStrip>
-          <Readout label="Staged" value={counts.staged} tone={counts.staged ? 'warn' : 'idle'} />
-          <Readout label="Posting" value={counts.posting} tone={counts.posting ? 'warn' : 'idle'} />
-          <Readout label="Failed" value={counts.failed} tone={counts.failed ? 'bad' : 'idle'} />
-          <Readout label="Locked" value={counts.locked} tone={counts.locked ? 'ok' : 'idle'} />
+          <Readout label={pt ? 'Preparados' : 'Staged'} value={counts.staged} tone={counts.staged ? 'warn' : 'idle'} />
+          <Readout label={pt ? 'Em lançamento' : 'Posting'} value={counts.posting} tone={counts.posting ? 'warn' : 'idle'} />
+          <Readout label={pt ? 'Com falha' : 'Failed'} value={counts.failed} tone={counts.failed ? 'bad' : 'idle'} />
+          <Readout label={pt ? 'Bloqueados' : 'Locked'} value={counts.locked} tone={counts.locked ? 'ok' : 'idle'} />
         </ReadoutStrip>
 
         <Segmented<View>
-          label="Accounting view"
+          label={pt ? 'Visualização contábil' : 'Accounting view'}
           value={view}
           onChange={setView}
           options={[
-            { value: 'batches', label: 'Batches', count: counts.all },
-            { value: 'mappings', label: 'Mappings', count: mappings.length },
+            { value: 'batches', label: pt ? 'Lotes' : 'Batches', count: counts.all },
+            { value: 'mappings', label: pt ? 'Mapeamentos' : 'Mappings', count: mappings.length },
           ]}
         />
 
@@ -504,27 +512,27 @@ export function AccountingPageClient({
 
             <div className="flex min-w-0 flex-col gap-3">
               <Segmented
-                label="Batch status"
+                label={pt ? 'Status do lote' : 'Batch status'}
                 value={status}
                 onChange={setStatus}
                 options={[
-                  { value: 'all', label: 'All', count: counts.all },
-                  ...BATCH_STATUSES.map(value => ({ value, label: BATCH_STATUS_LABEL[value], count: counts[value], tone: batchTone(value) })),
+                  { value: 'all', label: pt ? 'Todos' : 'All', count: counts.all },
+                  ...BATCH_STATUSES.map(value => ({ value, label: accountingLabel(locale, BATCH_STATUS_LABEL[value]), count: counts[value], tone: batchTone(value) })),
                 ]}
               />
               <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
                 <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Source ID, reference or error" aria-label="Search batches" className="h-11 rounded-[4px] pl-9 sm:h-9" />
+                  <Input value={search} onChange={event => setSearch(event.target.value)} placeholder={pt ? 'ID da origem, referência ou erro' : 'Source ID, reference or error'} aria-label={pt ? 'Buscar lotes' : 'Search batches'} className="h-11 rounded-[4px] pl-9 sm:h-9" />
                 </div>
                 <Select value={sourceType} onValueChange={setSourceType}>
-                  <SelectTrigger className="h-11 w-full rounded-[4px] sm:h-9 sm:w-48" aria-label="Source type">
+                  <SelectTrigger className="h-11 w-full rounded-[4px] sm:h-9 sm:w-48" aria-label={pt ? 'Tipo de origem' : 'Source type'}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All sources</SelectItem>
+                    <SelectItem value="all">{pt ? 'Todas as origens' : 'All sources'}</SelectItem>
                     {SOURCE_TYPES.map(value => (
-                      <SelectItem key={value} value={value}>{SOURCE_TYPE_LABEL[value]}</SelectItem>
+                      <SelectItem key={value} value={value}>{accountingLabel(locale, SOURCE_TYPE_LABEL[value])}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -534,11 +542,11 @@ export function AccountingPageClient({
             {batchError ? (
               <div className="space-y-3">
                 <Notice tone="bad">
-                  <p className="font-medium">Batches are unavailable</p>
+                  <p className="font-medium">{pt ? 'Lotes indisponíveis' : 'Batches are unavailable'}</p>
                   <p className="mt-0.5 text-muted-foreground">{batchError}</p>
                 </Notice>
                 <Track>
-                  <Pill onClick={() => loadBatches({ status, sourceType, search })} className="h-10 sm:h-8">Retry</Pill>
+                  <Pill onClick={() => loadBatches({ status, sourceType, search })} className="h-10 sm:h-8">{pt ? 'Tentar novamente' : 'Retry'}</Pill>
                 </Track>
               </div>
             ) : (
@@ -548,7 +556,7 @@ export function AccountingPageClient({
                     <p>{batchLoading ? 'Loading…' : filtered ? 'No batches match' : 'No batches'}</p>
                     {filtered && !batchLoading && (
                       <Track>
-                        <Pill size="sm" className="h-10 sm:h-7" onClick={() => { setSearch(''); setStatus('all'); setSourceType('all') }}>Reset filters</Pill>
+                        <Pill size="sm" className="h-10 sm:h-7" onClick={() => { setSearch(''); setStatus('all'); setSourceType('all') }}>{pt ? 'Limpar filtros' : 'Reset filters'}</Pill>
                       </Track>
                     )}
                   </div>
@@ -558,13 +566,13 @@ export function AccountingPageClient({
                   <DeskTable>
                     <thead>
                       <tr>
-                        <Th>Batch</Th>
-                        <Th>Status</Th>
-                        <Th priority={3}>Reference</Th>
-                        <Th priority={3} align="right">Attempts</Th>
-                        <Th priority={2}>Updated</Th>
-                        <Th align="right">Debits</Th>
-                        <Th priority={2} align="right">Credits</Th>
+                        <Th>{pt ? 'Lote' : 'Batch'}</Th>
+                        <Th>{pt ? 'Situação' : 'Status'}</Th>
+                        <Th priority={3}>{pt ? 'Referência' : 'Reference'}</Th>
+                        <Th priority={3} align="right">{pt ? 'Tentativas' : 'Attempts'}</Th>
+                        <Th priority={2}>{pt ? 'Atualizado' : 'Updated'}</Th>
+                        <Th align="right">{pt ? 'Débitos' : 'Debits'}</Th>
+                        <Th priority={2} align="right">{pt ? 'Créditos' : 'Credits'}</Th>
                       </tr>
                     </thead>
                     <tbody>
@@ -572,7 +580,7 @@ export function AccountingPageClient({
                         <Tr key={batch.id} className="cursor-pointer" onClick={() => router.push(`${basePath}/platform/accounting/${batch.id}`)}>
                           <Td className="min-w-0">
                             <Link href={`${basePath}/platform/accounting/${batch.id}`} className="block font-medium text-foreground hover:underline" onClick={event => event.stopPropagation()}>
-                              {SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType}
+                              {accountingLabel(locale, SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType)}
                             </Link>
                             <p className="mt-0.5 flex min-w-0 flex-wrap gap-x-2 text-xs text-muted-foreground">
                               <Code>{recordReference('SRC', batch.sourceId)}</Code>
@@ -581,7 +589,7 @@ export function AccountingPageClient({
                             </p>
                           </Td>
                           <Td>
-                            <Status tone={batchTone(batch.status)}>{BATCH_STATUS_LABEL[batch.status] || batch.status}</Status>
+                            <Status tone={batchTone(batch.status)}>{accountingLabel(locale, BATCH_STATUS_LABEL[batch.status] || batch.status)}</Status>
                             {batch.lastErrorCode && batch.status === 'failed' && <p className="mt-0.5"><Code>{batch.lastErrorCode}</Code></p>}
                           </Td>
                           <Td priority={3}>{batch.externalReference ? <Code>{batch.externalReference}</Code> : <span className="text-muted-foreground">-</span>}</Td>
@@ -601,21 +609,21 @@ export function AccountingPageClient({
           <div className="space-y-4">
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <Segmented
-                label="Mapping source type"
+                label={pt ? 'Tipo de origem do mapeamento' : 'Mapping source type'}
                 value={mappingType}
                 onChange={setMappingType}
                 options={[
                   { value: 'all' as const, label: 'All', count: mappings.filter(m => mappingRooftop === 'all' || m.rooftop?.id === mappingRooftop).length },
-                  ...SOURCE_TYPES.map(value => ({ value, label: SOURCE_TYPE_LABEL[value], count: mappings.filter(m => m.sourceType === value && (mappingRooftop === 'all' || m.rooftop?.id === mappingRooftop)).length })),
+                  ...SOURCE_TYPES.map(value => ({ value, label: accountingLabel(locale, SOURCE_TYPE_LABEL[value]), count: mappings.filter(m => m.sourceType === value && (mappingRooftop === 'all' || m.rooftop?.id === mappingRooftop)).length })),
                 ]}
               />
               {rooftops.length > 1 && (
                 <Select value={mappingRooftop} onValueChange={setMappingRooftop}>
-                  <SelectTrigger className="h-11 w-full rounded-[4px] sm:h-9 sm:w-56" aria-label="Rooftop">
+                  <SelectTrigger className="h-11 w-full rounded-[4px] sm:h-9 sm:w-56" aria-label={pt ? 'Loja' : 'Rooftop'}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All rooftops</SelectItem>
+                    <SelectItem value="all">{pt ? 'Todas as lojas' : 'All rooftops'}</SelectItem>
                     {rooftops.map(rooftop => (
                       <SelectItem key={rooftop.id} value={rooftop.id}>{rooftop.name}</SelectItem>
                     ))}
@@ -634,34 +642,34 @@ export function AccountingPageClient({
             {mappingError ? (
               <div className="space-y-3">
                 <Notice tone="bad">
-                  <p className="font-medium">Mappings are unavailable</p>
+                  <p className="font-medium">{pt ? 'Mapeamentos indisponíveis' : 'Mappings are unavailable'}</p>
                   <p className="mt-0.5 text-muted-foreground">{mappingError}</p>
                 </Notice>
                 <Track>
-                  <Pill onClick={loadMappings} className="h-10 sm:h-8">Retry</Pill>
+                  <Pill onClick={loadMappings} className="h-10 sm:h-8">{pt ? 'Tentar novamente' : 'Retry'}</Pill>
                 </Track>
               </div>
             ) : (
               filteredMappings.length === 0 ? (
                 <Panel>
-                  <p className="py-10 text-center text-sm text-muted-foreground">No mappings</p>
+                  <p className="py-10 text-center text-sm text-muted-foreground">{pt ? 'Nenhum mapeamento cadastrado' : 'No mappings'}</p>
                 </Panel>
               ) : (
                 <DeskTable>
                   <thead>
                     <tr>
-                      <Th>Source code</Th>
-                      <Th>Debit account</Th>
-                      <Th priority={2}>Credit account</Th>
-                      {rooftops.length > 1 && <Th priority={3}>Rooftop</Th>}
-                      <Th align="right"><span className="sr-only">Actions</span></Th>
+                      <Th>{pt ? 'Código de origem' : 'Source code'}</Th>
+                      <Th>{pt ? 'Conta de débito' : 'Debit account'}</Th>
+                      <Th priority={2}>{pt ? 'Conta de crédito' : 'Credit account'}</Th>
+                      {rooftops.length > 1 && <Th priority={3}>{pt ? 'Loja' : 'Rooftop'}</Th>}
+                      <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredMappings.map(mapping => (
                       <Tr key={mapping.id}>
                         <Td className="min-w-0">
-                          <p className="font-medium text-foreground">{SOURCE_TYPE_LABEL[mapping.sourceType] || mapping.sourceType}</p>
+                          <p className="font-medium text-foreground">{accountingLabel(locale, SOURCE_TYPE_LABEL[mapping.sourceType] || mapping.sourceType)}</p>
                           <Code>{mapping.sourceCode}</Code>
                         </Td>
                         <Td className="break-words">
@@ -693,13 +701,13 @@ export function AccountingPageClient({
 
         <CommandDialog
           open={stageOpen}
-          title="Stage accounting batch"
+          title={pt ? 'Preparar lote contábil' : 'Stage accounting batch'}
           fields={stageFields}
           values={stageValues}
           fieldErrors={stageFieldErrors}
           error={stageError}
           busy={stageBusy}
-          submitLabel="Stage"
+          submitLabel={pt ? 'Preparar' : 'Stage'}
           onValuesChange={changeStage}
           onSubmit={submitStage}
           onOpenChange={setStageOpen}
@@ -707,13 +715,13 @@ export function AccountingPageClient({
 
         <CommandDialog
           open={Boolean(mappingForm)}
-          title={mappingForm?.mode === 'edit' ? 'Edit mapping' : 'Add mapping'}
+          title={mappingForm?.mode === 'edit' ? (pt ? 'Editar mapeamento' : 'Edit mapping') : (pt ? 'Adicionar mapeamento' : 'Add mapping')}
           fields={mappingFields}
           values={mappingForm?.values || {}}
           fieldErrors={mappingFieldErrors}
           error={mappingSubmitError}
           busy={mappingBusy}
-          submitLabel={mappingForm?.mode === 'edit' ? 'Save' : 'Add'}
+          submitLabel={mappingForm?.mode === 'edit' ? (pt ? 'Salvar' : 'Save') : (pt ? 'Adicionar' : 'Add')}
           onValuesChange={changeMapping}
           onSubmit={submitMapping}
           onOpenChange={open => { if (!open) setMappingForm(null) }}
@@ -721,14 +729,14 @@ export function AccountingPageClient({
 
         <CommandDialog
           open={Boolean(deleting)}
-          title="Delete mapping"
+          title={pt ? 'Excluir mapeamento' : 'Delete mapping'}
           description={deleting ? `${deleting.sourceType}/${deleting.sourceCode}: Dr ${deleting.debitAccount} · Cr ${deleting.creditAccount}` : undefined}
           fields={[]}
           values={{}}
           error={deleteError}
           busy={deleteBusy}
           danger
-          submitLabel="Delete"
+          submitLabel={pt ? 'Excluir' : 'Delete'}
           onValuesChange={() => {}}
           onSubmit={confirmDelete}
           onOpenChange={open => { if (!open) setDeleting(null) }}

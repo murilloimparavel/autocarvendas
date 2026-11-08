@@ -55,4 +55,5 @@ export type CancellationsWorkspace = {
   acceptedMenus: AcceptedMenu[]
   payments: DealPayment[] | null
   refunds: DealRefund[] | null
+  currencyCode: string
 }

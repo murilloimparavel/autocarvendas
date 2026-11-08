@@ -15,6 +15,7 @@ import { customerRequestReference } from '../lib/customerRequests'
 import { transitionTradeInStep, TRADE_IN_ESTIMATE_DISCLAIMER } from '../lib/tradeInForm'
 import { fillBlankFields, useCustomerPrefill } from '../lib/useCustomerPrefill'
 import { currencySymbol } from '../lib/format'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import {
   Field,
   FormSection,
@@ -73,6 +74,9 @@ const optionLabel = (options: { value: string; label: string }[], value: string)
   options.find((option) => option.value === value)?.label ?? null
 
 export function TradeInPage() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const text = (en: string, br: string) => pt ? br : en
   const business = useStorefrontBusiness()
   const searchParams = useSearchParams()
   const interestedVehicleId = searchParams?.get('vehicleId') || ''
@@ -173,49 +177,49 @@ export function TradeInPage() {
   const mileage = Number(formData.mileage)
   const payoff = Number(formData.payoffAmount)
   const vehicleRows: StickerRowData[] = [
-    { label: 'Vehicle', value: [formData.year, formData.make, formData.model, formData.trim].filter(Boolean).join(' '), strong: true },
-    { label: 'Mileage', value: formData.mileage && Number.isFinite(mileage) ? formatMileage(mileage) : null },
+    { label: text('Vehicle', 'Veículo'), value: [formData.year, formData.make, formData.model, formData.trim].filter(Boolean).join(' '), strong: true },
+    { label: text('Mileage', 'Quilometragem'), value: formData.mileage && Number.isFinite(mileage) ? formatMileage(mileage, locale) : null },
     ...(formData.vin ? [{ label: 'VIN', value: formData.vin }] : []),
-    { label: 'Condition', value: optionLabel(CONDITIONS, formData.condition) },
-    { label: 'Ownership', value: optionLabel(OWNERSHIP, formData.ownership) },
+    { label: text('Condition', 'Condição'), value: (pt ? ({ excellent: 'Excelente', good: 'Bom', fair: 'Regular', poor: 'Ruim' } as Record<string, string>)[formData.condition] : optionLabel(CONDITIONS, formData.condition)) },
+    { label: text('Ownership', 'Situação do veículo'), value: (pt ? ({ own: 'Quitado', financing: 'Financiado', lease: 'Leasing' } as Record<string, string>)[formData.ownership] : optionLabel(OWNERSHIP, formData.ownership)) },
     ...(formData.ownership === 'financing' && formData.payoffAmount && Number.isFinite(payoff)
-      ? [{ label: 'Payoff', value: formatPrice(payoff, business.currencyCode) }]
+      ? [{ label: text('Payoff', 'Saldo devedor'), value: formatPrice(payoff, business.currencyCode, locale) }]
       : []),
   ]
   const contactName = [formData.firstName, formData.lastName].filter(Boolean).join(' ')
 
   const sticker = (rows: StickerRowData[], meta?: string) => (
-    <Sticker title="Trade-in" meta={meta} rows={rows}>
-      {interestedVehicle && <StickerVehicle vehicle={interestedVehicle} label="Trading toward" />}
+    <Sticker title={text('Trade-in', 'Veículo na troca')} meta={meta} rows={rows}>
+      {interestedVehicle && <StickerVehicle vehicle={interestedVehicle} label={pt ? 'Veículo desejado' : 'Trading toward'} />}
     </Sticker>
   )
 
   if (submitted) {
     return (
       <RequestReceived
-        context="Trade-in"
+        context={text('Trade-in', 'Veículo na troca')}
         reference={submissionReference}
         note={estimate
-          ? TRADE_IN_ESTIMATE_DISCLAIMER
-          : 'Any offer, if made, will be shared separately after inspection and dealership review.'}
+          ? (pt ? 'Esta estimativa é preliminar e não representa uma oferta da loja. Qualquer proposta será apresentada separadamente, após a inspeção do veículo e a análise da concessionária.' : TRADE_IN_ESTIMATE_DISCLAIMER)
+          : text('Any offer, if made, will be shared separately after inspection and dealership review.', 'Qualquer proposta, se houver, será apresentada separadamente após a inspeção do veículo e a análise da concessionária.')}
         summary={sticker([
           ...(estimate
             ? [{
-                label: 'Preliminary range',
-                value: <span className="sf-figure">{formatPrice(estimate.min, business.currencyCode)} to {formatPrice(estimate.max, business.currencyCode)}</span>,
+                label: text('Preliminary range', 'Faixa estimada'),
+                value: <span className="sf-figure">{formatPrice(estimate.min, business.currencyCode, locale)} {pt ? 'a' : 'to'} {formatPrice(estimate.max, business.currencyCode, locale)}</span>,
                 strong: true,
               }]
             : []),
           ...vehicleRows,
-          { label: 'Name', value: contactName },
-          { label: 'Email', value: formData.email },
-          { label: 'Phone', value: formData.phone },
+          { label: text('Name', 'Nome'), value: contactName },
+          { label: text('Email', 'E-mail'), value: formData.email },
+          { label: text('Phone', 'Telefone'), value: formData.phone },
         ], business.shortName || business.fullName)}
         actions={
           <>
-            <Link href="/inventory" className="sf-btn sf-btn-primary">Browse inventory</Link>
-            <button type="button" onClick={reset} className="sf-btn sf-btn-ghost">New trade-in request</button>
-            <Link href="/financing" className="sf-btn sf-btn-ghost">Financing</Link>
+            <Link href="/inventory" className="sf-btn sf-btn-primary">{text('Browse inventory', 'Ver estoque')}</Link>
+            <button type="button" onClick={reset} className="sf-btn sf-btn-ghost">{text('New trade-in request', 'Nova avaliação')}</button>
+            <Link href="/financing" className="sf-btn sf-btn-ghost">{text('Financing', 'Financiamento')}</Link>
           </>
         }
       />
@@ -223,17 +227,17 @@ export function TradeInPage() {
   }
 
   const summary = sticker(
-    step === 3 ? [...vehicleRows, { label: 'Name', value: contactName }] : vehicleRows,
-    `Step ${step}/3`,
+    step === 3 ? [...vehicleRows, { label: text('Name', 'Nome'), value: contactName }] : vehicleRows,
+    pt ? `Etapa ${step}/3` : `Step ${step}/3`,
   )
 
   return (
     <>
-      <PageHeader title="Trade-in review" />
+      <PageHeader title={text('Trade-in review', 'Avaliação do veículo na troca')} />
 
       <RequestLayout summary={summary}>
-        <ol className="sf-track mb-[var(--sf-space-lg)]" aria-label="Steps">
-          {STEPS.map((label, i) => {
+        <ol className="sf-track mb-[var(--sf-space-lg)]" aria-label={text('Steps', 'Etapas')}>
+          {(pt ? ['Veículo', 'Condição', 'Contato'] : STEPS).map((label, i) => {
             const n = i + 1
             return (
               <li
@@ -263,55 +267,55 @@ export function TradeInPage() {
           />
 
           {step === 1 && (
-            <FormSection title="Your vehicle" first>
+            <FormSection title={text('Your vehicle', 'Seu veículo')} first>
               <div className="grid gap-4">
-                <Field label="Year" htmlFor="trade-year">
-                  <PlatformSelect id="trade-year" name="year" required value={formData.year} onValueChange={(v) => setFormData((p) => ({ ...p, year: v }))} className="sf-input sf-trigger" placeholder="Select year" searchable options={YEARS.map((y) => ({ value: String(y), label: String(y) }))} />
+                <Field label={text('Year', 'Ano')} htmlFor="trade-year">
+                  <PlatformSelect id="trade-year" name="year" required value={formData.year} onValueChange={(v) => setFormData((p) => ({ ...p, year: v }))} className="sf-input sf-trigger" placeholder={text('Select year', 'Selecione o ano')} searchable options={YEARS.map((y) => ({ value: String(y), label: String(y) }))} />
                 </Field>
-                <Field label="Make" htmlFor="trade-make">
-                  <PlatformSelect id="trade-make" name="make" required value={formData.make} onValueChange={(v) => setFormData((p) => ({ ...p, make: v }))} className="sf-input sf-trigger" placeholder="Select make" searchable options={MAKES.map((m) => ({ value: m, label: m }))} />
+                <Field label={text('Make', 'Marca')} htmlFor="trade-make">
+                  <PlatformSelect id="trade-make" name="make" required value={formData.make} onValueChange={(v) => setFormData((p) => ({ ...p, make: v }))} className="sf-input sf-trigger" placeholder={text('Select make', 'Selecione a marca')} searchable options={MAKES.map((m) => ({ value: m, label: m }))} />
                 </Field>
-                <Field label="Model" htmlFor="trade-model">
-                  <input id="trade-model" type="text" required value={formData.model} onChange={(e) => setFormData((p) => ({ ...p, model: e.target.value }))} className="sf-input" placeholder="e.g. Accord" />
+                <Field label={text('Model', 'Modelo')} htmlFor="trade-model">
+                  <input id="trade-model" type="text" required value={formData.model} onChange={(e) => setFormData((p) => ({ ...p, model: e.target.value }))} className="sf-input" placeholder={text('e.g. Accord', 'Ex.: Corolla')} />
                 </Field>
-                <Field label="Trim" htmlFor="trade-trim" optional>
-                  <input id="trade-trim" type="text" value={formData.trim} onChange={(e) => setFormData((p) => ({ ...p, trim: e.target.value }))} className="sf-input" placeholder="e.g. Sport" />
+                <Field label={text('Trim', 'Versão')} htmlFor="trade-trim" optional>
+                  <input id="trade-trim" type="text" value={formData.trim} onChange={(e) => setFormData((p) => ({ ...p, trim: e.target.value }))} className="sf-input" placeholder={text('e.g. Sport', 'Ex.: XEi')} />
                 </Field>
-                <Field label="Mileage" htmlFor="trade-mileage">
-                  <input id="trade-mileage" type="number" inputMode="numeric" required min="0" max="2000000" step="1" value={formData.mileage} onChange={(e) => setFormData((p) => ({ ...p, mileage: e.target.value }))} className="sf-input sf-figure" placeholder="e.g. 45,000" />
+                <Field label={text('Mileage', 'Quilometragem')} htmlFor="trade-mileage">
+                  <input id="trade-mileage" type="number" inputMode="numeric" required min="0" max="2000000" step="1" value={formData.mileage} onChange={(e) => setFormData((p) => ({ ...p, mileage: e.target.value }))} className="sf-input sf-figure" placeholder={text('e.g. 45,000', 'Ex.: 45.000')} />
                 </Field>
-                <Field label="VIN" htmlFor="trade-vin" optional>
-                  <input id="trade-vin" type="text" value={formData.vin} onChange={(e) => setFormData((p) => ({ ...p, vin: e.target.value }))} className="sf-input sf-figure" placeholder="17 characters" maxLength={17} autoCapitalize="characters" spellCheck={false} />
+                <Field label={text('VIN', 'Chassi (VIN)')} htmlFor="trade-vin" optional>
+                  <input id="trade-vin" type="text" value={formData.vin} onChange={(e) => setFormData((p) => ({ ...p, vin: e.target.value }))} className="sf-input sf-figure" placeholder={text('17 characters', '17 caracteres')} maxLength={17} autoCapitalize="characters" spellCheck={false} />
                 </Field>
               </div>
             </FormSection>
           )}
 
           {step === 2 && (
-            <FormSection title="Condition" first>
+            <FormSection title={text('Condition', 'Estado do veículo')} first>
               <div className="space-y-5">
                 <RadioPills
-                  legend="Overall condition"
+                  legend={text('Overall condition', 'Condição geral')}
                   name="condition"
                   required
                   variant="grid"
                   className="grid-cols-2 sm:grid-cols-4"
                   value={formData.condition}
                   onChange={(e) => setFormData((p) => ({ ...p, condition: e.target.value }))}
-                  options={CONDITIONS}
+                  options={CONDITIONS.map(item => ({ ...item, label: pt ? ({ excellent: 'Excelente', good: 'Bom', fair: 'Regular', poor: 'Ruim' } as Record<string, string>)[item.value] : item.label }))}
                 />
                 <RadioPills
-                  legend="Ownership"
+                  legend={text('Ownership', 'Situação do veículo')}
                   name="ownership"
                   required
                   variant="grid"
                   className="grid-cols-3"
                   value={formData.ownership}
                   onChange={(e) => setFormData((p) => ({ ...p, ownership: e.target.value }))}
-                  options={OWNERSHIP}
+                  options={OWNERSHIP.map(item => ({ ...item, label: pt ? ({ own: 'Quitado', financing: 'Financiado', lease: 'Leasing' } as Record<string, string>)[item.value] : item.label }))}
                 />
                 {formData.ownership === 'financing' && (
-                  <Field label="Estimated payoff" htmlFor="trade-payoff" className="sm:max-w-xs">
+                  <Field label={text('Estimated payoff', 'Saldo devedor estimado')} htmlFor="trade-payoff" className="sm:max-w-xs">
                     <div className="relative">
                       <span className="sf-figure sf-faint pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">{currencySymbol(business.currencyCode)}</span>
                       <input id="trade-payoff" type="number" inputMode="decimal" min="0" step="1" value={formData.payoffAmount} onChange={(e) => setFormData((p) => ({ ...p, payoffAmount: e.target.value }))} className="sf-input sf-figure pl-8" />
@@ -323,18 +327,18 @@ export function TradeInPage() {
           )}
 
           {step === 3 && (
-            <FormSection title="Contact" first>
+            <FormSection title={text('Contact', 'Seus dados de contato')} first>
               <div className="grid gap-4">
-                <Field label="First name" htmlFor="trade-first-name">
+                <Field label={text('First name', 'Nome')} htmlFor="trade-first-name">
                   <input id="trade-first-name" type="text" required autoComplete="given-name" value={formData.firstName} onChange={(e) => setFormData((p) => ({ ...p, firstName: e.target.value }))} className="sf-input" />
                 </Field>
-                <Field label="Last name" htmlFor="trade-last-name">
+                <Field label={text('Last name', 'Sobrenome')} htmlFor="trade-last-name">
                   <input id="trade-last-name" type="text" required autoComplete="family-name" value={formData.lastName} onChange={(e) => setFormData((p) => ({ ...p, lastName: e.target.value }))} className="sf-input" />
                 </Field>
-                <Field label="Email" htmlFor="trade-email">
+                <Field label={text('Email', 'E-mail')} htmlFor="trade-email">
                   <input id="trade-email" type="email" required autoComplete="email" value={formData.email} onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))} className="sf-input" />
                 </Field>
-                <Field label="Phone" htmlFor="trade-phone">
+                <Field label={text('Phone', 'Telefone')} htmlFor="trade-phone">
                   <input id="trade-phone" type="tel" required autoComplete="tel" value={formData.phone} onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))} className="sf-input" />
                 </Field>
               </div>
@@ -350,11 +354,11 @@ export function TradeInPage() {
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
               {step > 1 && (
                 <button type="button" onClick={() => goBack(step === 3 ? 2 : 1)} className="sf-btn sf-btn-ghost w-full sm:w-auto">
-                  Back
+                  {text('Back', 'Voltar')}
                 </button>
               )}
               <button type="submit" disabled={step === 3 && isSubmitting} className="sf-btn sf-btn-primary w-full sm:w-auto sm:min-w-56">
-                {step === 3 ? (isSubmitting ? 'Sending…' : 'Send trade-in request') : 'Continue'}
+                {step === 3 ? (isSubmitting ? text('Sending…', 'Enviando…') : text('Send trade-in request', 'Enviar solicitação de avaliação')) : text('Continue', 'Continuar')}
               </button>
             </div>
           </div>

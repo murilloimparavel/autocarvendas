@@ -8,6 +8,7 @@ import { vehicleImageUrl, skipImageOptimizer } from '../../lib/images'
 import { PhotoAttribution } from '../PhotoAttribution'
 import { isRepresentativePhoto } from '../../lib/photoAttribution'
 import { VehiclePhotoPlaceholder } from '../VehiclePhotoPlaceholder'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const SWIPE_THRESHOLD = 40
 
@@ -30,6 +31,7 @@ export function VehicleGallery({
   make?: string | null
   model?: string | null
 }) {
+  const { locale } = useLocale()
   const stripRef = useRef<HTMLDivElement>(null)
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const count = images.length
@@ -94,7 +96,7 @@ export function VehicleGallery({
         <span className="sf-chip sf-chip-dark absolute left-3 top-3">{conditionLabel}</span>
         {stockNumber && <span className="sf-stall absolute bottom-3 left-3">#{stockNumber}</span>}
         {isRepresentativePhoto(currentImageUrl, { make, model }) && (
-          <span className="sf-chip sf-chip-dark absolute bottom-3 right-3">Representative photo</span>
+          <span className="sf-chip sf-chip-dark absolute bottom-3 right-3">{locale === 'pt-BR' ? 'Imagem ilustrativa' : 'Representative photo'}</span>
         )}
 
         {hasMany && (
@@ -107,7 +109,7 @@ export function VehicleGallery({
                 type="button"
                 onClick={() => step(-1)}
                 className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] bg-[var(--sf-asphalt)] text-[var(--sf-on-dark)] transition-colors hover:bg-[var(--sf-ink)] hover:text-[var(--sf-asphalt)]"
-                aria-label="Previous photo"
+                aria-label={locale === 'pt-BR' ? 'Foto anterior' : 'Previous photo'}
               >
                 <ChevronLeft className="size-5" aria-hidden="true" />
               </button>
@@ -115,7 +117,7 @@ export function VehicleGallery({
                 type="button"
                 onClick={() => step(1)}
                 className="grid size-11 place-items-center rounded-[var(--sf-radius-sm)] bg-[var(--sf-asphalt)] text-[var(--sf-on-dark)] transition-colors hover:bg-[var(--sf-ink)] hover:text-[var(--sf-asphalt)]"
-                aria-label="Next photo"
+                aria-label={locale === 'pt-BR' ? 'Próxima foto' : 'Next photo'}
               >
                 <ChevronRight className="size-5" aria-hidden="true" />
               </button>

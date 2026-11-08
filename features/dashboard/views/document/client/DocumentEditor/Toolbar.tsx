@@ -36,7 +36,7 @@ import {
 
 import { type DocumentFeatures } from '../../index'
 import { InlineDialog } from './primitives/InlineDialog'
-import { linkButton } from './link'
+import { LinkToolbarButton } from './link'
 import {
   BlockComponentsButtons,
   ComponentBlockContext,
@@ -44,15 +44,16 @@ import {
 import { clearFormatting, modifierKeyText } from './utils'
 import { LayoutsButton } from './layouts'
 import { ListButton, unorderedListButton, orderedListButton } from './lists'
-import { blockquoteButton } from './blockquote'
+import { BlockquoteToolbarButton } from './blockquote'
 import {
   DocumentFieldRelationshipsContext,
   RelationshipButton,
 } from './relationship'
-import { codeButton } from './code-block'
+import { CodeToolbarButton } from './code-block'
 import { TextAlignMenu } from './alignment'
-import { dividerButton } from './divider'
+import { DividerToolbarButton } from './divider'
 import { useToolbarState } from './toolbar-state'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import {
   Select,
   SelectTrigger,
@@ -157,6 +158,8 @@ export function Toolbar({ documentFeatures, viewState }: {
   documentFeatures: DocumentFeatures
   viewState?: { expanded: boolean; toggle: () => void }
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const relationship = useContext(DocumentFieldRelationshipsContext)
   const blockComponent = useContext(ComponentBlockContext)
   const hasBlockItems =
@@ -191,7 +194,7 @@ export function Toolbar({ documentFeatures, viewState }: {
               </TooltipTrigger>
 
               <TooltipWithShortcut shortcut="-">
-                Bullet List
+                {pt ? 'Lista com marcadores' : 'Bullet List'}
               </TooltipWithShortcut>
             </Tooltip>
           )}
@@ -203,7 +206,7 @@ export function Toolbar({ documentFeatures, viewState }: {
                 </ListButton>
               </TooltipTrigger>
               <TooltipWithShortcut shortcut="1.">
-                Numbered List
+                {pt ? 'Lista numerada' : 'Numbered List'}
               </TooltipWithShortcut>
             </Tooltip>
           )}
@@ -214,14 +217,13 @@ export function Toolbar({ documentFeatures, viewState }: {
             <Separator orientation="vertical"/>
           )}
 
-          {documentFeatures.dividers && dividerButton}
-          {documentFeatures.links && linkButton}
-          {documentFeatures.formatting.blockTypes.blockquote &&
-            blockquoteButton}
+          {documentFeatures.dividers && <DividerToolbarButton />}
+          {documentFeatures.links && <LinkToolbarButton />}
+          {documentFeatures.formatting.blockTypes.blockquote && <BlockquoteToolbarButton />}
           {!!documentFeatures.layouts.length && (
             <LayoutsButton layouts={documentFeatures.layouts} />
           )}
-          {documentFeatures.formatting.blockTypes.code && codeButton}
+          {documentFeatures.formatting.blockTypes.code && <CodeToolbarButton />}
           {!!hasBlockItems && <InsertBlockMenu />}
         </ToolbarGroup>
         <Separator orientation="vertical"/>
@@ -302,13 +304,15 @@ const ToolbarContainer = ({ children }: { children: ReactNode }) => {
 const downIcon = <ChevronDown size={16} />
 
 function HeadingMenu({ headingLevels }: { headingLevels: DocumentFeatures['formatting']['headingLevels'] }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [showMenu, setShowMenu] = useState(false)
   const { textStyles } = useToolbarState()
   const isDisabled = textStyles.allowedHeadingLevels.length === 0
   const buttonLabel =
     textStyles.selected === 'normal'
-      ? 'Normal text'
-      : 'Heading ' + textStyles.selected
+      ? (pt ? 'Texto normal' : 'Normal text')
+      : `${pt ? 'Título' : 'Heading'} ${textStyles.selected}`
 
   return (
     <div className="inline-block relative px-1">
@@ -337,7 +341,7 @@ function HeadingMenu({ headingLevels }: { headingLevels: DocumentFeatures['forma
             />
           </Popover>
         </TooltipTrigger>
-        <TooltipWithShortcut>Headings</TooltipWithShortcut>
+        <TooltipWithShortcut>{pt ? 'Títulos' : 'Headings'}</TooltipWithShortcut>
       </Tooltip>
     </div>
   )
@@ -347,6 +351,8 @@ function HeadingDialog({ headingLevels, onSelect }: {
   headingLevels: DocumentFeatures['formatting']['headingLevels']
   onSelect: () => void
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const { editor, textStyles } = useToolbarState()
 
   return (
@@ -379,17 +385,17 @@ function HeadingDialog({ headingLevels, onSelect }: {
               }}
             >
               {hNum === 1 ? (
-                <span className="text-2xl font-bold">Heading 1</span>
+                <span className="text-2xl font-bold">{pt ? 'Título 1' : 'Heading 1'}</span>
               ) : hNum === 2 ? (
-                <span className="text-xl font-bold">Heading 2</span>
+                <span className="text-xl font-bold">{pt ? 'Título 2' : 'Heading 2'}</span>
               ) : hNum === 3 ? (
-                <span className="text-lg font-bold">Heading 3</span>
+                <span className="text-lg font-bold">{pt ? 'Título 3' : 'Heading 3'}</span>
               ) : hNum === 4 ? (
-                <span className="text-base font-bold">Heading 4</span>
+                <span className="text-base font-bold">{pt ? 'Título 4' : 'Heading 4'}</span>
               ) : hNum === 5 ? (
-                <span className="text-sm font-bold">Heading 5</span>
+                <span className="text-sm font-bold">{pt ? 'Título 5' : 'Heading 5'}</span>
               ) : (
-                <span className="text-xs font-bold">Heading 6</span>
+                <span className="text-xs font-bold">{pt ? 'Título 6' : 'Heading 6'}</span>
               )}
             </ToolbarButton>
           )
@@ -405,7 +411,7 @@ function HeadingDialog({ headingLevels, onSelect }: {
             onSelect()
           }}
         >
-          <span className="text-sm">Normal text</span>
+          <span className="text-sm">{pt ? 'Texto normal' : 'Normal text'}</span>
         </ToolbarButton>
       </ToolbarGroup>
     </PopoverContent>
@@ -413,6 +419,7 @@ function HeadingDialog({ headingLevels, onSelect }: {
 }
 
 function InsertBlockMenu() {
+  const { locale } = useLocale()
   const [showMenu, setShowMenu] = useState(false)
 
   return (
@@ -440,13 +447,15 @@ function InsertBlockMenu() {
             </PopoverContent>
           </Popover>
         </TooltipTrigger>
-        <TooltipWithShortcut shortcut="/">Insert</TooltipWithShortcut>
+        <TooltipWithShortcut shortcut="/">{locale === 'pt-BR' ? 'Inserir' : 'Insert'}</TooltipWithShortcut>
       </Tooltip>
     </div>
   )
 }
 
 function InlineMarks({ marks }: { marks: DocumentFeatures['formatting']['inlineMarks'] }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [showMenu, setShowMenu] = useState(false)
   const {
     editor,
@@ -486,7 +495,7 @@ function InlineMarks({ marks }: { marks: DocumentFeatures['formatting']['inlineM
             <TooltipTrigger asChild>
               <MoreFormattingButton showMenu={showMenu} />
             </TooltipTrigger>
-            <TooltipWithShortcut>More Formatting</TooltipWithShortcut>
+            <TooltipWithShortcut>{pt ? 'Mais formatação' : 'More Formatting'}</TooltipWithShortcut>
           </Tooltip>
         </PopoverTrigger>
         <PopoverContent align="start" className="p-1">
@@ -494,19 +503,19 @@ function InlineMarks({ marks }: { marks: DocumentFeatures['formatting']['inlineM
             {marks.underline && (
               <MarkButton markType="underline">
                 <ContentInButtonWithShortcut
-                  content="Underline"
+                  content={pt ? 'Sublinhado' : 'Underline'}
                   shortcut="Ctrl+U"
                 />
               </MarkButton>
             )}
             {marks.strikethrough && (
               <MarkButton markType="strikethrough">
-                <ContentInButtonWithShortcut content="Strikethrough" />
+                <ContentInButtonWithShortcut content={pt ? 'Tachado' : 'Strikethrough'} />
               </MarkButton>
             )}
             {marks.code && (
               <MarkButton markType="code">
-                <ContentInButtonWithShortcut content="Code" />
+                <ContentInButtonWithShortcut content={pt ? 'Código' : 'Code'} />
               </MarkButton>
             )}
             {marks.keyboard && (

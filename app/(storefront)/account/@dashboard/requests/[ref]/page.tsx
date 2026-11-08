@@ -2,7 +2,10 @@ import type { Metadata } from 'next'
 
 import { AccountRequestDetailPage } from '@/features/storefront/screens/AccountRequestDetailPage'
 
-export const metadata: Metadata = { title: 'Request' }
+export async function generateMetadata(): Promise<Metadata> {
+  const { getRequestLocale } = await import('@/features/i18n/server')
+  return { title: (await getRequestLocale()) === 'pt-BR' ? 'Solicitação' : 'Request' }
+}
 
 type Props = { params: Promise<{ ref: string }> }
 

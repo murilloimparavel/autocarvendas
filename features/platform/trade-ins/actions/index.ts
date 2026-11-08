@@ -63,6 +63,13 @@ const TRADE_IN_FIELDS = `
   deal { id status updatedAt tradeInValueCents vehicle { year make model stockNumber } }
 `
 
+async function tradeInCurrencyCode() {
+  const response = await keystoneClient<{ storefrontProfile: { currencyCode: string | null } | null }>(`
+    query TradeInCurrency { storefrontProfile { currencyCode } }
+  `, {}, { cache: 'no-store' })
+  return response.success ? response.data.storefrontProfile?.currencyCode || 'USD' : 'USD'
+}
+
 function revalidateTradeIn(id?: string) {
   revalidatePath(TRADE_INS_PATH)
   if (id) revalidatePath(`${TRADE_INS_PATH}/${id}`)
@@ -79,7 +86,7 @@ function acquisitionsByTradeIn(rows: TradeInAcquisition[]) {
 }
 
 export async function getTradeIns() {
-  const [tradeIns, acquisitions] = await Promise.all([
+  const [tradeIns, acquisitions, currencyCode] = await Promise.all([
     keystoneClient<{ tradeIns: TradeIn[] }>(`
       query TradeInDesk {
         tradeIns(orderBy: { createdAt: desc }, take: 200) { ${TRADE_IN_FIELDS} }
@@ -91,6 +98,7 @@ export async function getTradeIns() {
         inventoryAcquisitions(where: { acquisitionSource: { equals: "trade-in" } }, orderBy: { createdAt: desc }, take: 500) { id reference status sourceReference vehicle { id stockNumber } }
       }
     `, {}, { cache: 'no-store' }),
+    tradeInCurrencyCode(),
   ])
   if (!tradeIns.success) return { success: false as const, error: tradeIns.error }
   return {
@@ -99,12 +107,13 @@ export async function getTradeIns() {
       tradeIns: tradeIns.data.tradeIns || [],
       acquisitions: acquisitions.success ? acquisitionsByTradeIn(acquisitions.data.inventoryAcquisitions || []) : {},
       canSeeAcquisitions: acquisitions.success,
+      currencyCode,
     },
   }
 }
 
 export async function getTradeIn(id: string) {
-  const [tradeIn, acquisitions, timeline] = await Promise.all([
+  const [tradeIn, acquisitions, timeline, currencyCode] = await Promise.all([
     keystoneClient<{ tradeIn: TradeIn | null }>(`
       query TradeInDetail($id: ID!) { tradeIn(where: { id: $id }) { ${TRADE_IN_FIELDS} } }
     `, { id }, { cache: 'no-store' }),
@@ -116,6 +125,7 @@ export async function getTradeIn(id: string) {
     keystoneClient<{ domainTimeline: TradeInTimelineEntry[] }>(`
       query TradeInTimeline($id: ID!) { domainTimeline(aggregateType: "TradeIn", aggregateId: $id, limit: 20) { id action occurredAt actor { name } } }
     `, { id }, { cache: 'no-store' }),
+    tradeInCurrencyCode(),
   ])
   if (!tradeIn.success) return { success: false as const, error: tradeIn.error }
   return {
@@ -125,6 +135,7 @@ export async function getTradeIn(id: string) {
       acquisition: acquisitions.success ? acquisitions.data.inventoryAcquisitions?.[0] ?? null : null,
       canSeeAcquisitions: acquisitions.success,
       timeline: timeline.success ? timeline.data.domainTimeline || [] : [],
+      currencyCode,
     },
   }
 }

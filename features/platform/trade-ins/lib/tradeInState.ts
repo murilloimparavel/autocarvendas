@@ -108,12 +108,12 @@ export function tradeInVehicleLabel(tradeIn: Pick<TradeIn, 'year' | 'make' | 'mo
   return [tradeIn.year, tradeIn.make, tradeIn.model, tradeIn.trim].filter(Boolean).join(' ') || (locale === 'pt-BR' ? 'Veículo não identificado' : 'Unknown vehicle')
 }
 
-export function tradeInCustomer(tradeIn: Pick<TradeIn, 'lead'>) {
-  return tradeIn.lead ? [tradeIn.lead.firstName, tradeIn.lead.lastName].filter(Boolean).join(' ') || 'Customer' : null
+export function tradeInCustomer(tradeIn: Pick<TradeIn, 'lead'>, locale: Locale = 'en-US') {
+  return tradeIn.lead ? [tradeIn.lead.firstName, tradeIn.lead.lastName].filter(Boolean).join(' ') || (locale === 'pt-BR' ? 'Cliente' : 'Customer') : null
 }
 
-export function formatWholeUsd(value: number | null | undefined, locale: Locale = 'en-US') {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value || 0)
+export function formatWholeUsd(value: number | null | undefined, locale: Locale = 'en-US', currencyCode = 'USD') {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: 0 }).format(value || 0)
 }
 
 export function formatMileage(value: number | null | undefined, locale: Locale = 'en-US') {

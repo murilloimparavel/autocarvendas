@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getStoreSetupState } from "../actions/onboarding";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 const DEALERSHIP_WELCOME_STEP = {
   title: "Welcome to Openfront Dealership",
@@ -86,11 +87,17 @@ export function OnboardingCards({
   onOpenDialog?: () => void;
   userRole?: any;
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [dismissedSteps] = React.useState<string[]>([]);
   // The shared sidebar passes the family welcome step; the dealership copy lives here.
   const cards = steps
     .filter(({ href }) => !dismissedSteps.includes(href))
-    .map((step) => step.href === "#onboarding" ? { ...step, ...DEALERSHIP_WELCOME_STEP } : step);
+    .map((step) => step.href === "#onboarding"
+      ? (pt
+        ? { ...step, title: 'Bem-vindo ao AutoCarVendas', description: 'Configure o perfil da revenda, o estoque, a oficina, as peças, o financiamento e as funções da equipe.' }
+        : { ...step, ...DEALERSHIP_WELCOME_STEP })
+      : step);
   const cardCount = cards.length;
   const [showCompleted, setShowCompleted] = React.useState(cardCount > 0);
   const [storeConfigured, setStoreConfigured] = React.useState<boolean | null>(null);
@@ -155,6 +162,8 @@ function OnboardingCard({
   onDismiss?: () => void;
   onOpenDialog?: () => void;
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [isDismissed, setIsDismissed] = React.useState(false);
 
   const handleDismiss = () => {
@@ -189,7 +198,7 @@ function OnboardingCard({
         <InfoCardFooter>
           <div className="m-2 space-x-2">
             <Button size="sm" onClick={onOpenDialog} className="text-xs h-6">
-              Get started
+              {pt ? 'Começar' : 'Get started'}
             </Button>
             <Button
               variant="ghost"
@@ -197,7 +206,7 @@ function OnboardingCard({
               onClick={handleDismiss}
               className="text-xs h-6"
             >
-              Skip for now
+              {pt ? 'Pular por enquanto' : 'Skip for now'}
             </Button>
           </div>
         </InfoCardFooter>

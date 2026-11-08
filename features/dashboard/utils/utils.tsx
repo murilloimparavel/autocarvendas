@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { formatInZone } from '../lib/storeTime'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 // Type definitions
 export type DataGetter = (data: Record<string, any>) => any
@@ -175,6 +176,7 @@ export function useQuery<T = any>(
     revalidateOnReconnect?: boolean
   } = {}
 ) {
+  const { locale } = useLocale()
   const [data, setData] = useState<T | undefined>(undefined)
   const [error, setError] = useState<Error | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -200,7 +202,7 @@ export function useQuery<T = any>(
       }
     } catch (err) {
       if (mountedRef.current) {
-        setError(err instanceof Error ? err : new Error('Unknown error'))
+        setError(err instanceof Error ? err : new Error(locale === 'pt-BR' ? 'Erro desconhecido' : 'Unknown error'))
       }
     } finally {
       if (mountedRef.current) {

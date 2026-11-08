@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAiConfig } from "../../hooks/use-ai-config";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface SimpleSettingsPopoverProps {
   disabled?: boolean;
@@ -35,6 +36,8 @@ const PROVIDERS = [
 ];
 
 export function SimpleSettingsPopover({ disabled = false }: SimpleSettingsPopoverProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [open, setOpen] = useState(false);
   const { config, setConfig } = useAiConfig();
   const [provider, setProvider] = useState<"openrouter" | "custom">("openrouter");
@@ -88,7 +91,7 @@ export function SimpleSettingsPopover({ disabled = false }: SimpleSettingsPopove
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">Switch to local configuration to bring your own key</p>
+            <p className="text-xs">{pt ? 'Mude para a configuração local para usar sua própria chave.' : 'Switch to local configuration to bring your own key'}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -110,7 +113,7 @@ export function SimpleSettingsPopover({ disabled = false }: SimpleSettingsPopove
           {/* Provider Selection */}
           <div className="mb-4">
             <Label htmlFor="provider" className="text-xs font-medium">
-              Provider
+              {pt ? 'Provedor' : 'Provider'}
             </Label>
             <Select value={provider} onValueChange={(value: "openrouter" | "custom") => setProvider(value)}>
               <SelectTrigger id="provider" className="h-9 text-sm mt-1.5">
@@ -139,15 +142,15 @@ export function SimpleSettingsPopover({ disabled = false }: SimpleSettingsPopove
 
           {/* API Key */}
           <div>
-            <Label htmlFor="api-key" className="text-xs font-medium">
-              API Key
+              <Label htmlFor="api-key" className="text-xs font-medium">
+              {pt ? 'Chave de API' : 'API Key'}
             </Label>
             <Input
               id="api-key"
               type="text"
               placeholder={
                 provider === 'custom'
-                  ? "Enter your API key..."
+                  ? (pt ? 'Informe sua chave de API…' : "Enter your API key...")
                   : "sk-or-v1-..."
               }
               value={apiKey}
@@ -155,13 +158,13 @@ export function SimpleSettingsPopover({ disabled = false }: SimpleSettingsPopove
               className="h-9 text-sm font-mono mt-1.5"
             />
             <p className="text-xs text-muted-foreground mt-3">
-              Your key is only saved locally in your browser
+              {pt ? 'Sua chave fica salva apenas neste navegador.' : 'Your key is only saved locally in your browser'}
             </p>
           </div>
 
           <div className="mt-3">
             <Label htmlFor="max-tokens" className="text-xs font-medium">
-              Max Tokens
+              {pt ? 'Limite de tokens' : 'Max Tokens'}
             </Label>
             <Select value={maxTokens} onValueChange={setMaxTokens}>
               <SelectTrigger id="max-tokens" className="h-9 text-sm mt-1.5">
@@ -185,7 +188,7 @@ export function SimpleSettingsPopover({ disabled = false }: SimpleSettingsPopove
             onClick={handleSave}
             disabled={!apiKey && !config.localKeys?.apiKey}
           >
-            Save
+            {pt ? 'Salvar' : 'Save'}
           </Button>
         </div>
       </PopoverContent>

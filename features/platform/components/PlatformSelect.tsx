@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/features/i18n/LocaleProvider";
 
 export type PlatformSelectOption = { value: string; label: string; hint?: string; disabled?: boolean };
 
@@ -42,7 +43,7 @@ export function PlatformSelect({
   onValueChange,
   id,
   name,
-  placeholder = "Select",
+  placeholder,
   disabled = false,
   required = false,
   submitOnChange = false,
@@ -51,6 +52,9 @@ export function PlatformSelect({
   className,
   ...aria
 }: Props) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const selectPlaceholder = placeholder ?? (pt ? 'Selecionar' : 'Select')
   const [inner, setInner] = React.useState(defaultValue);
   const current = value ?? inner;
   const [open, setOpen] = React.useState(false);
@@ -114,7 +118,7 @@ export function PlatformSelect({
               className,
             )}
           >
-            <span className={cn("min-w-0 truncate", !selected && "text-muted-foreground")}>{selected?.label ?? placeholder}</span>
+            <span className={cn("min-w-0 truncate", !selected && "text-muted-foreground")}>{selected?.label ?? selectPlaceholder}</span>
             <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden="true" />
           </button>
         </PopoverTrigger>
@@ -142,14 +146,14 @@ export function PlatformSelect({
                   if (event.key === "ArrowDown") { event.preventDefault(); optionButtons()[0]?.focus(); }
                   if (event.key === "Enter") { event.preventDefault(); const first = shown.find((option) => !option.disabled); if (first) choose(first.value); }
                 }}
-                placeholder="Search"
-                aria-label="Search options"
+                placeholder={pt ? 'Buscar' : 'Search'}
+                aria-label={pt ? 'Buscar opções' : 'Search options'}
                 className="h-9 w-full rounded-[6px] border border-input bg-background pl-8 pr-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
               />
             </div>
           ) : null}
           <div ref={listRef} id={listId} role="listbox" aria-label={aria["aria-label"]} onKeyDown={onListKeyDown} className="max-h-72 overflow-y-auto overscroll-contain py-1">
-            {shown.length === 0 ? <p className="px-2.5 py-2 text-sm text-muted-foreground">No matches</p> : null}
+            {shown.length === 0 ? <p className="px-2.5 py-2 text-sm text-muted-foreground">{pt ? 'Nenhuma opção encontrada' : 'No matches'}</p> : null}
             {shown.map((option) => {
               const isSelected = option.value === current;
               return (

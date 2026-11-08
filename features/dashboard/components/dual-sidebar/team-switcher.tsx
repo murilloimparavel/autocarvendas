@@ -2,6 +2,7 @@
 
 import { ElementType, useState } from "react";
 import { ChevronsUpDown, Plus } from "lucide-react";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ export function TeamSwitcher({
     plan: string;
   }[];
 }) {
+  const { locale } = useLocale()
   const { isMobile } = useSidebar();
   const [activeTeam, setActiveTeam] = useState(teams[0]);
 
@@ -80,7 +82,7 @@ export function TeamSwitcher({
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
-              <div className="font-medium text-muted-foreground">Add team</div>
+              <div className="font-medium text-muted-foreground">{locale === 'pt-BR' ? 'Adicionar equipe' : 'Add team'}</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

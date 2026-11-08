@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 /** Phone-width tap targets for desk pills and inputs. */
 export const TAP = 'h-11 sm:h-8'
@@ -58,6 +59,8 @@ export function FormDialog({
   children: React.ReactNode
   wide?: boolean
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   return (
     <Dialog open={open} onOpenChange={value => { if (!busy) onOpenChange(value) }}>
       <DialogContent className={cn('max-h-[90dvh] overflow-y-auto', wide ? 'sm:max-w-2xl' : 'sm:max-w-lg')}>
@@ -70,8 +73,8 @@ export function FormDialog({
           {error && <Notice tone="bad">{error}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" className={TAP} disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-              <Pill type="submit" variant="primary" className={TAP} disabled={busy}>{busy ? 'Saving…' : submitLabel}</Pill>
+              <Pill variant="plain" className={TAP} disabled={busy} onClick={() => onOpenChange(false)}>{pt ? 'Cancelar' : 'Cancel'}</Pill>
+              <Pill type="submit" variant="primary" className={TAP} disabled={busy}>{busy ? (pt ? 'Salvando…' : 'Saving…') : (pt && submitLabel === 'Save' ? 'Salvar' : submitLabel)}</Pill>
             </Track>
           </DialogFooter>
         </form>
@@ -99,6 +102,8 @@ export function ConfirmDialog({
   onConfirm: () => void
   onOpenChange: (open: boolean) => void
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   return (
     <Dialog open={open} onOpenChange={value => { if (!busy) onOpenChange(value) }}>
       <DialogContent className="sm:max-w-md">
@@ -109,8 +114,8 @@ export function ConfirmDialog({
         {error && <Notice tone="bad">{error}</Notice>}
         <DialogFooter className="sm:justify-end">
           <Track>
-            <Pill variant="plain" className={TAP} disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-            <Pill variant="danger" className={TAP} disabled={busy} onClick={onConfirm}>{busy ? 'Working…' : confirmLabel}</Pill>
+            <Pill variant="plain" className={TAP} disabled={busy} onClick={() => onOpenChange(false)}>{pt ? 'Cancelar' : 'Cancel'}</Pill>
+            <Pill variant="danger" className={TAP} disabled={busy} onClick={onConfirm}>{busy ? (pt ? 'Processando…' : 'Working…') : (pt && confirmLabel === 'Delete' ? 'Excluir' : confirmLabel)}</Pill>
           </Track>
         </DialogFooter>
       </DialogContent>

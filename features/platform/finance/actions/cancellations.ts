@@ -10,7 +10,7 @@ import type { AcceptedMenu, CancellationRecord, CancellationsWorkspace, DealPaym
 const DEAL_FIELDS = 'id status saleDate rooftop { id name } lead { id firstName lastName } vehicle { id year make model stockNumber }'
 
 export async function getCancellationsWorkspace(): Promise<{ success: true; data: CancellationsWorkspace } | { success: false; error: string }> {
-  const response = await keystoneClient<{ financeProductCancellations: CancellationRecord[]; financeMenuVersions: AcceptedMenu[] }>(`
+  const response = await keystoneClient<{ financeProductCancellations: CancellationRecord[]; financeMenuVersions: AcceptedMenu[]; storefrontProfile: { currencyCode: string | null } | null }>(`
     query FinanceCancellations {
       financeProductCancellations(orderBy: [{ requestedAt: desc }], take: 500) {
         id productCode status reason refundCents evidence requestedAt completedAt createdAt
@@ -21,6 +21,7 @@ export async function getCancellationsWorkspace(): Promise<{ success: true; data
         id version decidedAt optionsSnapshot selectedProductCodes
         deal { ${DEAL_FIELDS} }
       }
+      storefrontProfile { currencyCode }
     }
   `, {}, { cache: 'no-store' })
   if (!response.success) return { success: false, error: response.error }
@@ -46,6 +47,7 @@ export async function getCancellationsWorkspace(): Promise<{ success: true; data
       acceptedMenus: response.data.financeMenuVersions,
       payments,
       refunds,
+      currencyCode: response.data.storefrontProfile?.currencyCode || 'USD',
     },
   }
 }

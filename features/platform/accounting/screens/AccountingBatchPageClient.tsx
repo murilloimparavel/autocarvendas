@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { ArrowLeft, CheckCircle2, FileLock2, RefreshCw, Send, XCircle, Scale } from 'lucide-react'
 import { PageContainer } from '@/features/dashboard/components/PageContainer'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { basePath } from '@/features/dashboard/lib/config'
 import { Attention, Code, DeskHeader, DeskSection, DeskTable, Facts, Notice, Panel, Pill, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { recordReference, countLabel } from '@/features/platform/lib/format'
 
 import { getAccountingBatch, manageAccountingBatch } from '../actions'
 import { CommandDialog, type CommandField, type FieldErrors } from '../components/CommandDialog'
-import { BATCH_STATUS_LABEL, SOURCE_TYPE_LABEL, batchTone, dateTime, money, nonce } from '../lib/format'
+import { BATCH_STATUS_LABEL, SOURCE_TYPE_LABEL, accountingLabel, batchTone, dateTime as dateTimeBase, money as moneyBase, nonce } from '../lib/format'
 import type { AccountingBatchDetail, AccountingProviderResponseRecord, BatchSourceSummary } from '../lib/types'
 
 type BatchAction = 'queue-post' | 'record-posted' | 'record-failed' | 'reconcile' | 'lock'
@@ -40,6 +41,7 @@ const FIELD_LIMITS: Record<string, { label: string; max: number }> = {
 export function AccountingBatchPageClient({
   id,
   timeZone,
+  currencyCode,
   initialBatch,
   initialResponses,
   initialSource,
@@ -47,11 +49,15 @@ export function AccountingBatchPageClient({
 }: {
   id: string
   timeZone: string
+  currencyCode: string
   initialBatch: AccountingBatchDetail | null
   initialResponses: AccountingProviderResponseRecord[]
   initialSource: BatchSourceSummary | null
   initialError: string | null
 }) {
+  const { locale } = useLocale()
+  const money = (cents: number | null | undefined) => moneyBase(cents, currencyCode, locale)
+  const dateTime = (value: string | null | undefined, zone: string) => dateTimeBase(value, zone, locale)
   const [batch, setBatch] = useState(initialBatch)
   const [responses, setResponses] = useState(initialResponses)
   const [source, setSource] = useState(initialSource)
@@ -92,8 +98,8 @@ export function AccountingBatchPageClient({
     const value = field ? (values[field] || '').trim() : ''
     if (field) {
       const limit = FIELD_LIMITS[field]
-      if (!value) errors[field] = `${limit.label} is required`
-      else if (value.length > limit.max) errors[field] = `Up to ${limit.max} characters`
+      if (!value) errors[field] = locale === 'pt-BR' ? `${accountingLabel(locale, limit.label)} é obrigatório` : `${limit.label} is required`
+      else if (value.length > limit.max) errors[field] = locale === 'pt-BR' ? `Máximo de ${limit.max} caracteres` : `Up to ${limit.max} characters`
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
@@ -111,15 +117,15 @@ export function AccountingBatchPageClient({
       return
     }
     setPending(null)
-    setMessage(`${pending.label}: ${BATCH_STATUS_LABEL[result.data.manageAccountingBatch.status] || result.data.manageAccountingBatch.status}`)
+    setMessage(`${accountingLabel(locale, pending.label)}: ${accountingLabel(locale, BATCH_STATUS_LABEL[result.data.manageAccountingBatch.status] || result.data.manageAccountingBatch.status)}`)
     await load()
   }
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'page' as const, label: 'Platform' },
-    { type: 'link' as const, label: 'Accounting', href: `${basePath}/platform/accounting` },
-    { type: 'page' as const, label: recordReference('BAT', id) || 'Batch' },
+    { type: 'link' as const, label: locale === 'pt-BR' ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'page' as const, label: locale === 'pt-BR' ? 'Plataforma' : 'Platform' },
+    { type: 'link' as const, label: locale === 'pt-BR' ? 'Contabilidade' : 'Accounting', href: `${basePath}/platform/accounting` },
+    { type: 'page' as const, label: recordReference('BAT', id) || (locale === 'pt-BR' ? 'Lote' : 'Batch') },
   ]
 
   const back = (
@@ -127,7 +133,7 @@ export function AccountingBatchPageClient({
       <Pill asChild className="h-11 sm:h-8">
         <Link href={`${basePath}/platform/accounting`}>
           <ArrowLeft />
-          Accounting
+          {locale === 'pt-BR' ? 'Contabilidade' : 'Accounting'}
         </Link>
       </Pill>
     </Track>
@@ -135,14 +141,14 @@ export function AccountingBatchPageClient({
 
   if (!batch) {
     return (
-      <PageContainer title="Accounting batch" header={<DeskHeader title="Accounting batch" tone="bad" status="Unavailable" meta={error ? "Unavailable" : "Not found"} actions={back} />} breadcrumbs={breadcrumbs}>
+      <PageContainer title={locale === 'pt-BR' ? 'Lote contábil' : 'Accounting batch'} header={<DeskHeader title={locale === 'pt-BR' ? 'Lote contábil' : 'Accounting batch'} tone="bad" status={locale === 'pt-BR' ? 'Indisponível' : 'Unavailable'} meta={error ? (locale === 'pt-BR' ? 'Indisponível' : 'Unavailable') : (locale === 'pt-BR' ? 'Não encontrado' : 'Not found')} actions={back} />} breadcrumbs={breadcrumbs}>
         <div className="min-w-0 max-w-full space-y-3 px-4 pb-24 md:px-6">
           <Notice tone="bad">
-            <p className="font-medium">{error ? 'Batch is unavailable' : 'Batch not found'}</p>
+            <p className="font-medium">{error ? (locale === 'pt-BR' ? 'Lote indisponível' : 'Batch is unavailable') : (locale === 'pt-BR' ? 'Lote não encontrado' : 'Batch not found')}</p>
             {error && <p className="mt-0.5 text-muted-foreground">{error}</p>}
           </Notice>
           <Track>
-            <Pill onClick={load} disabled={loading} className="h-10 sm:h-8">Retry</Pill>
+            <Pill onClick={load} disabled={loading} className="h-10 sm:h-8">{locale === 'pt-BR' ? 'Tentar novamente' : 'Retry'}</Pill>
           </Track>
         </div>
       </PageContainer>
@@ -151,7 +157,7 @@ export function AccountingBatchPageClient({
 
   const lines = Array.isArray(batch.lines) ? batch.lines : []
   const balanced = batch.totalDebitCents === batch.totalCreditCents
-  const statusLabel = BATCH_STATUS_LABEL[batch.status] || batch.status
+  const statusLabel = accountingLabel(locale, BATCH_STATUS_LABEL[batch.status] || batch.status)
 
   const allowedActions = ACTIONS.filter(item => item.from.includes(batch.status))
   const blockedActions = ACTIONS.filter(item => !item.from.includes(batch.status))
@@ -160,7 +166,7 @@ export function AccountingBatchPageClient({
 
   const header = (
     <DeskHeader
-      title={`${SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType} batch · ${money(batch.totalDebitCents)}`}
+      title={`${accountingLabel(locale, SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType)} · ${money(batch.totalDebitCents)}`}
       tone={batchTone(batch.status)}
       status={statusLabel}
       meta={
@@ -177,12 +183,12 @@ export function AccountingBatchPageClient({
           <Pill asChild variant="plain" className="h-11 sm:h-8">
             <Link href={`${basePath}/platform/accounting`}>
               <ArrowLeft />
-              Accounting
+              {locale === 'pt-BR' ? 'Contabilidade' : 'Accounting'}
             </Link>
           </Pill>
-          <Pill variant="plain" onClick={load} disabled={loading} aria-label="Refresh" className="h-11 sm:h-8">
+          <Pill variant="plain" onClick={load} disabled={loading} aria-label={locale === 'pt-BR' ? 'Atualizar' : 'Refresh'} className="h-11 sm:h-8">
             <RefreshCw className={loading ? 'animate-spin' : undefined} />
-            Refresh
+            {locale === 'pt-BR' ? 'Atualizar' : 'Refresh'}
           </Pill>
           {allowedActions.map(item => {
             const Icon = item.icon
@@ -204,14 +210,14 @@ export function AccountingBatchPageClient({
   )
 
   return (
-    <PageContainer title="Accounting batch" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={locale === 'pt-BR' ? 'Lote contábil' : 'Accounting batch'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
         {message && (
           <Notice tone="ok">
             <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
               <p className="min-w-0">{message}</p>
               <Track>
-                <Pill size="sm" variant="plain" onClick={() => setMessage(null)} className="h-10 sm:h-7">Dismiss</Pill>
+                <Pill size="sm" variant="plain" onClick={() => setMessage(null)} className="h-10 sm:h-7">{locale === 'pt-BR' ? 'Fechar' : 'Dismiss'}</Pill>
               </Track>
             </div>
           </Notice>
@@ -219,13 +225,13 @@ export function AccountingBatchPageClient({
         {error && <Notice tone="bad">{error}</Notice>}
         {batch.status === 'failed' && batch.lastErrorCode && (
           <Notice tone="bad">
-            Last error: <Code className="text-inherit">{batch.lastErrorCode}</Code>
+            {locale === 'pt-BR' ? 'Último erro:' : 'Last error:'} <Code className="text-inherit">{batch.lastErrorCode}</Code>
           </Notice>
         )}
-        {!balanced && <Notice tone="bad">Debits and credits differ by {money(Math.abs(batch.totalDebitCents - batch.totalCreditCents))}</Notice>}
+        {!balanced && <Notice tone="bad">{locale === 'pt-BR' ? 'Débitos e créditos diferem em' : 'Debits and credits differ by'} {money(Math.abs(batch.totalDebitCents - batch.totalCreditCents))}</Notice>}
 
         {blockedActions.length > 0 && (
-          <ul className="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground" aria-label="Unavailable actions">
+          <ul className="flex min-w-0 flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground" aria-label={locale === 'pt-BR' ? 'Ações indisponíveis' : 'Unavailable actions'}>
             {blockedActions.map(item => (
               <li key={item.action} id={`why-${item.action}`}>
                 <span className="font-medium text-foreground/80">{item.label}</span>: {item.requires.charAt(0).toLowerCase() + item.requires.slice(1)}
@@ -238,8 +244,8 @@ export function AccountingBatchPageClient({
           <Facts
             items={[
               { label: 'Status', value: <Status tone={batchTone(batch.status)}>{statusLabel}</Status> },
-              { label: 'Balance', value: balanced ? <Status tone="ok">Balanced</Status> : <Attention>Out of balance</Attention> },
-              { label: 'Type', value: SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType },
+              { label: locale === 'pt-BR' ? 'Conferência' : 'Balance', value: balanced ? <Status tone="ok">{accountingLabel(locale, 'Balanced')}</Status> : <Attention>{accountingLabel(locale, 'Out of balance')}</Attention> },
+              { label: locale === 'pt-BR' ? 'Tipo' : 'Type', value: accountingLabel(locale, SOURCE_TYPE_LABEL[batch.sourceType] || batch.sourceType) },
               {
                 label: 'Record',
                 value: source ? (
@@ -254,35 +260,35 @@ export function AccountingBatchPageClient({
               },
               source?.detail ? { label: 'Detail', value: source.detail } : null,
               { label: 'Source ID', value: batch.sourceId, mono: true },
-              { label: 'Attempts', value: batch.attemptCount },
+              { label: locale === 'pt-BR' ? 'Tentativas' : 'Attempts', value: batch.attemptCount },
             ]}
           />
           <Facts
             className="max-lg:border-t"
             items={[
-              { label: 'Staged', value: dateTime(batch.createdAt, timeZone) },
-              { label: 'Posted', value: batch.postedAt ? dateTime(batch.postedAt, timeZone) : 'Not posted' },
+              { label: accountingLabel(locale, 'Staged'), value: dateTime(batch.createdAt, timeZone) },
+              { label: accountingLabel(locale, 'Posted'), value: batch.postedAt ? dateTime(batch.postedAt, timeZone) : accountingLabel(locale, 'Not posted') },
               batch.externalReference ? { label: 'GL reference', value: batch.externalReference, mono: true } : null,
-              { label: 'Reconciled', value: batch.reconciledAt ? dateTime(batch.reconciledAt, timeZone) : 'Not reconciled' },
-              { label: 'Locked', value: batch.lockedAt ? dateTime(batch.lockedAt, timeZone) : 'Not locked' },
-              { label: 'Updated', value: dateTime(batch.updatedAt, timeZone) },
+              { label: accountingLabel(locale, 'Reconciled'), value: batch.reconciledAt ? dateTime(batch.reconciledAt, timeZone) : accountingLabel(locale, 'Not reconciled') },
+              { label: accountingLabel(locale, 'Locked'), value: batch.lockedAt ? dateTime(batch.lockedAt, timeZone) : accountingLabel(locale, 'Not locked') },
+              { label: locale === 'pt-BR' ? 'Atualizado' : 'Updated', value: dateTime(batch.updatedAt, timeZone) },
             ]}
           />
         </Panel>
 
-        <DeskSection title="Journal lines" count={lines.length}>
+        <DeskSection title={locale === 'pt-BR' ? 'Lançamentos contábeis' : 'Journal lines'} count={lines.length}>
           {lines.length === 0 ? (
             <Panel>
-              <p className="py-8 text-center text-sm text-muted-foreground">No lines</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{locale === 'pt-BR' ? 'Nenhum lançamento' : 'No lines'}</p>
             </Panel>
           ) : (
             <DeskTable>
               <thead>
                 <tr>
-                  <Th>Account</Th>
-                  <Th priority={2}>Source code</Th>
-                  <Th align="right">Debit</Th>
-                  <Th align="right">Credit</Th>
+                  <Th>{locale === 'pt-BR' ? 'Conta' : 'Account'}</Th>
+                  <Th priority={2}>{locale === 'pt-BR' ? 'Código de origem' : 'Source code'}</Th>
+                  <Th align="right">{locale === 'pt-BR' ? 'Débito' : 'Debit'}</Th>
+                  <Th align="right">{locale === 'pt-BR' ? 'Crédito' : 'Credit'}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -300,8 +306,8 @@ export function AccountingBatchPageClient({
               </tbody>
               <tfoot className="border-t-2 border-foreground/15 font-semibold">
                 <tr>
-                  <Td>Total</Td>
-                  <Td priority={2} className="text-[12px] font-medium text-muted-foreground">{balanced ? 'Balanced' : 'Out of balance'}</Td>
+                  <Td>{locale === 'pt-BR' ? 'Total' : 'Total'}</Td>
+                  <Td priority={2} className="text-[12px] font-medium text-muted-foreground">{accountingLabel(locale, balanced ? 'Balanced' : 'Out of balance')}</Td>
                   <Td align="right" className="whitespace-nowrap">{money(batch.totalDebitCents)}</Td>
                   <Td align="right" className="whitespace-nowrap">{money(batch.totalCreditCents)}</Td>
                 </tr>
@@ -310,19 +316,19 @@ export function AccountingBatchPageClient({
           )}
         </DeskSection>
 
-        <DeskSection title="Provider responses" count={responses.length}>
+        <DeskSection title={locale === 'pt-BR' ? 'Respostas do provedor' : 'Provider responses'} count={responses.length}>
           {responses.length === 0 ? (
             <Panel>
-              <p className="py-8 text-center text-sm text-muted-foreground">No responses recorded</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{locale === 'pt-BR' ? 'Nenhuma resposta registrada' : 'No responses recorded'}</p>
             </Panel>
           ) : (
             <DeskTable className="table-fixed">
               <thead>
                 <tr>
-                  <Th>Result</Th>
-                  <Th priority={2}>Received</Th>
-                  <Th priority={3}>Details</Th>
-                  <Th priority={3}>Request fingerprint</Th>
+                  <Th>{locale === 'pt-BR' ? 'Resultado' : 'Result'}</Th>
+                  <Th priority={2}>{locale === 'pt-BR' ? 'Recebido em' : 'Received'}</Th>
+                  <Th priority={3}>{locale === 'pt-BR' ? 'Detalhes' : 'Details'}</Th>
+                  <Th priority={3}>{locale === 'pt-BR' ? 'Identificador da solicitação' : 'Request fingerprint'}</Th>
                 </tr>
               </thead>
               <tbody>

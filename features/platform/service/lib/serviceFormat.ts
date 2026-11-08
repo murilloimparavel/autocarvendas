@@ -1,10 +1,10 @@
-export function formatCents(cents: number | null | undefined) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format((cents || 0) / 100)
+export function formatCents(cents: number | null | undefined, currencyCode = 'USD', locale: 'pt-BR' | 'en-US' = 'en-US') {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode, maximumFractionDigits: 2 }).format((cents || 0) / 100)
 }
 
-export function formatDateTime(value: string | null | undefined, timeZone: string, empty = 'Unscheduled') {
+export function formatDateTime(value: string | null | undefined, timeZone: string, empty = 'Unscheduled', locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return empty
-  return new Date(value).toLocaleString('en-US', { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  return new Date(value).toLocaleString(locale, { timeZone, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
 }
 
 /** "1.5" -> 1.5; null when it is not a positive quantity the line commands accept. */
@@ -27,10 +27,22 @@ export function formatQuantity(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, '')
 }
 
+/** Service appointment and vehicle mileage are stored in miles by the source DMS. */
+export function formatMileage(value: number | null | undefined, locale: 'pt-BR' | 'en-US') {
+  if (value == null || !Number.isFinite(value)) return '—'
+  const displayValue = locale === 'pt-BR' ? Math.round(value * 1.609344) : value
+  return `${displayValue.toLocaleString(locale)} ${locale === 'pt-BR' ? 'km' : 'mi'}`
+}
+
+/** Convert a user-entered locale distance back to the source system's stored miles. */
+export function mileageToStoredMiles(value: number, locale: 'pt-BR' | 'en-US') {
+  return locale === 'pt-BR' ? Math.round(value / 1.609344) : value
+}
+
 /** Time of day only, in dealership time: "9:30 AM". */
-export function formatTime(value: string | null | undefined, timeZone: string, empty = '—') {
+export function formatTime(value: string | null | undefined, timeZone: string, empty = '—', locale: 'pt-BR' | 'en-US' = 'en-US') {
   if (!value) return empty
-  return new Date(value).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' })
+  return new Date(value).toLocaleTimeString(locale, { timeZone, hour: 'numeric', minute: '2-digit' })
 }
 
 /** Elapsed time since a timestamp as a short figure: "45m", "6h", "3d". */

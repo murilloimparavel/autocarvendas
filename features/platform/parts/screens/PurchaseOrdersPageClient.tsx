@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, RefreshCw, Search } from 'lucide-react'
@@ -11,7 +12,7 @@ import { Code, DeskHeader, DeskSection, DeskTable, Figure, Notice, Panel, Pill, 
 
 import { getPurchaseOrders } from '../actions'
 import { PurchaseOrderFormDialog } from '../components/PurchaseOrderFormDialog'
-import { PO_RECEIVABLE, PO_STATUS_LABEL, PO_STATUS_TONE, formatAge, formatCents, formatDateTime, poLines, poTotalCents, stockState, type Part, type PartsRooftop, type PurchaseOrder } from '../lib/types'
+import { PO_RECEIVABLE, PO_STATUS_LABEL, PO_STATUS_TONE, formatAge, formatCents as formatCentsBase, formatDateTime as formatDateTimeBase, partsLabel, poLines, poTotalCents, stockState, type Part, type PartsRooftop, type PurchaseOrder } from '../lib/types'
 
 type StatusFilter = 'open' | 'draft' | 'ordered' | 'partially-received' | 'received' | 'cancelled' | 'all'
 const OPEN_STATUSES = ['draft', 'ordered', 'partially-received']
@@ -22,13 +23,19 @@ export function PurchaseOrdersPageClient({
   initialRooftops,
   initialError,
   timeZone,
+  currencyCode,
 }: {
   initialOrders: PurchaseOrder[]
   initialParts: Part[]
   initialRooftops: PartsRooftop[]
   initialError: string | null
   timeZone: string
+  currencyCode: string
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const formatCents = (value: number | null | undefined) => formatCentsBase(value, currencyCode, locale)
+  const formatDateTime = (value: string | null | undefined, zone: string) => formatDateTimeBase(value, zone, locale)
   const router = useRouter()
   const [orders, setOrders] = useState(initialOrders)
   const [parts, setParts] = useState(initialParts)
@@ -81,9 +88,9 @@ export function PurchaseOrdersPageClient({
   }, [orders, filter, search])
 
   const breadcrumbs = [
-    { type: 'link' as const, label: 'Dashboard', href: basePath },
-    { type: 'link' as const, label: 'Parts', href: `${basePath}/platform/parts` },
-    { type: 'page' as const, label: 'Purchase orders' },
+    { type: 'link' as const, label: pt ? 'Painel' : 'Dashboard', href: basePath },
+    { type: 'link' as const, label: pt ? 'Peças' : 'Parts', href: `${basePath}/platform/parts` },
+    { type: 'page' as const, label: pt ? 'Pedidos de compra' : 'Purchase orders' },
   ]
 
   const poHref = (order: PurchaseOrder) => `${basePath}/platform/parts/purchase-orders/${order.id}`
@@ -94,26 +101,26 @@ export function PurchaseOrdersPageClient({
 
   const header = (
     <DeskHeader
-      title="Purchase orders"
+      title={pt ? 'Pedidos de compra' : 'Purchase orders'}
       tone={error ? 'bad' : counts.partial ? 'warn' : counts.ordered ? 'info' : 'idle'}
-      status={error ? 'Unavailable' : `${counts.open} open`}
-      meta={`${toReceive.length} to receive · ${counts.draft} draft · ${reorderParts.length} low-stock parts not on order`}
+      status={error ? (pt ? 'Indisponível' : 'Unavailable') : `${counts.open} ${pt ? 'em aberto' : 'open'}`}
+      meta={pt ? `${toReceive.length} para receber · ${counts.draft} rascunhos · ${reorderParts.length} peças com estoque baixo sem pedido` : `${toReceive.length} to receive · ${counts.draft} draft · ${reorderParts.length} low-stock parts not on order`}
       actions={
         <>
           <Pill variant="plain" asChild className="h-11 sm:h-8">
-            <Link href={`${basePath}/platform/parts`}><ArrowLeft />Parts</Link>
+            <Link href={`${basePath}/platform/parts`}><ArrowLeft />{pt ? 'Peças' : 'Parts'}</Link>
           </Pill>
           <Pill variant="plain" onClick={load} disabled={loading} className="h-11 sm:h-8">
             <RefreshCw className={loading ? 'animate-spin' : undefined} />
-            Refresh
+            {pt ? 'Atualizar' : 'Refresh'}
           </Pill>
-          <Pill className="h-11 sm:h-8" onClick={() => setCreating({ partIds: reorderIds })} disabled={!reorderIds.length} title={reorderIds.length ? undefined : 'No low-stock parts without an order'}>
-            Reorder low stock
+          <Pill className="h-11 sm:h-8" onClick={() => setCreating({ partIds: reorderIds })} disabled={!reorderIds.length} title={reorderIds.length ? undefined : (pt ? 'Nenhuma peça com estoque baixo sem pedido' : 'No low-stock parts without an order')}>
+            {pt ? 'Repor estoque baixo' : 'Reorder low stock'}
             <span className="text-xs tabular-nums text-muted-foreground">{reorderIds.length}</span>
           </Pill>
-          <Pill variant="primary" className="h-11 sm:h-8" onClick={() => setCreating({ partIds: [] })} disabled={!parts.length} title={parts.length ? undefined : 'Create a part first'}>
+          <Pill variant="primary" className="h-11 sm:h-8" onClick={() => setCreating({ partIds: [] })} disabled={!parts.length} title={parts.length ? undefined : (pt ? 'Cadastre uma peça primeiro' : 'Create a part first')}>
             <Plus />
-            New PO
+            {pt ? 'Novo pedido' : 'New PO'}
           </Pill>
         </>
       }
@@ -121,22 +128,22 @@ export function PurchaseOrdersPageClient({
   )
 
   return (
-    <PageContainer title="Purchase orders" header={header} breadcrumbs={breadcrumbs}>
+    <PageContainer title={pt ? 'Pedidos de compra' : 'Purchase orders'} header={header} breadcrumbs={breadcrumbs}>
       <div className="min-w-0 max-w-full space-y-8 px-4 pb-24 md:px-6">
         {!error && (
-          <DeskSection title="To receive" count={toReceive.length} id="po-to-receive">
+          <DeskSection title={pt ? 'Para receber' : 'To receive'} count={toReceive.length} id="po-to-receive">
             {toReceive.length === 0 ? (
-              <p className="rounded-md border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">No purchase orders waiting to be received</p>
+              <p className="rounded-md border border-dashed px-4 py-8 text-center text-[13px] text-muted-foreground">{pt ? 'Nenhum pedido de compra aguardando recebimento' : 'No purchase orders waiting to be received'}</p>
             ) : (
               <DeskTable aria-labelledby="po-to-receive">
                 <thead>
                   <tr>
-                    <Th>PO</Th>
-                    <Th priority={2}>Supplier</Th>
-                    <Th priority={2}>Status</Th>
-                    <Th align="right">Received</Th>
-                    <Th align="right" priority={3}>Outstanding at cost</Th>
-                    <Th align="right">Age</Th>
+                    <Th>{pt ? 'Pedido' : 'PO'}</Th>
+                    <Th priority={2}>{pt ? 'Fornecedor' : 'Supplier'}</Th>
+                    <Th priority={2}>{pt ? 'Situação' : 'Status'}</Th>
+                    <Th align="right">{pt ? 'Recebido' : 'Received'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Saldo a custo' : 'Outstanding at cost'}</Th>
+                    <Th align="right">{pt ? 'Tempo' : 'Age'}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,7 +159,7 @@ export function PurchaseOrdersPageClient({
                           <p className="truncate text-xs text-muted-foreground md:hidden">{order.supplier}</p>
                         </Td>
                         <Td priority={2} className="max-w-[14rem] truncate">{order.supplier}</Td>
-                        <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{PO_STATUS_LABEL[order.status] || order.status}</Status></Td>
+                        <Td priority={2}><Status tone={PO_STATUS_TONE[order.status] || 'idle'}>{partsLabel(locale, PO_STATUS_LABEL[order.status] || order.status)}</Status></Td>
                         <Td align="right" className="whitespace-nowrap">{received} of {ordered}</Td>
                         <Td align="right" priority={3} className="whitespace-nowrap">{formatCents(outstanding)}</Td>
                         <Td align="right" className="whitespace-nowrap">
@@ -169,62 +176,62 @@ export function PurchaseOrdersPageClient({
         )}
 
         <ReadoutStrip>
-          <Readout label="Open" value={counts.open} />
-          <Readout label="Ordered" value={counts.ordered} tone={counts.ordered ? 'info' : undefined} />
-          <Readout label="Partially received" value={counts.partial} tone={counts.partial ? 'warn' : undefined} />
-          <Readout label="Outstanding at cost" value={formatCents(openValue)} />
+          <Readout label={pt ? 'Em aberto' : 'Open'} value={counts.open} />
+          <Readout label={pt ? 'Enviados' : 'Ordered'} value={counts.ordered} tone={counts.ordered ? 'info' : undefined} />
+          <Readout label={pt ? 'Recebidos parcialmente' : 'Partially received'} value={counts.partial} tone={counts.partial ? 'warn' : undefined} />
+          <Readout label={pt ? 'Saldo a custo' : 'Outstanding at cost'} value={formatCents(openValue)} />
         </ReadoutStrip>
 
-        <DeskSection title="All purchase orders" count={visible.length} id="po-all">
+        <DeskSection title={pt ? 'Todos os pedidos de compra' : 'All purchase orders'} count={visible.length} id="po-all">
           <div className="space-y-3">
             <Segmented<StatusFilter>
-              label="Filter purchase orders"
+              label={pt ? 'Filtrar pedidos de compra' : 'Filter purchase orders'}
               value={filter}
               onChange={setFilter}
               size="sm"
               options={[
-                { value: 'open', label: 'Open', count: counts.open },
-                { value: 'draft', label: 'Draft', count: counts.draft },
-                { value: 'ordered', label: 'Ordered', count: counts.ordered },
-                { value: 'partially-received', label: 'Partial', count: counts.partial },
-                { value: 'received', label: 'Received', count: counts.received },
-                { value: 'cancelled', label: 'Cancelled', count: counts.cancelled },
-                { value: 'all', label: 'All', count: counts.all },
+                { value: 'open', label: pt ? 'Em aberto' : 'Open', count: counts.open },
+                { value: 'draft', label: pt ? 'Rascunhos' : 'Draft', count: counts.draft },
+                { value: 'ordered', label: pt ? 'Enviados' : 'Ordered', count: counts.ordered },
+                { value: 'partially-received', label: pt ? 'Parciais' : 'Partial', count: counts.partial },
+                { value: 'received', label: pt ? 'Recebidos' : 'Received', count: counts.received },
+                { value: 'cancelled', label: pt ? 'Cancelados' : 'Cancelled', count: counts.cancelled },
+                { value: 'all', label: pt ? 'Todos' : 'All', count: counts.all },
               ]}
             />
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative min-w-0 sm:max-w-sm sm:flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input className="h-11 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="Reference, supplier or part number" aria-label="Search purchase orders" />
+                <Input className="h-11 rounded-[4px] pl-9 text-[13px] sm:h-9" value={search} onChange={event => setSearch(event.target.value)} placeholder={pt ? 'Número do pedido, fornecedor ou código da peça' : 'Reference, supplier or part number'} aria-label={pt ? 'Buscar pedidos de compra' : 'Search purchase orders'} />
               </div>
-              {loading && <span className="text-xs text-muted-foreground" role="status">Refreshing…</span>}
+              {loading && <span className="text-xs text-muted-foreground" role="status">{pt ? 'Atualizando…' : 'Refreshing…'}</span>}
             </div>
 
             {error ? (
               <Notice tone="bad">
-                <p className="font-medium">Purchase orders unavailable</p>
+                <p className="font-medium">{pt ? 'Pedidos de compra indisponíveis' : 'Purchase orders unavailable'}</p>
                 <p className="mt-0.5 text-muted-foreground">{error}</p>
-                <Track className="mt-2"><Pill size="sm" className="max-sm:h-10" onClick={load}>Retry</Pill></Track>
+                <Track className="mt-2"><Pill size="sm" className="max-sm:h-10" onClick={load}>{pt ? 'Tentar novamente' : 'Retry'}</Pill></Track>
               </Notice>
             ) : visible.length === 0 ? (
               <Panel className="flex flex-col items-center gap-3 border-dashed px-4 py-8 text-center">
-                <p className="text-[13px] text-muted-foreground">{orders.length && (filter !== 'all' || search.trim()) ? 'No matching purchase orders' : 'No purchase orders'}</p>
+                <p className="text-[13px] text-muted-foreground">{orders.length && (filter !== 'all' || search.trim()) ? (pt ? 'Nenhum pedido de compra encontrado' : 'No matching purchase orders') : (pt ? 'Nenhum pedido de compra' : 'No purchase orders')}</p>
                 {orders.length > 0 && (filter !== 'all' || search.trim()) && (
-                  <Pill size="sm" className="max-sm:h-10" onClick={() => { setFilter('all'); setSearch('') }}>Reset filters</Pill>
+                  <Pill size="sm" className="max-sm:h-10" onClick={() => { setFilter('all'); setSearch('') }}>{pt ? 'Limpar filtros' : 'Reset filters'}</Pill>
                 )}
               </Panel>
             ) : (
               <DeskTable aria-labelledby="po-all">
                 <thead>
                   <tr>
-                    <Th>PO</Th>
-                    <Th priority={2}>Supplier</Th>
-                    <Th>Status</Th>
-                    <Th align="right" priority={3}>Lines</Th>
-                    <Th align="right" priority={2}>Received</Th>
-                    <Th priority={3}>Date</Th>
-                    {rooftops.length > 1 && <Th priority={3}>Rooftop</Th>}
-                    <Th align="right">Total</Th>
+                    <Th>{pt ? 'Pedido' : 'PO'}</Th>
+                    <Th priority={2}>{pt ? 'Fornecedor' : 'Supplier'}</Th>
+                    <Th>{pt ? 'Situação' : 'Status'}</Th>
+                    <Th align="right" priority={3}>{pt ? 'Itens' : 'Lines'}</Th>
+                    <Th align="right" priority={2}>{pt ? 'Recebido' : 'Received'}</Th>
+                    <Th priority={3}>{pt ? 'Data' : 'Date'}</Th>
+                    {rooftops.length > 1 && <Th priority={3}>{pt ? 'Loja' : 'Rooftop'}</Th>}
+                    <Th align="right">{pt ? 'Valor total' : 'Total'}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -262,6 +269,7 @@ export function PurchaseOrdersPageClient({
           order={null}
           parts={parts}
           rooftops={rooftops}
+          currencyCode={currencyCode}
           initialPartIds={creating?.partIds}
           onOpenChange={open => { if (!open) setCreating(null) }}
           onSaved={id => {

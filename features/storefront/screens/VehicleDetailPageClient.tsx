@@ -138,7 +138,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
         if (!result.success) throw new Error(result.error)
         setFeedback({
           status: 'success',
-          message: `${business.fullName} received your test-drive request.`,
+          message: locale === 'pt-BR' ? `${business.fullName} recebeu seu pedido de test-drive.` : `${business.fullName} received your test-drive request.`,
           reference: customerRequestReference('test-drive', result.data.testDriveId),
         })
       } else if (intent === 'reserve') {
@@ -154,7 +154,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
           idempotencyKey,
         })
         if (!result.success) throw new Error(result.error)
-        if (!result.data.checkoutUrl || !/^https:\/\//.test(result.data.checkoutUrl)) throw new Error('Card checkout could not be started. Please try again.')
+        if (!result.data.checkoutUrl || !/^https:\/\//.test(result.data.checkoutUrl)) throw new Error(locale === 'pt-BR' ? 'Não foi possível iniciar o pagamento com cartão. Tente novamente.' : 'Card checkout could not be started. Please try again.')
         window.location.assign(result.data.checkoutUrl)
         return
       } else {
@@ -175,8 +175,8 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
         setFeedback({
           status: 'success',
           message: intent === 'get-quote'
-            ? `${business.fullName} received your price-quote request.`
-            : `${business.fullName} received your question.`,
+            ? (locale === 'pt-BR' ? `${business.fullName} recebeu seu pedido de proposta.` : `${business.fullName} received your price-quote request.`)
+            : (locale === 'pt-BR' ? `${business.fullName} recebeu sua pergunta.` : `${business.fullName} received your question.`),
           reference: customerRequestReference('inquiry', result.data.leadId),
         })
       }
@@ -184,7 +184,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
     } catch (error) {
       setFeedback({
         status: 'error',
-        message: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+        message: error instanceof Error ? error.message : locale === 'pt-BR' ? 'Ocorreu um erro. Tente novamente.' : 'Something went wrong. Please try again.',
       })
     } finally {
       setIsSubmitting(false)
@@ -202,15 +202,15 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
           <div role="alert" aria-live="assertive">
             <h1 className="sf-title-line sf-heading text-[length:var(--sf-text-xl)]">
               <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-              Vehicle details unavailable
+              {locale === 'pt-BR' ? 'Detalhes do veículo indisponíveis' : 'Vehicle details unavailable'}
             </h1>
-            <p className="sf-muted mt-2 pl-4">We couldn&apos;t load this vehicle.</p>
+            <p className="sf-muted mt-2 pl-4">{locale === 'pt-BR' ? 'Não foi possível carregar este veículo.' : <>We couldn&apos;t load this vehicle.</>}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={retryVehicleLoad} className="sf-btn sf-btn-primary">
-              Retry
+              {locale === 'pt-BR' ? 'Tentar novamente' : 'Retry'}
             </button>
-            <Link href="/inventory" className="sf-btn sf-btn-ghost">Back to inventory</Link>
+            <Link href="/inventory" className="sf-btn sf-btn-ghost">{locale === 'pt-BR' ? 'Voltar ao estoque' : 'Back to inventory'}</Link>
           </div>
         </div>
       </Container>
@@ -229,8 +229,8 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
   const features = parseVehicleFeatures(vehicle.features)
   const title = vehicleTitle(vehicle)
   const name = `${vehicle.year} ${vehicle.make} ${vehicle.model}`
-  const status = vehicleStatus(vehicle.status)
-  const conditionLabel = vehicleConditionLabel(vehicle.condition)
+  const status = vehicleStatus(vehicle.status, locale)
+  const conditionLabel = vehicleConditionLabel(vehicle.condition, locale)
   const hasPublicPrice = typeof vehicle.price === 'number' && Number.isFinite(vehicle.price) && vehicle.price >= 0
   const displayPrice = readOnly ? status.label : hasPublicPrice ? formatPrice(vehicle.price, business.currencyCode, locale) : t('priceUnavailable')
   const similarParams = new URLSearchParams()
@@ -250,21 +250,21 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
   }
 
   const specs: { label: string; value: string; figure?: boolean }[] = [
-    { label: 'Year', value: String(vehicle.year ?? ''), figure: true },
-    { label: 'Make', value: vehicle.make || '' },
-    { label: 'Model', value: vehicle.model || '' },
-    { label: 'Trim', value: vehicle.trim || '' },
+    { label: locale === 'pt-BR' ? 'Ano' : 'Year', value: String(vehicle.year ?? ''), figure: true },
+    { label: locale === 'pt-BR' ? 'Marca' : 'Make', value: vehicle.make || '' },
+    { label: 'Modelo', value: vehicle.model || '' },
+    { label: locale === 'pt-BR' ? 'Versão' : 'Trim', value: vehicle.trim || '' },
     { label: t('mileageShort'), value: formatMileage(vehicle.mileage, locale), figure: true },
-    { label: 'Color', value: vehicle.color || '' },
+    { label: locale === 'pt-BR' ? 'Cor' : 'Color', value: vehicle.color || '' },
   ]
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="border-b" style={{ borderColor: 'var(--sf-rule)' }}>
+      <nav aria-label={locale === 'pt-BR' ? 'Navegação estrutural' : 'Breadcrumb'} className="border-b" style={{ borderColor: 'var(--sf-rule)' }}>
         <Container className="flex min-h-11 items-center gap-1.5 text-[length:var(--sf-text-sm)]">
           <Link href="/inventory" className="sf-muted inline-flex min-h-11 shrink-0 items-center gap-1 hover:text-[var(--sf-accent)]">
             <ChevronLeft className="size-4 sm:hidden" aria-hidden="true" />
-            Inventory
+            {locale === 'pt-BR' ? 'Estoque' : 'Inventory'}
           </Link>
           <ChevronRight className="sf-faint hidden size-3.5 shrink-0 sm:block" aria-hidden="true" />
           <span className="sf-faint hidden min-w-0 truncate sm:block" aria-current="page">{title}</span>
@@ -307,7 +307,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
               <div className="mt-5">
                 <Link href={similarHref} className="sf-btn sf-btn-primary sf-btn-block">
                   <Search className="size-4" aria-hidden="true" />
-                  See similar vehicles
+                  {locale === 'pt-BR' ? 'Ver veículos semelhantes' : 'See similar vehicles'}
                 </Link>
               </div>
             ) : (
@@ -318,7 +318,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                   onClick={() => openLead('test-drive', testDriveOpenerRef)}
                   className="sf-btn sf-btn-primary sf-btn-block"
                 >
-                  Schedule test drive
+                  {locale === 'pt-BR' ? 'Agendar test-drive' : 'Schedule test drive'}
                 </button>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -327,7 +327,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                     onClick={() => openLead('get-quote', quoteOpenerRef)}
                     className="sf-btn sf-btn-ghost px-3"
                   >
-                    Get price quote
+                    {locale === 'pt-BR' ? 'Solicitar proposta' : 'Get price quote'}
                   </button>
                   <button
                     ref={reserveOpenerRef}
@@ -335,7 +335,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                     onClick={() => openLead('reserve', reserveOpenerRef)}
                     className="sf-btn sf-btn-ghost px-3"
                   >
-                    Reserve this vehicle
+                    {locale === 'pt-BR' ? 'Reservar este veículo' : 'Reserve this vehicle'}
                   </button>
                 </div>
                 <button
@@ -343,12 +343,12 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                   onClick={toggleCompare}
                   className={`sf-btn sf-btn-block ${comparing ? 'sf-btn-secondary' : 'sf-btn-ghost'}`}
                   aria-pressed={comparing}
-                  aria-label={comparing ? `Remove ${title} from compare` : `Add ${title} to compare`}
+                  aria-label={locale === 'pt-BR' ? (comparing ? `Remover ${title} da comparação` : `Adicionar ${title} à comparação`) : (comparing ? `Remove ${title} from compare` : `Add ${title} to compare`)}
                 >
                   {comparing ? <Check className="size-4" aria-hidden="true" /> : <Plus className="size-4" aria-hidden="true" />}
-                  Compare
+                  {locale === 'pt-BR' ? 'Comparar' : 'Compare'}
                 </button>
-                {compareFull && <p role="status" className="sf-muted text-[length:var(--sf-text-xs)]">Compare holds 4 vehicles.</p>}
+                {compareFull && <p role="status" className="sf-muted text-[length:var(--sf-text-xs)]">{locale === 'pt-BR' ? 'A comparação permite até 4 veículos.' : 'Compare holds 4 vehicles.'}</p>}
                 <div className="hidden flex-wrap gap-x-5 gap-y-1 pt-1 text-[length:var(--sf-text-sm)] lg:flex">
                   <button
                     ref={contactOpenerRef}
@@ -356,42 +356,42 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
                     onClick={() => openLead('contact', contactOpenerRef)}
                     className="sf-link min-h-10"
                   >
-                    Ask a question
+                    {locale === 'pt-BR' ? 'Tirar uma dúvida' : 'Ask a question'}
                   </button>
-                  <Link href={financingHref} className="sf-link inline-flex min-h-10 items-center">Financing</Link>
-                  <Link href={tradeInHref} className="sf-link inline-flex min-h-10 items-center">Trade-in</Link>
+                  <Link href={financingHref} className="sf-link inline-flex min-h-10 items-center">{locale === 'pt-BR' ? 'Financiamento' : 'Financing'}</Link>
+                  <Link href={tradeInHref} className="sf-link inline-flex min-h-10 items-center">{locale === 'pt-BR' ? 'Veículo na troca' : 'Trade-in'}</Link>
                 </div>
               </div>
             )}
 
             <div className="sf-sticker mt-6">
               <div className="sf-sticker-head">
-                <span>Window sticker</span>
+                <span>{locale === 'pt-BR' ? 'Resumo do veículo' : 'Window sticker'}</span>
                 <span>{status.label}</span>
               </div>
               <dl>
                 <div className="sf-sticker-row">
-                  <dt>Stock #</dt>
+                  <dt>{locale === 'pt-BR' ? 'Estoque nº' : 'Stock #'}</dt>
                   <dd>{vehicle.stockNumber}</dd>
                 </div>
                 <div className="sf-sticker-row">
-                  <dt>VIN</dt>
-                  <dd className="text-[length:var(--sf-text-xs)]">{vehicle.vin || 'Not listed'}</dd>
+                  <dt>{locale === 'pt-BR' ? 'Chassi (VIN)' : 'VIN'}</dt>
+                  <dd className="text-[length:var(--sf-text-xs)]">{vehicle.vin || (locale === 'pt-BR' ? 'Não informado' : 'Not listed')}</dd>
                 </div>
                 <div className="sf-sticker-row">
                   <dt>{t('mileageShort')}</dt>
                   <dd>{formatMileage(vehicle.mileage, locale)}</dd>
                 </div>
                 <div className="sf-sticker-row">
-                  <dt>Condition</dt>
+                  <dt>{locale === 'pt-BR' ? 'Condição' : 'Condition'}</dt>
                   <dd>{conditionLabel}</dd>
                 </div>
                 <div className="sf-sticker-row">
-                  <dt>Color</dt>
-                  <dd>{vehicle.color || 'Not listed'}</dd>
+                  <dt>{locale === 'pt-BR' ? 'Cor' : 'Color'}</dt>
+                  <dd>{vehicle.color || (locale === 'pt-BR' ? 'Não informada' : 'Not listed')}</dd>
                 </div>
                 <div className="sf-sticker-row">
-                  <dt>{readOnly ? 'Status' : 'Price'}</dt>
+                  <dt>{readOnly ? 'Status' : (locale === 'pt-BR' ? 'Preço' : 'Price')}</dt>
                   <dd className="font-semibold">{displayPrice}</dd>
                 </div>
               </dl>
@@ -400,32 +400,32 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
 
           <div className="min-w-0 lg:col-start-1 lg:row-start-2">
             <section aria-labelledby="vdp-spec">
-              <h2 id="vdp-spec" className="sf-caps text-[0.875rem] font-medium">Specifications</h2>
+              <h2 id="vdp-spec" className="sf-caps text-[0.875rem] font-medium">{locale === 'pt-BR' ? 'Especificações' : 'Specifications'}</h2>
               <dl className="sf-spec mt-4 grid-cols-2 sm:grid-cols-3">
                 {specs.map((spec) => (
                   <div key={spec.label}>
                     <dt>{spec.label}</dt>
-                    <dd className={spec.figure ? 'sf-figure' : undefined}>{spec.value || 'Not listed'}</dd>
+                    <dd className={spec.figure ? 'sf-figure' : undefined}>{spec.value || (locale === 'pt-BR' ? 'Não informado' : 'Not listed')}</dd>
                   </div>
                 ))}
               </dl>
             </section>
 
             <section className="mt-10 border-t pt-8" style={{ borderColor: 'var(--sf-rule)' }} aria-labelledby="vdp-description">
-              <h2 id="vdp-description" className="sf-caps text-[0.875rem] font-medium">Description</h2>
+              <h2 id="vdp-description" className="sf-caps text-[0.875rem] font-medium">{locale === 'pt-BR' ? 'Descrição' : 'Description'}</h2>
               {vehicle.description ? (
                 <p className="sf-muted mt-4 max-w-[68ch] whitespace-pre-line text-[length:var(--sf-text-md)] leading-relaxed">
                   {vehicle.description}
                 </p>
               ) : (
-                <p className="sf-faint mt-4 text-[length:var(--sf-text-sm)]">No description listed.</p>
+                <p className="sf-faint mt-4 text-[length:var(--sf-text-sm)]">{locale === 'pt-BR' ? 'Nenhuma descrição informada.' : 'No description listed.'}</p>
               )}
             </section>
 
             {Array.isArray(features) && features.length > 0 && (
               <section className="mt-10 border-t pt-8" style={{ borderColor: 'var(--sf-rule)' }} aria-labelledby="vdp-features">
                 <h2 id="vdp-features" className="sf-title-line sf-caps text-[0.875rem] font-medium">
-                  Features
+                  {locale === 'pt-BR' ? 'Itens e equipamentos' : 'Features'}
                   <span className="sf-chip sf-figure">{features.length}</span>
                 </h2>
                 <ul className="mt-4 grid gap-x-8 sm:grid-cols-2">
@@ -456,7 +456,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
       <div
         className={`fixed inset-x-3 z-40 lg:hidden ${compareCount > 0 ? 'bottom-[7.25rem] md:bottom-[5.25rem]' : 'bottom-12'}`}
         role="region"
-        aria-label="Vehicle actions"
+        aria-label={locale === 'pt-BR' ? 'Ações do veículo' : 'Vehicle actions'}
       >
         <div
           className="mx-auto grid max-w-md grid-cols-4 gap-1.5 rounded-[var(--sf-radius-md)] border p-1.5"
@@ -468,7 +468,7 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
             onClick={() => openLead('contact', barContactOpenerRef)}
             className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1"
           >
-            Ask
+            {locale === 'pt-BR' ? 'Contato' : 'Ask'}
           </button>
           <button
             ref={barTestDriveOpenerRef}
@@ -476,10 +476,10 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
             onClick={() => openLead('test-drive', barTestDriveOpenerRef)}
             className="sf-btn sf-btn-primary sf-bar-btn min-w-0 px-1"
           >
-            Test drive
+            {locale === 'pt-BR' ? 'Test-drive' : 'Test drive'}
           </button>
-          <Link href={financingHref} className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1">Finance</Link>
-          <Link href={tradeInHref} className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1">Trade-in</Link>
+          <Link href={financingHref} className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1">{locale === 'pt-BR' ? 'Financiar' : 'Finance'}</Link>
+          <Link href={tradeInHref} className="sf-btn sf-btn-ghost sf-bar-btn min-w-0 px-1">{locale === 'pt-BR' ? 'Troca' : 'Trade-in'}</Link>
         </div>
       </div>
       )}
@@ -502,12 +502,14 @@ export function VehicleDetailPageClient({ id, initialState }: { id: string; init
 }
 
 function VehicleDetailSkeleton() {
+  const { locale } = useLocale()
+
   return (
     <Container className="pb-[var(--sf-space-xl)] pt-[3.75rem] md:pt-[5.25rem]">
       <div
         className="grid gap-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-x-12 xl:gap-x-16"
         aria-busy="true"
-        aria-label="Loading vehicle"
+        aria-label={locale === 'pt-BR' ? 'Carregando veículo' : 'Loading vehicle'}
       >
         <div className="min-w-0">
           <div className="sf-skeleton aspect-[4/3] sm:aspect-[16/10]" />

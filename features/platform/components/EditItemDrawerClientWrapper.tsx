@@ -7,6 +7,7 @@ import { EditItemDrawerClient } from './EditItemDrawerClient'
 import { getListByPath } from '@/features/dashboard/actions/getListByPath'
 import { getItemAction } from '@/features/dashboard/actions/getItemAction'
 import { toast } from 'sonner'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 interface EditItemDrawerClientWrapperProps {
   listKey: string
@@ -48,6 +49,8 @@ export function EditItemDrawerClientWrapper({
   onClose,
   onSave
 }: EditItemDrawerClientWrapperProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [list, setList] = useState<any>(null)
   const [item, setItem] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -64,7 +67,7 @@ export function EditItemDrawerClientWrapper({
         // Fetch list metadata
         const listData = await getListByPath(listKey)
         if (!listData) {
-          setError(`List not found: ${listKey}`)
+          setError(pt ? `Lista não encontrada: ${listKey}` : `List not found: ${listKey}`)
           return
         }
         setList(listData)
@@ -72,25 +75,25 @@ export function EditItemDrawerClientWrapper({
         // Fetch item data
         const itemResponse = await getItemAction(listData, itemId)
         if (!itemResponse.success) {
-          setError(itemResponse.error || 'Failed to load item')
+          setError(itemResponse.error || (pt ? 'Não foi possível carregar o registro' : 'Failed to load item'))
           return
         }
         if (!itemResponse.data?.item) {
-          setError('Failed to load item')
+          setError(pt ? 'Não foi possível carregar o registro' : 'Failed to load item')
           return
         }
         setItem(itemResponse.data.item)
       } catch (err) {
         console.error('Error fetching data:', err)
-        setError(err instanceof Error ? err.message : 'Unknown error')
-        toast.error('Failed to load item data')
+        setError(err instanceof Error ? err.message : (pt ? 'Erro desconhecido' : 'Unknown error'))
+        toast.error(pt ? 'Não foi possível carregar os dados do registro' : 'Failed to load item data')
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchData()
-  }, [listKey, itemId, open])
+  }, [listKey, itemId, open, pt])
 
   // If not open, render empty drawer
   if (!open) {
@@ -107,14 +110,14 @@ export function EditItemDrawerClientWrapper({
         {isLoading ? (
           <>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Loading...</DrawerTitle>
+              <DrawerTitle>{pt ? 'Carregando…' : 'Loading…'}</DrawerTitle>
             </DrawerHeader>
             <LoadingSkeleton />
           </>
         ) : error ? (
           <>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
               <p className="text-destructive">{error}</p>
@@ -131,10 +134,10 @@ export function EditItemDrawerClientWrapper({
         ) : (
           <>
             <DrawerHeader className="flex-shrink-0">
-              <DrawerTitle>Error</DrawerTitle>
+              <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
             </DrawerHeader>
             <div className="p-6 text-center">
-              <p className="text-destructive">Failed to load data</p>
+              <p className="text-destructive">{pt ? 'Não foi possível carregar os dados' : 'Failed to load data'}</p>
             </div>
           </>
         )}

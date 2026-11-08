@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DeskSection, DeskTable, Figure, Notice, Panel, Pill, Segmented, Status, Td, Th, Tr, Track } from '@/features/platform/components/desk'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { type CatalogMake, type CatalogModel, type InventoryPair, addInventoryPairs, deleteMake, deleteModel, saveMake, saveModel } from '../actions'
 import { ConfirmDialog, EmptyRow, Field, FormDialog, TAP, TAP_INPUT, TAP_SM } from './formKit'
 
@@ -20,7 +21,12 @@ export const BODY_STYLES = [
   { value: 'van', label: 'Van' },
   { value: 'minivan', label: 'Minivan' },
 ]
-const bodyStyleLabel = (value: string | null) => BODY_STYLES.find(style => style.value === value)?.label || null
+const bodyStyleLabel = (value: string | null, pt = false) => {
+  const label = BODY_STYLES.find(style => style.value === value)?.label || null
+  if (!pt || !label) return label
+  const labels: Record<string, string> = { Sedan: 'Sedã', Truck: 'Picape', Coupe: 'Cupê', Hatchback: 'Hatch', Convertible: 'Conversível', Wagon: 'Perua', Van: 'Van', Minivan: 'Minivan' }
+  return labels[label] || label
+}
 
 type MakeFilter = 'all' | 'with-models' | 'no-models'
 type MakeDraft = { id?: string; name: string }
@@ -40,6 +46,8 @@ export function MakesModelsPanel({
   error: string | null
   onReload: () => Promise<void>
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [filter, setFilter] = useState<MakeFilter>('all')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(makes[0]?.id || null)
@@ -75,16 +83,16 @@ export function MakesModelsPanel({
     if (!makeDraft) return
     const name = makeDraft.name.trim()
     const errors: Record<string, string> = {}
-    if (!name) errors.name = 'Name is required'
-    else if (name.length > 100) errors.name = 'Name is too long'
-    else if (makes.some(make => make.id !== makeDraft.id && make.name.toLowerCase() === name.toLowerCase())) errors.name = 'This make already exists'
+    if (!name) errors.name = pt ? 'Informe o nome da marca' : 'Name is required'
+    else if (name.length > 100) errors.name = pt ? 'O nome deve ter até 100 caracteres' : 'Name is too long'
+    else if (makes.some(make => make.id !== makeDraft.id && make.name.toLowerCase() === name.toLowerCase())) errors.name = pt ? 'Esta marca já está cadastrada' : 'This make already exists'
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
     setBusy(true); setFormError(null)
     const response = await saveMake({ id: makeDraft.id, name })
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice(makeDraft.id ? `Make renamed to ${name}` : `Added ${name}`)
+    setNotice(pt ? (makeDraft.id ? `Marca renomeada para ${name}` : `Marca adicionada: ${name}`) : makeDraft.id ? `Make renamed to ${name}` : `Added ${name}`)
     closeForms()
     await onReload()
   }
@@ -94,15 +102,15 @@ export function MakesModelsPanel({
     const name = modelDraft.name.trim()
     const make = makes.find(item => item.id === modelDraft.makeId)
     const errors: Record<string, string> = {}
-    if (!make) errors.makeId = 'Choose a make'
-    if (!name) errors.name = 'Name is required'
-    else if (name.length > 100) errors.name = 'Name is too long'
-    else if (make?.models.some(model => model.id !== modelDraft.id && model.name.toLowerCase() === name.toLowerCase())) errors.name = `${make.name} already has this model`
+    if (!make) errors.makeId = pt ? 'Selecione uma marca' : 'Choose a make'
+    if (!name) errors.name = pt ? 'Informe o nome do modelo' : 'Name is required'
+    else if (name.length > 100) errors.name = pt ? 'O nome deve ter até 100 caracteres' : 'Name is too long'
+    else if (make?.models.some(model => model.id !== modelDraft.id && model.name.toLowerCase() === name.toLowerCase())) errors.name = pt ? `${make.name} já tem esse modelo cadastrado` : `${make.name} already has this model`
     let baseYear: number | null = null
     if (modelDraft.baseYear.trim()) {
       baseYear = Number(modelDraft.baseYear.trim())
       const maxYear = new Date().getFullYear() + 2
-      if (!Number.isInteger(baseYear) || baseYear < 1900 || baseYear > maxYear) errors.baseYear = `Year must be 1900 to ${maxYear}`
+      if (!Number.isInteger(baseYear) || baseYear < 1900 || baseYear > maxYear) errors.baseYear = pt ? `O ano deve estar entre 1900 e ${maxYear}` : `Year must be 1900 to ${maxYear}`
     }
     setFieldErrors(errors)
     if (Object.keys(errors).length) return
@@ -110,7 +118,7 @@ export function MakesModelsPanel({
     const response = await saveModel({ id: modelDraft.id, makeId: modelDraft.makeId, name, bodyStyle: modelDraft.bodyStyle === 'none' ? null : modelDraft.bodyStyle, baseYear })
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice(modelDraft.id ? `Saved ${name}` : `Added ${make?.name} ${name}`)
+    setNotice(pt ? (modelDraft.id ? `Modelo salvo: ${name}` : `Modelo adicionado: ${make?.name} ${name}`) : modelDraft.id ? `Saved ${name}` : `Added ${make?.name} ${name}`)
     setSelectedId(modelDraft.makeId)
     closeForms()
     await onReload()
@@ -122,7 +130,7 @@ export function MakesModelsPanel({
     const response = pending.kind === 'make' ? await deleteMake(pending.make.id) : await deleteModel(pending.model.id)
     setBusy(false)
     if (!response.success) { setFormError(response.error); return }
-    setNotice(pending.kind === 'make' ? `Deleted ${pending.make.name}` : `Deleted ${pending.model.name}`)
+    setNotice(pt ? (pending.kind === 'make' ? `Marca excluída: ${pending.make.name}` : `Modelo excluído: ${pending.model.name}`) : pending.kind === 'make' ? `Deleted ${pending.make.name}` : `Deleted ${pending.model.name}`)
     if (pending.kind === 'make' && selectedId === pending.make.id) setSelectedId(null)
     setPending(null)
     await onReload()
@@ -133,7 +141,7 @@ export function MakesModelsPanel({
     const response = await addInventoryPairs(pairs.map(pair => ({ make: pair.make, model: pair.model })))
     setAddingPairs(null)
     if (!response.success) { setPairError(response.error); return }
-    setNotice(`Added ${response.added ?? 0} ${response.added === 1 ? 'model' : 'models'} from inventory`)
+    setNotice(pt ? `${response.added ?? 0} ${response.added === 1 ? 'modelo adicionado' : 'modelos adicionados'} a partir do estoque` : `Added ${response.added ?? 0} ${response.added === 1 ? 'model' : 'models'} from inventory`)
     await onReload()
   }
 
@@ -144,24 +152,24 @@ export function MakesModelsPanel({
 
       {missingPairs.length > 0 && (
         <DeskSection
-          title="In inventory, not in catalog"
+          title={pt ? 'No estoque, fora do catálogo' : 'In inventory, not in catalog'}
           count={missingPairs.length}
           actions={
             <Track>
               <Pill size="sm" variant="primary" className={TAP_SM} disabled={addingPairs !== null} onClick={() => addPairs(missingPairs, 'all')}>
                 <Plus />
-                {addingPairs === 'all' ? 'Adding…' : 'Add all'}
+                {addingPairs === 'all' ? (pt ? 'Adicionando…' : 'Adding…') : (pt ? 'Adicionar todos' : 'Add all')}
               </Pill>
             </Track>
           }
         >
           {pairError && <Notice tone="bad" className="mb-3">{pairError}</Notice>}
-          <DeskTable aria-label="Inventory models missing from catalog">
+          <DeskTable aria-label={pt ? 'Modelos do estoque fora do catálogo' : 'Inventory models missing from catalog'}>
             <thead>
               <tr>
-                <Th>Make and model</Th>
-                <Th>Status</Th>
-                <Th align="right">Units</Th>
+                <Th>{pt ? 'Marca e modelo' : 'Make and model'}</Th>
+                <Th>{pt ? 'Situação' : 'Status'}</Th>
+                <Th align="right">{pt ? 'Unidades' : 'Units'}</Th>
                 <Th align="right"><span className="sr-only">Action</span></Th>
               </tr>
             </thead>
@@ -171,12 +179,12 @@ export function MakesModelsPanel({
                 return (
                   <Tr key={key}>
                     <Td className="font-medium text-foreground">{pair.make} {pair.model}</Td>
-                    <Td><Status tone="warn">Not in catalog</Status></Td>
+                    <Td><Status tone="warn">{pt ? 'Fora do catálogo' : 'Not in catalog'}</Status></Td>
                     <Td align="right"><Figure size="sm">{pair.units}</Figure></Td>
                     <Td align="right" className="w-px whitespace-nowrap">
                       <Pill size="sm" className={TAP_SM} disabled={addingPairs !== null} onClick={() => addPairs([pair], key)} aria-label={`Add ${pair.make} ${pair.model}`}>
                         <Plus />
-                        {addingPairs === key ? 'Adding…' : 'Add'}
+                        {addingPairs === key ? (pt ? 'Adicionando…' : 'Adding…') : (pt ? 'Adicionar' : 'Add')}
                       </Pill>
                     </Td>
                   </Tr>
@@ -189,38 +197,38 @@ export function MakesModelsPanel({
 
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Segmented<MakeFilter>
-          label="Filter makes"
+          label={pt ? 'Filtrar marcas' : 'Filter makes'}
           value={filter}
           onChange={setFilter}
           size="sm"
           options={[
-            { value: 'all', label: 'All', count: counts.all },
-            { value: 'with-models', label: 'With models', count: counts.withModels },
-            { value: 'no-models', label: 'No models', count: counts.noModels, tone: counts.noModels ? 'warn' : undefined },
+            { value: 'all', label: pt ? 'Todas' : 'All', count: counts.all },
+            { value: 'with-models', label: pt ? 'Com modelos' : 'With models', count: counts.withModels },
+            { value: 'no-models', label: pt ? 'Sem modelos' : 'No models', count: counts.noModels, tone: counts.noModels ? 'warn' : undefined },
           ]}
         />
         <div className="relative min-w-0 sm:max-w-xs sm:flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className={cn('pl-9', TAP_INPUT)} value={search} onChange={event => setSearch(event.target.value)} placeholder="Make or model" aria-label="Search makes and models" />
+          <Input className={cn('pl-9', TAP_INPUT)} value={search} onChange={event => setSearch(event.target.value)} placeholder={pt ? 'Marca ou modelo' : 'Make or model'} aria-label={pt ? 'Buscar marcas e modelos' : 'Search makes and models'} />
         </div>
         <Track className="sm:ml-auto">
           <Pill variant="primary" className={TAP} onClick={() => { closeForms(); setMakeDraft({ name: '' }) }}>
             <Plus />
-            Add make
+            {pt ? 'Adicionar marca' : 'Add make'}
           </Pill>
         </Track>
       </div>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {visible.length === 0 ? (
-          <Panel><EmptyRow>{makes.length === 0 ? 'No makes yet' : 'No makes match'}</EmptyRow></Panel>
+          <Panel><EmptyRow>{makes.length === 0 ? (pt ? 'Nenhuma marca cadastrada' : 'No makes yet') : (pt ? 'Nenhuma marca encontrada' : 'No makes match')}</EmptyRow></Panel>
         ) : (
-          <DeskTable aria-label="Makes">
+          <DeskTable aria-label={pt ? 'Marcas' : 'Makes'}>
             <thead>
               <tr>
-                <Th>Make</Th>
-                <Th>Status</Th>
-                <Th align="right">Models</Th>
+                <Th>{pt ? 'Marca' : 'Make'}</Th>
+                <Th>{pt ? 'Situação' : 'Status'}</Th>
+                <Th align="right">{pt ? 'Modelos' : 'Models'}</Th>
               </tr>
             </thead>
             <tbody>
@@ -236,7 +244,7 @@ export function MakesModelsPanel({
                       {make.name}
                     </button>
                   </Td>
-                  <Td>{make.modelsCount > 0 ? <Status tone="ok">Has models</Status> : <Status tone="warn">No models</Status>}</Td>
+                  <Td>{make.modelsCount > 0 ? <Status tone="ok">{pt ? 'Com modelos' : 'Has models'}</Status> : <Status tone="warn">{pt ? 'Sem modelos' : 'No models'}</Status>}</Td>
                   <Td align="right">{make.modelsCount}</Td>
                 </Tr>
               ))}
@@ -246,7 +254,7 @@ export function MakesModelsPanel({
 
         <Panel className="overflow-hidden">
           {!selected ? (
-            <EmptyRow>Select a make</EmptyRow>
+            <EmptyRow>{pt ? 'Selecione uma marca' : 'Select a make'}</EmptyRow>
           ) : (
             <div>
               <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
@@ -257,35 +265,35 @@ export function MakesModelsPanel({
                 <Track>
                   <Pill size="sm" className={TAP_SM} onClick={() => { closeForms(); setMakeDraft({ id: selected.id, name: selected.name }) }}>
                     <Pencil />
-                    Rename
+                    {pt ? 'Renomear' : 'Rename'}
                   </Pill>
                   <Pill
                     size="sm"
                     className={TAP_SM}
                     disabled={selected.modelsCount > 0}
-                    title={selected.modelsCount > 0 ? 'Delete its models first' : undefined}
+                    title={selected.modelsCount > 0 ? (pt ? 'Exclua os modelos primeiro' : 'Delete its models first') : undefined}
                     onClick={() => { setFormError(null); setPending({ kind: 'make', make: selected }) }}
                   >
                     <Trash2 />
-                    Delete
+                    {pt ? 'Excluir' : 'Delete'}
                   </Pill>
                   <Pill size="sm" variant="primary" className={TAP_SM} onClick={() => { closeForms(); setModelDraft({ makeId: selected.id, name: '', bodyStyle: 'none', baseYear: '' }) }}>
                     <Plus />
-                    Add model
+                    {pt ? 'Adicionar modelo' : 'Add model'}
                   </Pill>
                 </Track>
               </div>
-              {selected.modelsCount > 0 && <p className="border-b px-4 py-2 text-xs text-muted-foreground">Delete is available once the make has no models.</p>}
+              {selected.modelsCount > 0 && <p className="border-b px-4 py-2 text-xs text-muted-foreground">{pt ? 'A marca só pode ser excluída quando não tiver modelos.' : 'Delete is available once the make has no models.'}</p>}
               {selected.models.length === 0 ? (
-                <EmptyRow>No models</EmptyRow>
+                <EmptyRow>{pt ? 'Nenhum modelo' : 'No models'}</EmptyRow>
               ) : (
                 <table className="w-full border-collapse text-[13px]" aria-label={`${selected.name} models`}>
                   <thead>
                     <tr>
-                      <Th>Model</Th>
-                      <Th priority={2}>Body style</Th>
-                      <Th align="right" priority={2}>Since</Th>
-                      <Th align="right"><span className="sr-only">Actions</span></Th>
+                      <Th>{pt ? 'Modelo' : 'Model'}</Th>
+                      <Th priority={2}>{pt ? 'Categoria' : 'Body style'}</Th>
+                      <Th align="right" priority={2}>{pt ? 'A partir do ano' : 'Since'}</Th>
+                      <Th align="right"><span className="sr-only">{pt ? 'Ações' : 'Actions'}</span></Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -293,15 +301,15 @@ export function MakesModelsPanel({
                       <Tr key={model.id}>
                         <Td className="max-w-0 min-w-[7rem]">
                           <span className="block truncate font-medium text-foreground">{model.name}</span>
-                          <span className="block truncate text-xs text-muted-foreground md:hidden">{[bodyStyleLabel(model.bodyStyle), model.baseYear ? `Since ${model.baseYear}` : null].filter(Boolean).join(' · ') || 'No body style'}</span>
+                          <span className="block truncate text-xs text-muted-foreground md:hidden">{[bodyStyleLabel(model.bodyStyle, pt), model.baseYear ? `${pt ? 'A partir de' : 'Since'} ${model.baseYear}` : null].filter(Boolean).join(' · ') || (pt ? 'Sem categoria' : 'No body style')}</span>
                         </Td>
-                        <Td priority={2} className="text-muted-foreground">{bodyStyleLabel(model.bodyStyle) || 'None'}</Td>
+                        <Td priority={2} className="text-muted-foreground">{bodyStyleLabel(model.bodyStyle, pt) || (pt ? 'Não informada' : 'None')}</Td>
                         <Td align="right" priority={2} className="text-muted-foreground">{model.baseYear || ''}</Td>
                         <Td align="right" className="w-px whitespace-nowrap">
                           <div className="inline-flex gap-1">
                             <Pill size="sm" className={TAP_SM} aria-label={`Edit ${model.name}`} onClick={() => { closeForms(); setModelDraft({ id: model.id, makeId: selected.id, name: model.name, bodyStyle: model.bodyStyle || 'none', baseYear: model.baseYear ? String(model.baseYear) : '' }) }}>
                               <Pencil />
-                              Edit
+                              {pt ? 'Editar' : 'Edit'}
                             </Pill>
                             <Pill size="sm" variant="plain" className={cn(TAP_SM, 'max-sm:w-11')} aria-label={`Delete ${model.name}`} onClick={() => { setFormError(null); setPending({ kind: 'model', model }) }}>
                               <Trash2 />
@@ -320,45 +328,45 @@ export function MakesModelsPanel({
 
       <FormDialog
         open={makeDraft !== null}
-        title={makeDraft?.id ? 'Rename make' : 'Add make'}
+        title={makeDraft?.id ? (pt ? 'Renomear marca' : 'Rename make') : (pt ? 'Adicionar marca' : 'Add make')}
         busy={busy}
         error={formError}
         onSubmit={submitMake}
         onOpenChange={open => { if (!open) closeForms() }}
       >
-        <Field id="make-name" label="Name" error={fieldErrors.name}>
+        <Field id="make-name" label={pt ? 'Nome' : 'Name'} error={fieldErrors.name}>
           <Input id="make-name" className={TAP_INPUT} autoFocus maxLength={100} value={makeDraft?.name || ''} aria-invalid={Boolean(fieldErrors.name)} onChange={event => setMakeDraft(draft => draft && { ...draft, name: event.target.value })} />
         </Field>
       </FormDialog>
 
       <FormDialog
         open={modelDraft !== null}
-        title={modelDraft?.id ? 'Edit model' : 'Add model'}
+        title={modelDraft?.id ? (pt ? 'Editar modelo' : 'Edit model') : (pt ? 'Adicionar modelo' : 'Add model')}
         busy={busy}
         error={formError}
         onSubmit={submitModel}
         onOpenChange={open => { if (!open) closeForms() }}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="model-make" label="Make" error={fieldErrors.makeId}>
+          <Field id="model-make" label={pt ? 'Marca' : 'Make'} error={fieldErrors.makeId}>
             <Select value={modelDraft?.makeId || ''} onValueChange={value => setModelDraft(draft => draft && { ...draft, makeId: value })}>
-              <SelectTrigger id="model-make" className={TAP_INPUT}><SelectValue placeholder="Select make" /></SelectTrigger>
+              <SelectTrigger id="model-make" className={TAP_INPUT}><SelectValue placeholder={pt ? 'Selecione a marca' : 'Select make'} /></SelectTrigger>
               <SelectContent>{makes.map(make => <SelectItem key={make.id} value={make.id}>{make.name}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field id="model-name" label="Name" error={fieldErrors.name}>
+          <Field id="model-name" label={pt ? 'Nome' : 'Name'} error={fieldErrors.name}>
             <Input id="model-name" className={TAP_INPUT} autoFocus maxLength={100} value={modelDraft?.name || ''} aria-invalid={Boolean(fieldErrors.name)} onChange={event => setModelDraft(draft => draft && { ...draft, name: event.target.value })} />
           </Field>
-          <Field id="model-body" label="Body style">
+          <Field id="model-body" label={pt ? 'Categoria do veículo' : 'Body style'}>
             <Select value={modelDraft?.bodyStyle || 'none'} onValueChange={value => setModelDraft(draft => draft && { ...draft, bodyStyle: value })}>
               <SelectTrigger id="model-body" className={TAP_INPUT}><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {BODY_STYLES.map(style => <SelectItem key={style.value} value={style.value}>{style.label}</SelectItem>)}
+                <SelectItem value="none">{pt ? 'Não informada' : 'None'}</SelectItem>
+                {BODY_STYLES.map(style => <SelectItem key={style.value} value={style.value}>{bodyStyleLabel(style.value, pt)}</SelectItem>)}
               </SelectContent>
             </Select>
           </Field>
-          <Field id="model-year" label="Base year" error={fieldErrors.baseYear}>
+          <Field id="model-year" label={pt ? 'Ano inicial' : 'Base year'} error={fieldErrors.baseYear}>
             <Input id="model-year" className={TAP_INPUT} inputMode="numeric" maxLength={4} value={modelDraft?.baseYear || ''} aria-invalid={Boolean(fieldErrors.baseYear)} onChange={event => setModelDraft(draft => draft && { ...draft, baseYear: event.target.value })} />
           </Field>
         </div>
@@ -366,8 +374,8 @@ export function MakesModelsPanel({
 
       <ConfirmDialog
         open={pending !== null}
-        title={pending?.kind === 'make' ? `Delete ${pending.make.name}?` : `Delete ${pending?.kind === 'model' ? pending.model.name : ''}?`}
-        confirmLabel="Delete"
+        title={pending?.kind === 'make' ? (pt ? `Excluir a marca ${pending.make.name}?` : `Delete ${pending.make.name}?`) : (pt ? `Excluir o modelo ${pending?.kind === 'model' ? pending.model.name : ''}?` : `Delete ${pending?.kind === 'model' ? pending.model.name : ''}?`)}
+        confirmLabel={pt ? 'Excluir' : 'Delete'}
         busy={busy}
         error={formError}
         onConfirm={confirmDelete}

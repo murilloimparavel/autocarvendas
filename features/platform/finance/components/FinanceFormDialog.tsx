@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Notice, Pill, Track } from '@/features/platform/components/desk'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { financeLabel } from '../lib/display'
 import { cn } from '@/lib/utils'
 
 export type FinanceFormField = {
@@ -51,6 +53,8 @@ export function FinanceFormDialog({
   onSubmit: () => void
   onOpenChange: (open: boolean) => void
 }) {
+  const { locale } = useLocale()
+  const text = (value: string) => financeLabel(locale, value)
   const change = (name: string, value: string) => onValuesChange({ ...values, [name]: value })
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -73,14 +77,14 @@ export function FinanceFormDialog({
               return (
                 <div key={field.name} className={cn('grid min-w-0 gap-1.5 text-sm', wide && 'sm:col-span-2')}>
                   {field.type !== 'checkbox' && (
-                    <label htmlFor={id} className="text-[12px] font-medium text-muted-foreground">{field.label}</label>
+                    <label htmlFor={id} className="text-[12px] font-medium text-muted-foreground">{text(field.label)}</label>
                   )}
                   {field.type === 'textarea' ? (
-                    <Textarea id={id} rows={3} maxLength={field.maxLength} placeholder={field.placeholder} value={values[field.name] || ''} aria-invalid={Boolean(fieldError)} aria-describedby={describedBy} onChange={event => change(field.name, event.target.value)} />
+                    <Textarea id={id} rows={3} maxLength={field.maxLength} placeholder={field.placeholder ? text(field.placeholder) : undefined} value={values[field.name] || ''} aria-invalid={Boolean(fieldError)} aria-describedby={describedBy} onChange={event => change(field.name, event.target.value)} />
                   ) : field.type === 'select' ? (
                     <Select value={values[field.name] || ''} onValueChange={value => change(field.name, value)}>
-                      <SelectTrigger id={id} className="h-10 w-full rounded-[4px]" aria-label={field.label} aria-invalid={Boolean(fieldError)} aria-describedby={describedBy}>
-                        <SelectValue placeholder={field.placeholder || 'Select'} />
+                      <SelectTrigger id={id} className="h-10 w-full rounded-[4px]" aria-label={text(field.label)} aria-invalid={Boolean(fieldError)} aria-describedby={describedBy}>
+                        <SelectValue placeholder={text(field.placeholder || 'Select')} />
                       </SelectTrigger>
                       <SelectContent>
                         {(field.options || []).map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
@@ -89,7 +93,7 @@ export function FinanceFormDialog({
                   ) : field.type === 'checkbox' ? (
                     <label htmlFor={id} className="flex min-h-11 items-start gap-2 rounded-md border bg-muted/40 p-3">
                       <input id={id} type="checkbox" className="mt-0.5 size-4" checked={values[field.name] === 'yes'} aria-invalid={Boolean(fieldError)} aria-describedby={describedBy} onChange={event => change(field.name, event.target.checked ? 'yes' : '')} />
-                      <span>{field.label}</span>
+                      <span>{text(field.label)}</span>
                     </label>
                   ) : field.type === 'readonly' ? (
                     <p id={id} className="flex h-10 items-center rounded-[4px] border bg-muted/40 px-3 text-[13px]">{values[field.name] || '-'}</p>
@@ -99,7 +103,7 @@ export function FinanceFormDialog({
                       className="h-10 rounded-[4px]"
                       inputMode={field.type === 'money' ? 'decimal' : field.type === 'number' ? 'numeric' : undefined}
                       maxLength={field.maxLength ?? (field.type === 'money' ? 20 : undefined)}
-                      placeholder={field.placeholder ?? (field.type === 'money' ? '$0' : undefined)}
+                      placeholder={field.placeholder ? text(field.placeholder) : field.type === 'money' ? (locale === 'pt-BR' ? 'R$ 0,00' : '$0') : undefined}
                       value={values[field.name] || ''}
                       aria-invalid={Boolean(fieldError)}
                       aria-describedby={describedBy}
@@ -107,20 +111,20 @@ export function FinanceFormDialog({
                     />
                   )}
                   {fieldError ? (
-                    <p id={`${id}-error`} className="text-xs text-red-600 dark:text-red-400">{fieldError}</p>
+                    <p id={`${id}-error`} className="text-xs text-red-600 dark:text-red-400">{text(fieldError)}</p>
                   ) : field.description ? (
-                    <p id={`${id}-description`} className="text-xs text-muted-foreground">{field.description}</p>
+                    <p id={`${id}-description`} className="text-xs text-muted-foreground">{text(field.description)}</p>
                   ) : null}
                 </div>
               )
             })}
           </div>
           {children}
-          {error && <Notice tone="bad">{error}</Notice>}
+          {error && <Notice tone="bad">{text(error)}</Notice>}
           <DialogFooter className="sm:justify-end">
             <Track>
-              <Pill variant="plain" disabled={busy} onClick={() => onOpenChange(false)}>Cancel</Pill>
-              <Pill type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : submitLabel}</Pill>
+              <Pill variant="plain" disabled={busy} onClick={() => onOpenChange(false)}>{text('Cancel')}</Pill>
+              <Pill type="submit" variant="primary" disabled={busy}>{busy ? text('Saving…') : text(submitLabel)}</Pill>
             </Track>
           </DialogFooter>
         </form>

@@ -20,6 +20,8 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { useDashboard } from '../../dashboard/context/DashboardProvider'
 import { enhanceFields } from '../../dashboard/utils/enhanceFields'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface PlatformFilterBarProps {
   list: any
@@ -44,6 +46,9 @@ export function PlatformFilterBar({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { basePath } = useDashboard()
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const schemaText = (value: string) => translateSchemaLabel(locale, value)
 
   const [searchString, setSearchString] = useState(
     searchParams?.get("search") || ""
@@ -110,12 +115,12 @@ export function PlatformFilterBar({
               className="pl-9 w-full h-10 rounded-[4px] text-[13px] placeholder:text-muted-foreground/80"
               value={searchString}
               onChange={(e) => setSearchString(e.target.value)}
-              placeholder={`Search by ${
+              placeholder={`${pt ? 'Buscar por' : 'Search by'} ${
                 searchLabels.length
-                  ? searchLabels.filter((label: string) => !/^(id|created at|updated at)$/i.test(label)).slice(0, 3).join(", ").toLowerCase()
+                  ? searchLabels.filter((label: string) => !/^(id|created at|updated at)$/i.test(label)).slice(0, 3).map(schemaText).join(", ").toLowerCase()
                   : "ID"
               }`}
-              aria-label={`Search ${list.plural ?? "records"}`}
+              aria-label={`${pt ? 'Buscar' : 'Search'} ${schemaText(list.plural ?? (pt ? 'registros' : 'records'))}`}
             />
           </form>
         </div>
@@ -129,7 +134,7 @@ export function PlatformFilterBar({
               className="h-10 w-10 lg:px-4 lg:py-2 lg:w-auto rounded-[4px]"
             >
               <SlidersHorizontal className="stroke-muted-foreground" />
-              <span className="hidden lg:inline">Filter</span>
+              <span className="hidden lg:inline">{pt ? 'Filtrar' : 'Filter'}</span>
             </Button>
           </FilterAdd>
 
@@ -140,7 +145,7 @@ export function PlatformFilterBar({
               className="h-10 w-10 lg:px-4 lg:py-2 lg:w-auto rounded-[4px]"
             >
               <ArrowUpDown className="stroke-muted-foreground" />
-              <span className="hidden lg:inline">Sort</span>
+              <span className="hidden lg:inline">{pt ? 'Ordenar' : 'Sort'}</span>
             </Button>
           </SortSelection>
 
@@ -152,7 +157,7 @@ export function PlatformFilterBar({
                 className="h-10 w-10 lg:px-4 lg:py-2 lg:w-auto rounded-[4px]"
               >
                 <Columns3 className="stroke-muted-foreground" />
-                <span className="hidden lg:inline">Display</span>
+                <span className="hidden lg:inline">{pt ? 'Exibir' : 'Display'}</span>
               </Button>
             </FieldSelection>
           )}
@@ -165,7 +170,7 @@ export function PlatformFilterBar({
                   className="h-10 w-10 lg:px-4 lg:py-2 lg:w-auto rounded-[4px]"
                 >
                   <CirclePlus />
-                  <span className="hidden lg:inline">{createLabel || `Create ${list.singular}`}</span>
+                  <span className="hidden lg:inline">{schemaText(createLabel || `${pt ? 'Criar' : 'Create'} ${list.singular}`)}</span>
                 </Button>
               ) : (
                 <Link
@@ -176,7 +181,7 @@ export function PlatformFilterBar({
                   )}
                 >
                   <CirclePlus />
-                  <span className="hidden lg:inline">Create {list.singular}</span>
+                  <span className="hidden lg:inline">{schemaText(`${pt ? 'Criar' : 'Create'} ${list.singular}`)}</span>
                 </Link>
               )
             )

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, type LucideIcon } from "lucide-react";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import {
   Collapsible,
   CollapsibleContent,
@@ -31,9 +32,11 @@ export function NavMain({
     }[];
   }[];
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>{pt ? 'Plataforma' : 'Platform'}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible

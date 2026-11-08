@@ -7,6 +7,8 @@
 import { keystoneClient } from '../lib/keystoneClient'
 import { getList } from './getList'
 import { getFieldTypeFromViewsIndex } from '../views/getFieldTypeFromViewsIndex'
+import { getRequestLocale } from '@/features/i18n/server'
+import { publicRequestError } from '../lib/security'
 
 interface ListItemsVariables extends Record<string, unknown> {
   where?: any
@@ -89,7 +91,8 @@ export async function getListItemsAction(
     const list = await getList(listKey)
     if (!list) {
       console.error(`❌ List not found: ${listKey}`)
-      return { success: false, error: `List not found: ${listKey}` }
+      const locale = await getRequestLocale()
+      return { success: false, error: locale === 'pt-BR' ? 'A lista solicitada não foi encontrada.' : `List not found: ${listKey}` }
     }
 
     // Build GraphQL selection for list fields - using the same pattern as getItemAction
@@ -151,7 +154,7 @@ export async function getListItemsAction(
     console.error("Dashboard operation failed (details redacted).")
     return { 
       success: false, 
-      error: "Unknown error occurred"
+      error: publicRequestError(await getRequestLocale())
     }
   }
 }

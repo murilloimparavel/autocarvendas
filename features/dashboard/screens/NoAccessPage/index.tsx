@@ -4,13 +4,18 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Lock, LogOut, Store } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/features/dashboard/actions/auth';
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { LanguageSwitcher } from '@/features/i18n/LanguageSwitcher'
 
 export function NoAccessPage() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const router = useRouter();
 
   return (
     <main className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm flex flex-col items-center bg-muted/40 border rounded-lg p-6 shadow-lg">
+        <div className="mb-4 flex w-full justify-end"><LanguageSwitcher /></div>
         <div className="flex justify-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/10 border-2 border-rose-200 dark:border-rose-800">
             <Lock className="h-6 w-6 text-rose-600 dark:text-rose-400" />
@@ -18,9 +23,9 @@ export function NoAccessPage() {
         </div>
 
         <div className="text-center gap-0 mt-4">
-          <h1 className="text-center text-lg font-semibold">Access Denied</h1>
+          <h1 className="text-center text-lg font-semibold">{pt ? 'Acesso negado' : 'Access Denied'}</h1>
           <p className="mt-2 text-center mx-auto sm:max-w-[90%] text-sm text-muted-foreground">
-            You don't have permission to access this page. If you believe this is an error, please contact your administrator for assistance.
+            {pt ? 'Você não tem permissão para acessar esta página. Se acredita que isso é um erro, fale com o administrador.' : "You don't have permission to access this page. If you believe this is an error, please contact your administrator for assistance."}
           </p>
         </div>
 
@@ -31,7 +36,7 @@ export function NoAccessPage() {
             onClick={() => router.back()}
           >
             <ArrowLeft className="size-3" />
-            Go Back
+            {pt ? 'Voltar' : 'Go Back'}
           </Button>
           <Button
             variant="default"
@@ -39,13 +44,13 @@ export function NoAccessPage() {
             onClick={() => router.push('/')}
           >
             <Store className="size-3" />
-            Home
+            {pt ? 'Início' : 'Home'}
           </Button>
         </div>
         <form action={signOut} className="w-full mt-2">
           <Button type="submit" variant="ghost" className="w-full">
             <LogOut className="size-3" />
-            Sign out
+            {pt ? 'Sair' : 'Sign out'}
           </Button>
         </form>
       </div>

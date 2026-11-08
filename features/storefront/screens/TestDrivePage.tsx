@@ -15,6 +15,7 @@ import { customerRequestReference } from '../lib/customerRequests'
 import { fillBlankFields, useCustomerPrefill } from '../lib/useCustomerPrefill'
 import { fetchListedInventoryOptions, type InventoryOption } from '../lib/data/inventory-facets'
 import { formatPrice } from '../lib/format'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { DEFAULT_TEST_DRIVE_SLOTS, closedDayLabel, dayAvailability, localDateString } from '../lib/bookingSlots'
 import {
   Field,
@@ -32,6 +33,8 @@ import {
 type TestDriveSummary = { name: string; email: string; phone: string; date: string; time: string }
 
 export function TestDrivePage() {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const business = useStorefrontBusiness()
   const searchParams = useSearchParams()
   const vehicleId = searchParams?.get('vehicleId')
@@ -90,8 +93,8 @@ export function TestDrivePage() {
 
   const optionLabel = (item: InventoryOption) => [
     [item.year, item.make, item.model, item.trim].filter(Boolean).join(' '),
-    item.stockNumber ? `Stock ${item.stockNumber}` : null,
-    item.price ? formatPrice(item.price, business.currencyCode) : null,
+    item.stockNumber ? `${pt ? 'Estoque' : 'Stock'} ${item.stockNumber}` : null,
+    item.price ? formatPrice(item.price, business.currencyCode, locale) : null,
   ].filter(Boolean).join(' · ')
   const pickerOptions = inventoryOptions ?? []
   const missingSelected = formData.vehicleId && !pickerOptions.some((item) => item.id === formData.vehicleId)
@@ -148,21 +151,21 @@ export function TestDrivePage() {
   if (submitStatus === 'success') {
     return (
       <RequestReceived
-        context="Test drive"
+        context={pt ? 'Test-drive' : 'Test drive'}
         reference={requestReference}
         summary={
           <Sticker
-            title="Test drive"
+            title={pt ? 'Test-drive' : 'Test drive'}
             meta={business.shortName || business.fullName}
             rows={[
-              { label: 'Date', value: submittedSummary ? formatRequestDate(submittedSummary.date) : null },
-              { label: 'Time', value: submittedSummary?.time },
-              { label: 'Name', value: submittedSummary?.name },
-              { label: 'Email', value: submittedSummary?.email },
-              { label: 'Phone', value: submittedSummary?.phone },
+              { label: pt ? 'Data' : 'Date', value: submittedSummary ? formatRequestDate(submittedSummary.date, locale) : null },
+              { label: pt ? 'Horário' : 'Time', value: submittedSummary?.time },
+              { label: pt ? 'Nome' : 'Name', value: submittedSummary?.name },
+              { label: 'E-mail', value: submittedSummary?.email },
+              { label: pt ? 'Telefone' : 'Phone', value: submittedSummary?.phone },
             ]}
           >
-            {submittedVehicle && <StickerVehicle vehicle={submittedVehicle} label="Vehicle" />}
+            {submittedVehicle && <StickerVehicle vehicle={submittedVehicle} label={pt ? 'Veículo' : 'Vehicle'} />}
           </Sticker>
         }
         actions={
@@ -171,10 +174,10 @@ export function TestDrivePage() {
               href={submittedVehicle ? `/inventory/${submittedVehicle.id}` : '/inventory'}
               className="sf-btn sf-btn-primary"
             >
-              {submittedVehicle ? 'Return to vehicle' : 'Browse inventory'}
+              {submittedVehicle ? (pt ? 'Voltar ao veículo' : 'Return to vehicle') : (pt ? 'Ver estoque' : 'Browse inventory')}
             </Link>
-            <Link href="/financing" className="sf-btn sf-btn-ghost">Financing</Link>
-            <Link href="/trade-in" className="sf-btn sf-btn-ghost">Trade-in</Link>
+            <Link href="/financing" className="sf-btn sf-btn-ghost">{pt ? 'Financiamento' : 'Financing'}</Link>
+            <Link href="/trade-in" className="sf-btn sf-btn-ghost">{pt ? 'Troca de veículo' : 'Trade-in'}</Link>
           </>
         }
       />
@@ -183,20 +186,20 @@ export function TestDrivePage() {
 
   const summary = (
     <Sticker
-      title="Test drive"
+      title={pt ? 'Test-drive' : 'Test drive'}
       meta={business.shortName || business.fullName}
       rows={[
-        { label: 'Date', value: formData.preferredDate ? formatRequestDate(formData.preferredDate) : null },
-        { label: 'Time', value: formData.preferredTime, strong: true },
-        { label: 'Name', value: formData.customerName },
+        { label: pt ? 'Data' : 'Date', value: formData.preferredDate ? formatRequestDate(formData.preferredDate, locale) : null },
+        { label: pt ? 'Horário' : 'Time', value: formData.preferredTime, strong: true },
+        { label: pt ? 'Nome' : 'Name', value: formData.customerName },
       ]}
     >
       {selectedVehicle ? (
-        <StickerVehicle vehicle={selectedVehicle} label="Vehicle" />
+        <StickerVehicle vehicle={selectedVehicle} label={pt ? 'Veículo' : 'Vehicle'} />
       ) : (
         <div className="flex items-center justify-between gap-3 border-b border-dashed px-4 py-3" style={{ borderColor: 'var(--sf-rule)' }}>
-          <span className="sf-eyebrow">Vehicle</span>
-          <Link href="/inventory" className="sf-link text-[length:var(--sf-text-sm)]">Choose from inventory</Link>
+          <span className="sf-eyebrow">{pt ? 'Veículo' : 'Vehicle'}</span>
+          <Link href="/inventory" className="sf-link text-[length:var(--sf-text-sm)]">{pt ? 'Escolher no estoque' : 'Choose from inventory'}</Link>
         </div>
       )}
     </Sticker>
@@ -204,13 +207,13 @@ export function TestDrivePage() {
 
   return (
     <>
-      <PageHeader title="Book a test drive" />
+      <PageHeader title={pt ? 'Agendar test-drive' : 'Book a test drive'} />
 
       <RequestLayout summary={summary}>
         <form onSubmit={handleSubmit} className="space-y-[var(--sf-space-xl)]">
-          <FormSection title="Date and time" first>
+          <FormSection title={pt ? 'Data e horário' : 'Date and time'} first>
             <div className="space-y-5">
-              <Field label="Date" htmlFor="preferredDate" className="sm:max-w-xs">
+              <Field label={pt ? 'Data' : 'Date'} htmlFor="preferredDate" className="sm:max-w-xs">
                 <PlatformDateInput
                   id="preferredDate"
                   name="preferredDate"
@@ -226,12 +229,12 @@ export function TestDrivePage() {
                 <div className="sf-well p-4">
                   <p role="alert" className="sf-title-line text-[length:var(--sf-text-sm)]">
                     <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-                    <span>{closedDayLabel(availability)} Choose another date.</span>
+                    <span>{closedDayLabel(availability)} {pt ? 'Escolha outra data.' : 'Choose another date.'}</span>
                   </p>
                 </div>
               ) : (
                 <RadioPills
-                  legend="Time"
+                  legend={pt ? 'Horário' : 'Time'}
                   name="preferredTime"
                   required
                   variant="grid"
@@ -247,17 +250,17 @@ export function TestDrivePage() {
             </div>
           </FormSection>
 
-          <FormSection title="Vehicle">
-            <Field label="Vehicle" htmlFor="vehicleId" optional>
+          <FormSection title={pt ? 'Veículo' : 'Vehicle'}>
+            <Field label={pt ? 'Veículo' : 'Vehicle'} htmlFor="vehicleId" optional>
               <PlatformSelect
                 id="vehicleId"
                 name="vehicleId"
                 value={formData.vehicleId}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, vehicleId: value }))}
                 className="sf-input sf-trigger"
-                placeholder={inventoryOptions === null ? 'Loading inventory' : 'No specific vehicle'}
+                placeholder={inventoryOptions === null ? (pt ? 'Carregando estoque' : 'Loading inventory') : (pt ? 'Nenhum veículo específico' : 'No specific vehicle')}
                 options={[
-                  { value: '', label: inventoryOptions === null ? 'Loading inventory' : 'No specific vehicle' },
+                  { value: '', label: inventoryOptions === null ? (pt ? 'Carregando estoque' : 'Loading inventory') : (pt ? 'Nenhum veículo específico' : 'No specific vehicle') },
                   ...(missingSelected && selectedVehicle
                     ? [{ value: formData.vehicleId, label: [selectedVehicle.year, selectedVehicle.make, selectedVehicle.model, selectedVehicle.trim].filter(Boolean).join(' ') }]
                     : []),
@@ -266,13 +269,13 @@ export function TestDrivePage() {
               />
             </Field>
             {inventoryError && (
-              <p className="sf-muted mt-2 text-[length:var(--sf-text-sm)]" role="status">Inventory list unavailable.</p>
+              <p className="sf-muted mt-2 text-[length:var(--sf-text-sm)]" role="status">{pt ? 'Lista de estoque indisponível.' : 'Inventory list unavailable.'}</p>
             )}
           </FormSection>
 
-          <FormSection title="Contact">
+          <FormSection title={pt ? 'Seus dados' : 'Contact'}>
             <div className="grid gap-4">
-              <Field label="Full name" htmlFor="customerName">
+              <Field label={pt ? 'Nome completo' : 'Full name'} htmlFor="customerName">
                 <input
                   id="customerName"
                   name="customerName"
@@ -284,7 +287,7 @@ export function TestDrivePage() {
                   className="sf-input"
                 />
               </Field>
-              <Field label="Email" htmlFor="customerEmail">
+              <Field label="E-mail" htmlFor="customerEmail">
                 <input
                   id="customerEmail"
                   name="customerEmail"
@@ -296,7 +299,7 @@ export function TestDrivePage() {
                   className="sf-input"
                 />
               </Field>
-              <Field label="Phone" htmlFor="customerPhone">
+              <Field label={pt ? 'Telefone' : 'Phone'} htmlFor="customerPhone">
                 <input
                   id="customerPhone"
                   name="customerPhone"
@@ -308,7 +311,7 @@ export function TestDrivePage() {
                   className="sf-input"
                 />
               </Field>
-              <Field label="Notes" htmlFor="message" optional>
+              <Field label={pt ? 'Observações' : 'Notes'} htmlFor="message" optional>
                 <textarea
                   id="message"
                   name="message"
@@ -316,7 +319,7 @@ export function TestDrivePage() {
                   value={formData.message}
                   onChange={handleChange}
                   className="sf-input"
-                  placeholder="Vehicle of interest"
+                  placeholder={pt ? 'Veículo de interesse' : 'Vehicle of interest'}
                 />
               </Field>
             </div>
@@ -338,15 +341,15 @@ export function TestDrivePage() {
 
             {submitStatus === 'error' && (
               <Notice tone="bad">
-                {submitError || 'We couldn’t send your request.'}{' '}
+                {submitError || (pt ? 'Não foi possível enviar sua solicitação.' : 'We couldn’t send your request.')}{' '}
                 {business.phoneHref && business.phoneDisplay ? (
                   <>
-                    Call <a href={business.phoneHref} className="sf-link sf-figure">{business.phoneDisplay}</a> to schedule directly.
+                    {pt ? 'Ligue para' : 'Call'} <a href={business.phoneHref} className="sf-link sf-figure">{business.phoneDisplay}</a> {pt ? 'para agendar diretamente.' : 'to schedule directly.'}
                   </>
                 ) : business.salesEmail ? (
-                  <>Please try again or email <a href={`mailto:${business.salesEmail}`} className="sf-link break-all">{business.salesEmail}</a>.</>
+                  <>{pt ? 'Tente novamente ou envie um e-mail para' : 'Please try again or email'} <a href={`mailto:${business.salesEmail}`} className="sf-link break-all">{business.salesEmail}</a>.</>
                 ) : (
-                  <>Please try again later.</>
+                  <>{pt ? 'Tente novamente mais tarde.' : 'Please try again later.'}</>
                 )}
               </Notice>
             )}
@@ -357,10 +360,10 @@ export function TestDrivePage() {
                 disabled={isSubmitting || availability.status === 'closed'}
                 className="sf-btn sf-btn-primary w-full sm:w-auto sm:min-w-56"
               >
-                {isSubmitting ? 'Sending…' : 'Request test drive'}
+                {isSubmitting ? (pt ? 'Enviando…' : 'Sending…') : (pt ? 'Solicitar test-drive' : 'Request test drive')}
               </button>
               <Link href="/inventory" className="sf-btn sf-btn-ghost w-full sm:w-auto">
-                Cancel
+                {pt ? 'Cancelar' : 'Cancel'}
               </Link>
             </div>
           </div>

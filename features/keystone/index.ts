@@ -7,7 +7,7 @@ import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
 import { permissions } from "./access";
 import { passwordResetPath } from "./lib/passwordResetPath";
-import { localeFromCookieHeader } from '@/features/i18n/server'
+import { localeFromCookieHeader } from '../i18n/server'
 import Iron from "@hapi/iron";
 import * as cookie from "cookie";
 import { authenticateApiKey, refreshHumanSession } from "./utils/requestAuthentication";

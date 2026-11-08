@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -26,6 +27,8 @@ function CreateItemForm({
   onCreate: (data: Record<string, unknown>) => void;
   onClose: () => void;
 }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   // NOW we can safely call the hook because we know list and enhancedFields are loaded
   const createItem = useCreateItem(list, enhancedFields, { skipRevalidation: true });
 
@@ -57,10 +60,10 @@ function CreateItemForm({
       <DrawerFooter className="flex-shrink-0">
         <div className="flex gap-2 justify-end">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {pt ? 'Cancelar' : 'Cancel'}
           </Button>
           <Button type="submit" disabled={createItem.state === 'loading'}>
-            {createItem.state === 'loading' ? 'Creating...' : `Add ${list.singular}`}
+            {createItem.state === 'loading' ? (pt ? 'Criando…' : 'Creating...') : `${pt ? 'Adicionar' : 'Add'} ${list.singular}`}
           </Button>
         </div>
       </DrawerFooter>
@@ -69,6 +72,8 @@ function CreateItemForm({
 }
 
 export function CreateItemDrawer({ listKey, isOpen, onClose, onCreate }: CreateItemDrawerProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   // Use SWR to fetch list data (same pattern as relationship field)
   const { data: list, error, isLoading } = useSWR(
     `list-${listKey}`,
@@ -95,10 +100,10 @@ export function CreateItemDrawer({ listKey, isOpen, onClose, onCreate }: CreateI
       <Drawer open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Loading...</DrawerTitle>
+            <DrawerTitle>{pt ? 'Carregando…' : 'Loading...'}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 py-8 text-center">
-            Loading form...
+            {pt ? 'Carregando formulário…' : 'Loading form...'}
           </div>
         </DrawerContent>
       </Drawer>
@@ -111,13 +116,13 @@ export function CreateItemDrawer({ listKey, isOpen, onClose, onCreate }: CreateI
       <Drawer open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Error</DrawerTitle>
+            <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 py-8 text-center text-red-600">
-            {`Could not load form for ${listKey}. Please try again.`}
+            {pt ? `Não foi possível carregar o formulário de ${listKey}. Tente novamente.` : `Could not load form for ${listKey}. Please try again.`}
           </div>
           <DrawerFooter>
-            <Button onClick={handleCancel}>Close</Button>
+            <Button onClick={handleCancel}>{pt ? 'Fechar' : 'Close'}</Button>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>

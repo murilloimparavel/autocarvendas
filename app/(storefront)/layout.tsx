@@ -9,13 +9,13 @@ import { getRequestLocale } from '@/features/i18n/server'
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await loadStorefrontBusiness()
+  const [settings, locale] = await Promise.all([loadStorefrontBusiness(), getRequestLocale()])
 
   if (settings.status === 'error') {
-    return { title: "We couldn't load this page", robots: { index: false, follow: false } }
+    return { title: locale === 'pt-BR' ? 'Não foi possível carregar esta página' : "We couldn't load this page", robots: { index: false, follow: false } }
   }
 
-  return storefrontMetadata(settings.business, (await getBaseUrl()) || null, await getRequestLocale())
+  return storefrontMetadata(settings.business, (await getBaseUrl()) || null, locale)
 }
 
 export default async function StorefrontLayout({

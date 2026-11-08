@@ -1,5 +1,10 @@
+import type { Locale } from '@/features/i18n/messages'
+import { translateSchemaLabel } from '@/features/i18n/messages'
+import { localizeValidationMessage } from '@/features/i18n/validation'
+
 /** Never serialize an Error: ClientError.message itself includes request variables. */
-export const PUBLIC_REQUEST_ERROR = 'Unable to complete the request. Please try again.';
+export const PUBLIC_REQUEST_ERROR = 'Unable to complete the request. Please try again.'
+export const publicRequestError = (locale: Locale) => locale === 'pt-BR' ? 'Não foi possível concluir a solicitação. Tente novamente.' : PUBLIC_REQUEST_ERROR
 
 const SAFE_CODES = new Set([
   'UNAUTHENTICATED', 'FORBIDDEN', 'BAD_USER_INPUT', 'GRAPHQL_VALIDATION_FAILED',
@@ -39,9 +44,9 @@ function cleanMessage(message: string): string | null {
  * validation, input and access messages (and unique-constraint failures, by field name only).
  * Everything else, including Prisma debug output and stacks, falls back to PUBLIC_REQUEST_ERROR.
  */
-export function publicGraphQLErrorMessage(error: unknown): string {
+export function publicGraphQLErrorMessage(error: unknown, locale: Locale = 'en-US'): string {
   const errors = (error as { response?: { errors?: unknown } } | null)?.response?.errors;
-  if (!Array.isArray(errors)) return PUBLIC_REQUEST_ERROR;
+  if (!Array.isArray(errors)) return publicRequestError(locale);
   const messages: string[] = [];
   for (const entry of errors) {
     const code = entry?.extensions?.code;
@@ -49,14 +54,21 @@ export function publicGraphQLErrorMessage(error: unknown): string {
     if (code === 'KS_PRISMA_ERROR') {
       const fields = /Unique constraint failed on the fields: \(([^)]*)\)/.exec(message)?.[1];
       const names = fields?.split(',').map((field) => field.replace(/[`'"\s]/g, '')).filter((field) => /^\w+$/.test(field));
-      if (names?.length) messages.push(`A record with this ${names.join(' and ')} already exists.`);
+      if (names?.length) messages.push(locale === 'pt-BR'
+        ? `Já existe um cadastro com este(s) campo(s): ${names.map((name) => translateSchemaLabel(locale, name)).join(', ')}.`
+        : `A record with this ${names.join(' and ')} already exists.`)
       continue;
     }
     if (typeof code !== 'string' || !USER_FACING_CODES.has(code)) continue;
     const cleaned = cleanMessage(message);
-    if (cleaned) messages.push(cleaned);
+    if (cleaned) {
+      if (locale === 'pt-BR') {
+        const localized = localizeValidationMessage(cleaned, locale)
+        messages.push(localized === cleaned ? 'Revise os dados informados e tente novamente.' : localized)
+      } else messages.push(cleaned)
+    }
   }
-  return messages.length ? [...new Set(messages)].join('\n') : PUBLIC_REQUEST_ERROR;
+  return messages.length ? [...new Set(messages)].join('\n') : publicRequestError(locale)
 }
 
 /** Only root-relative, same-site navigation; also reject encoded bypasses. */

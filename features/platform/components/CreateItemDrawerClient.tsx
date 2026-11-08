@@ -9,6 +9,8 @@ import { enhanceFields } from '../../dashboard/utils/enhanceFields'
 import { useCreateItem } from '../../dashboard/utils/useCreateItem'
 import { AlertCircle, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useLocale } from '@/features/i18n/LocaleProvider'
+import { translateSchemaLabel } from '@/features/i18n/messages'
 
 interface CreateItemDrawerClientProps {
   list: any
@@ -21,6 +23,9 @@ export function CreateItemDrawerClient({
   onClose, 
   onCreate 
 }: CreateItemDrawerClientProps) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
+  const itemName = translateSchemaLabel(list.singular, locale)
   // Create enhanced fields exactly like dashboard implementation
   const enhancedFields = useMemo(() => {
     return enhanceFields(list.fields || {}, list.key)
@@ -39,7 +44,7 @@ export function CreateItemDrawerClient({
       // Use the createItem hook's create method (same as dashboard)
       const item = await createItem.create()
       if (item?.id) {
-        toast.success(`${list.singular} created successfully`)
+        toast.success(pt ? `${itemName} criado com sucesso` : `${itemName} created successfully`)
         
         // Call onCreate callback if provided
         if (onCreate) {
@@ -50,7 +55,7 @@ export function CreateItemDrawerClient({
       }
     } catch (error) {
       console.error('Error creating item:', error)
-      toast.error('Failed to create item')
+      toast.error(pt ? 'Não foi possível criar o registro' : 'Failed to create item')
     }
   }, [createItem, onCreate, onClose, list.singular])
 
@@ -59,10 +64,10 @@ export function CreateItemDrawerClient({
     return (
       <>
         <DrawerHeader className="flex-shrink-0">
-          <DrawerTitle>Error</DrawerTitle>
+          <DrawerTitle>{pt ? 'Erro' : 'Error'}</DrawerTitle>
         </DrawerHeader>
         <div className="p-6 text-center">
-          <p className="text-destructive">Unable to load create form</p>
+          <p className="text-destructive">{pt ? 'Não foi possível carregar o formulário de criação' : 'Unable to load create form'}</p>
         </div>
       </>
     )
@@ -71,9 +76,9 @@ export function CreateItemDrawerClient({
   return (
     <>
       <DrawerHeader className="flex-shrink-0">
-        <DrawerTitle>Create {list.singular}</DrawerTitle>
+        <DrawerTitle>{pt ? `Criar ${itemName}` : `Create ${itemName}`}</DrawerTitle>
         <DrawerDescription>
-          Create a new {list.singular.toLowerCase()}
+          {pt ? `Cadastre ${itemName.toLocaleLowerCase('pt-BR')}.` : `Create a new ${itemName.toLowerCase()}.`}
         </DrawerDescription>
       </DrawerHeader>
 
@@ -94,7 +99,7 @@ export function CreateItemDrawerClient({
               onClick={onClose}
               disabled={createItem.state === 'loading'}
             >
-              Cancel
+              {pt ? 'Cancelar' : 'Cancel'}
             </Button>
             <Button 
               type="submit" 
@@ -104,10 +109,10 @@ export function CreateItemDrawerClient({
               {createItem.state === 'loading' ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  {pt ? 'Criando…' : 'Creating…'}
                 </>
               ) : (
-                `Create ${list.singular}`
+                pt ? `Criar ${itemName}` : `Create ${itemName}`
               )}
             </Button>
           </div>

@@ -11,10 +11,13 @@ import { MakesModelsPanel } from '../components/MakesModelsPanel'
 import { ServicePackagesPanel } from '../components/ServicePackagesPanel'
 import { TAP } from '../components/formKit'
 import { countLabel } from '@/features/platform/lib/format'
+import { useLocale } from '@/features/i18n/LocaleProvider'
 
 export type CatalogTab = 'makes' | 'services' | 'routing'
 
 export function CatalogPageClient({ initialData, initialTab }: { initialData: CatalogData; initialTab: CatalogTab }) {
+  const { locale } = useLocale()
+  const pt = locale === 'pt-BR'
   const [data, setData] = useState(initialData)
   const [tab, setTab] = useState<CatalogTab>(initialTab)
   const [loading, setLoading] = useState(false)
@@ -49,13 +52,13 @@ export function CatalogPageClient({ initialData, initialTab }: { initialData: Ca
 
   const header = (
     <DeskHeader
-      title="Catalog"
-      status={anyError ? 'Partly unavailable' : modelCount === 0 ? 'No models' : activeRules === 0 ? 'No active routing' : 'Ready'}
+      title={pt ? 'Catálogo' : 'Catalog'}
+      status={anyError ? (pt ? 'Parcialmente indisponível' : 'Partly unavailable') : modelCount === 0 ? (pt ? 'Sem modelos' : 'No models') : activeRules === 0 ? (pt ? 'Sem distribuição ativa' : 'No active routing') : (pt ? 'Pronto' : 'Ready')}
       meta={`${anyError ? 'Partly unavailable' : modelCount === 0 ? 'No models' : activeRules === 0 ? 'No active routing' : 'Ready'} · ${countLabel(data.makes.data.length, 'make')} · ${countLabel(modelCount, 'model')} · ${countLabel(data.servicePackages.data.length, 'service package')} · ${countLabel(activeRules, 'active routing rule')}`}
       actions={
         <Pill variant="plain" className={TAP} onClick={reload} disabled={loading}>
           <RefreshCw className={loading ? 'animate-spin' : undefined} />
-          Refresh
+          {pt ? 'Atualizar' : 'Refresh'}
         </Pill>
       }
     />
@@ -63,22 +66,22 @@ export function CatalogPageClient({ initialData, initialTab }: { initialData: Ca
 
   return (
     <PageContainer
-      title="Catalog"
+      title={pt ? 'Catálogo' : 'Catalog'}
       header={header}
       breadcrumbs={[
-        { type: 'link', label: 'Dashboard', href: basePath },
-        { type: 'page', label: 'Platform' },
-        { type: 'page', label: 'Catalog' },
+        { type: 'link', label: pt ? 'Painel' : 'Dashboard', href: basePath },
+        { type: 'page', label: pt ? 'Plataforma' : 'Platform' },
+        { type: 'page', label: pt ? 'Catálogo' : 'Catalog' },
       ]}
     >
       <div className="min-w-0 max-w-full space-y-4 px-4 pb-24 md:px-6">
         {queue.length > 0 && (
-          <DeskSection title="Needs you" count={queue.length} id="catalog-needs-you" className="pb-4">
+          <DeskSection title={pt ? 'Ações necessárias' : 'Needs you'} count={queue.length} id="catalog-needs-you" className="pb-4">
             <DeskTable aria-labelledby="catalog-needs-you">
               <thead>
                 <tr>
-                  <Th>Waiting</Th>
-                  <Th>Status</Th>
+                  <Th>{pt ? 'Pendente' : 'Waiting'}</Th>
+                  <Th>{pt ? 'Situação' : 'Status'}</Th>
                   <Th align="right"><span className="sr-only">Action</span></Th>
                 </tr>
               </thead>
@@ -90,7 +93,7 @@ export function CatalogPageClient({ initialData, initialTab }: { initialData: Ca
                       <span className="block truncate text-xs text-muted-foreground">{item.detail}</span>
                     </Td>
                     <Td>{item.stale ? <Attention>{item.status}</Attention> : <Status tone="warn">{item.status}</Status>}</Td>
-                    <Td align="right" className="w-px"><Pill size="sm" className={TAP} onClick={() => changeTab(item.tab)}>Open</Pill></Td>
+                    <Td align="right" className="w-px"><Pill size="sm" className={TAP} onClick={() => changeTab(item.tab)}>{pt ? 'Abrir' : 'Open'}</Pill></Td>
                   </Tr>
                 ))}
               </tbody>
@@ -99,13 +102,13 @@ export function CatalogPageClient({ initialData, initialTab }: { initialData: Ca
         )}
 
         <Segmented<CatalogTab>
-          label="Catalog section"
+          label={pt ? 'Seção do catálogo' : 'Catalog section'}
           value={tab}
           onChange={changeTab}
           options={[
-            { value: 'makes', label: 'Makes and models', count: data.makes.data.length, tone: data.makes.error ? 'bad' : modelCount === 0 ? 'warn' : undefined },
-            { value: 'services', label: 'Service packages', count: data.servicePackages.data.length, tone: data.servicePackages.error ? 'bad' : undefined },
-            { value: 'routing', label: 'Lead routing', count: data.routingRules.data.length, tone: data.routingRules.error ? 'bad' : activeRules === 0 ? 'warn' : undefined },
+            { value: 'makes', label: pt ? 'Marcas e modelos' : 'Makes and models', count: data.makes.data.length, tone: data.makes.error ? 'bad' : modelCount === 0 ? 'warn' : undefined },
+            { value: 'services', label: pt ? 'Pacotes de serviço' : 'Service packages', count: data.servicePackages.data.length, tone: data.servicePackages.error ? 'bad' : undefined },
+            { value: 'routing', label: pt ? 'Distribuição de oportunidades' : 'Lead routing', count: data.routingRules.data.length, tone: data.routingRules.error ? 'bad' : activeRules === 0 ? 'warn' : undefined },
           ]}
         />
         {tab === 'makes' && <MakesModelsPanel makes={data.makes.data} inventoryPairs={data.inventoryPairs} error={data.makes.error} onReload={reload} />}

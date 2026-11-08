@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react'
 
 import { getCustomer } from '../actions/account'
 import { getCustomerEmailLink, getCustomerRequestHistory } from '../actions/customerRecords'
+import { getRequestLocale } from '../../i18n/server'
 import { EmailLinkPanel } from '../components/account/EmailLinkPanel'
 import { customerFacingReference, customerRequestStatusLabel, type CustomerRequestKind } from '../lib/customerRequests'
 import { customerRequestPath, formatCents, formatDateTime, isCustomerRequestKind, statusTone, type CustomerRequestRow } from '../lib/accountRecords'
@@ -34,6 +35,16 @@ function isScheduledKind(item: CustomerRequest) {
   return ['test-drive', 'service'].includes(kindKey(item) ?? '')
 }
 
+function requestKindLabel(value: string, pt: boolean) {
+  if (!pt) return value
+  const kind = String(value).trim().toLowerCase()
+  const labels: Record<string, string> = {
+    'test drive': 'Test-drive', 'test-drive': 'Test-drive', service: 'Oficina', 'trade-in': 'Veículo na troca', 'trade in': 'Veículo na troca',
+    financing: 'Financiamento', inquiry: 'Contato', contact: 'Contato',
+  }
+  return labels[kind] || value
+}
+
 const NEW_REQUESTS = [
   { href: '/test-drive', label: 'Test drive' },
   { href: '/service', label: 'Service' },
@@ -42,19 +53,20 @@ const NEW_REQUESTS = [
 ]
 
 export async function AccountPage() {
-  const [customer, history, emailLink] = await Promise.all([getCustomer(), getCustomerRequestHistory(), getCustomerEmailLink()])
+  const [customer, history, emailLink, locale] = await Promise.all([getCustomer(), getCustomerRequestHistory(), getCustomerEmailLink(), getRequestLocale()])
+  const pt = locale === 'pt-BR'
 
   if (!customer) {
     return (
       <div role="alert" className="mx-auto max-w-md py-[var(--sf-space-lg)]">
         <h1 className="sf-title-line">
           <span className="sf-dot" data-tone="bad" aria-hidden="true" />
-          <span className="sf-heading text-[length:var(--sf-text-2xl)]">Account unavailable</span>
+          <span className="sf-heading text-[length:var(--sf-text-2xl)]">{pt ? 'Conta indisponível' : 'Account unavailable'}</span>
         </h1>
-        <p className="sf-muted mt-3">We couldn&apos;t load your account. Please try again.</p>
+        <p className="sf-muted mt-3">{pt ? 'Não foi possível carregar sua conta. Tente novamente.' : 'We couldn&apos;t load your account. Please try again.'}</p>
         <div className="mt-6 flex flex-wrap gap-2">
-          <Link href="/account" prefetch={false} className="sf-btn sf-btn-primary">Retry</Link>
-          <Link href="/inventory" className="sf-btn sf-btn-ghost">Back to inventory</Link>
+          <Link href="/account" prefetch={false} className="sf-btn sf-btn-primary">{pt ? 'Tentar novamente' : 'Retry'}</Link>
+          <Link href="/inventory" className="sf-btn sf-btn-ghost">{pt ? 'Voltar ao estoque' : 'Back to inventory'}</Link>
         </div>
       </div>
     )
@@ -70,7 +82,7 @@ export async function AccountPage() {
   return (
     <section>
       <header className="border-b pb-[var(--sf-space-md)]" style={{ borderColor: 'var(--sf-rule)' }}>
-        <h1 className="sf-display text-[length:var(--sf-text-display)]">{customer.name || 'Account'}</h1>
+        <h1 className="sf-display text-[length:var(--sf-text-display)]">{customer.name || (pt ? 'Minha conta' : 'Account')}</h1>
         {customer.email && <p className="sf-muted mt-2 break-all">{customer.email}</p>}
       </header>
 
@@ -79,12 +91,12 @@ export async function AccountPage() {
       {counts.length > 0 && (
         <dl className="sf-spec grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(7.5rem,1fr))]">
           <div>
-            <dt>Requests</dt>
+            <dt>{pt ? 'Solicitações' : 'Requests'}</dt>
             <dd className="sf-figure text-[length:var(--sf-text-xl)]">{history?.length ?? 0}</dd>
           </div>
           {counts.map(([kind, count]) => (
             <div key={kind}>
-              <dt>{kind}</dt>
+              <dt>{requestKindLabel(kind, pt)}</dt>
               <dd className="sf-figure text-[length:var(--sf-text-xl)]">{count}</dd>
             </div>
           ))}
@@ -92,8 +104,8 @@ export async function AccountPage() {
       )}
 
       <div className="mt-[var(--sf-space-xl)] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <h2 className="sf-heading text-[length:var(--sf-text-xl)]">Request history</h2>
-        <nav className="flex flex-wrap gap-2" aria-label="New request">
+        <h2 className="sf-heading text-[length:var(--sf-text-xl)]">{pt ? 'Histórico de solicitações' : 'Request history'}</h2>
+        <nav className="flex flex-wrap gap-2" aria-label={pt ? 'Nova solicitação' : 'New request'}>
           {NEW_REQUESTS.map((link) => (
             <Link
               key={link.href}
@@ -107,32 +119,32 @@ export async function AccountPage() {
       </div>
 
       <div className="mt-5">
-        {history === null ? (
-          <div className="sf-notice" data-tone="bad" role="alert">Request history couldn&apos;t be loaded.</div>
+          {history === null ? (
+          <div className="sf-notice" data-tone="bad" role="alert">{pt ? 'Não foi possível carregar o histórico.' : 'Request history couldn&apos;t be loaded.'}</div>
         ) : history.length === 0 ? (
           <div className="sf-well p-6">
-            <p className="sf-muted text-[length:var(--sf-text-sm)]">No requests yet.</p>
+            <p className="sf-muted text-[length:var(--sf-text-sm)]">{pt ? 'Nenhuma solicitação até o momento.' : 'No requests yet.'}</p>
           </div>
         ) : (
           <ul className="border-t" style={{ borderColor: 'var(--sf-rule)' }}>
             {history.map((item) => {
               const reference = requestReference(item)
-              const status = customerRequestStatusLabel(item.kind, item.status)
+              const status = customerRequestStatusLabel(item.kind, item.status, locale)
               const kind = kindKey(item)
-              const amount = formatCents(item.amountCents)
+              const amount = formatCents(item.amountCents, null, locale)
               const row = (
                 <>
                   <div className="min-w-0">
                     <h3 className="sf-title-line">
                       <span className="sf-dot" data-tone={statusTone(item.status)} aria-hidden="true" />
-                      <span className="sf-heading text-[length:var(--sf-text-lg)]">{item.kind}</span>
+                      <span className="sf-heading text-[length:var(--sf-text-lg)]">{requestKindLabel(kind || item.kind, pt)}</span>
                       <span className="sf-muted text-[length:var(--sf-text-sm)]">{status}</span>
                     </h3>
                     {item.vehicle && <p className="mt-1 pl-4 text-[length:var(--sf-text-sm)]">{item.vehicle}</p>}
                     <p className="sf-muted mt-1 pl-4 text-[length:var(--sf-text-sm)]">
-                      {isScheduledKind(item) ? 'Requested time' : 'Submitted'}{' '}
+                      {isScheduledKind(item) ? (pt ? 'Data solicitada' : 'Requested time') : (pt ? 'Enviado em' : 'Submitted')}{' '}
                       <time dateTime={item.scheduledAt} className="sf-figure text-[var(--sf-ink)]">
-                        {formatDateTime(item.scheduledAt, item.timezone)}
+                        {formatDateTime(item.scheduledAt, item.timezone, locale)}
                       </time>
                       {amount && <> · <span className="sf-figure text-[var(--sf-ink)]">{amount}</span></>}
                     </p>

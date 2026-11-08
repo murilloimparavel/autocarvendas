@@ -1,3 +1,4 @@
+import { useLocale } from '@/features/i18n/LocaleProvider'
 import { Fragment, createContext, useContext, useMemo, useState } from 'react'
 import { Transforms, Range } from 'slate'
 import { ReactEditor, useSelected, useSlateStatic as useStaticEditor, useReadOnly, type RenderElementProps } from 'slate-react'
@@ -45,6 +46,7 @@ const LayoutPopoverSeparator = () => {
 }
 
 export function LayoutContainer({ attributes, children, element }: RenderElementProps & { element: { type: 'layout'; layout: number[] } }) {
+  const { locale } = useLocale()
   const editor = useStaticEditor()
   const isPopoverOpen = useLayoutPopoverOpen()
 
@@ -106,7 +108,7 @@ export function LayoutContainer({ attributes, children, element }: RenderElement
                 </ToolbarButton>
               </TooltipTrigger>
               <TooltipContent>
-                <span>Remove</span>
+                <span>{locale === 'pt-BR' ? 'Remover' : 'Remove'}</span>
               </TooltipContent>
             </Tooltip>
           </ToolbarGroup>
@@ -144,6 +146,7 @@ function makeLayoutIcon(ratios: number[]) {
 }
 
 export function LayoutsButton({ layouts }: { layouts: DocumentFeatures['layouts'] }) {
+  const { locale } = useLocale()
   const editor = useSlate()
   const { layouts: layoutState } = useToolbarState()
   
@@ -167,7 +170,7 @@ export function LayoutsButton({ layouts }: { layouts: DocumentFeatures['layouts'
         </ToolbarButton>
       </TooltipTrigger>
       <TooltipContent>
-        <span>Layouts</span>
+        <span>{locale === 'pt-BR' ? 'Colunas' : 'Layouts'}</span>
       </TooltipContent>
     </Tooltip>
   )
